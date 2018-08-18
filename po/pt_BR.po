@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: camorama\n"
 "Report-Msgid-Bugs-To: https://github.com/alessio/camorama\n"
-"POT-Creation-Date: 2018-08-17 22:20-0300\n"
-"PO-Revision-Date: 2018-08-17 14:42-0300\n"
+"POT-Creation-Date: 2018-08-18 09:01-0300\n"
+"PO-Revision-Date: 2018-08-18 09:05-0300\n"
 "Last-Translator: Andre Noel <andrenoel@ubuntu.com>\n"
 "Language-Team: Portuguese/Brazil <gnome-l10n-br@listas.cipspa.org.br>\n"
 "Language: pt_BR\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.0.7\n"
 
-#: camorama.appdata.xml:6 src/callbacks.c:469
+#: camorama.appdata.xml:6 src/callbacks.c:470
 msgid "Camorama"
 msgstr "Camorama"
 
@@ -226,7 +226,7 @@ msgstr "Matiz:"
 msgid "White Balance:"
 msgstr "Equilíbrio de Branco:"
 
-#: src/callbacks.c:460
+#: src/callbacks.c:461
 msgid "translator_credits"
 msgstr ""
 "Alexandre Folle de Menezes <afmenez@terra.com.br>\n"
@@ -234,11 +234,16 @@ msgstr ""
 "Duarte Loreto <happyguy_pt@hotmail.com>\n"
 "Andre Noel <andrenoel@ubuntu.com>"
 
-#: src/callbacks.c:471
+#: src/callbacks.c:472
 msgid "View, alter and save images from a webcam"
 msgstr "Ver, alterar e gravar imagens de uma webcam"
 
-#: src/callbacks.c:703
+#: src/callbacks.c:584
+#, c-format
+msgid "%.2f fps - current     %.2f fps - average"
+msgstr "%.2f quadros/s - atual     %.2f quadros/s - média"
+
+#: src/callbacks.c:704
 #, c-format
 msgid ""
 "Local Capture: %d\n"
@@ -249,7 +254,7 @@ msgstr ""
 "Captura Remota: %d\n"
 "Intervalo de Captura: %d"
 
-#: src/callbacks.c:712
+#: src/callbacks.c:713
 msgid "Automatic Capture Disabled"
 msgstr "Captura Automática Desabilitada"
 
