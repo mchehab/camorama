@@ -16,7 +16,7 @@ extern struct devnodes *devices;
 G_BEGIN_DECLS
 
 void on_change_size_activate(GtkWidget * widget, cam_t *cam);
-void on_quit_activate(GtkMenuItem *menuitem, cam_t *cam);
+void on_quit_activate(GtkWidget *widget, cam_t *cam);
 gboolean on_configure_event(GtkMenuItem *menuitem, GdkEvent *event, cam_t *cam);
 gboolean on_window_state_event(GtkMenuItem *menuitem,
                                GdkEventWindowState *event, cam_t *cam);
@@ -41,10 +41,10 @@ void rpng_func(GtkWidget *, cam_t *);
 void draw_callback(GtkWidget *, cairo_t *, cam_t *cam);
 
 void rppm_func(GtkWidget *, cam_t *);
-void on_preferences1_activate(GtkMenuItem *menuitem, gpointer user_data);
-void on_about_activate(GtkMenuItem *menuitem, cam_t *cam);
-void on_show_adjustments_activate(GtkToggleButton *button, cam_t *);
-void on_show_effects_activate(GtkMenuItem *menuitem, cam_t *);
+void on_preferences1_activate(GtkWidget *widget, gpointer user_data);
+void on_about_activate(GtkWidget *widget, cam_t *cam);
+void on_show_adjustments_activate(GtkWidget *button, cam_t *);
+void on_show_effects_activate(GtkWidget *button, cam_t *);
 void prefs_func(GtkWidget *, cam_t *);
 gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *event,
                                    cam_t *cam);
