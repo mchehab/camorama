@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.38.2 -->
 <interface>
-  <requires lib="gtk+" version="3.22"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkAccelGroup" id="accelgroup1"/>
   <object class="GtkAdjustment" id="adjustment1">
     <property name="upper">255</property>
@@ -34,15 +34,135 @@
     <property name="upper">255</property>
     <property name="step-increment">1</property>
   </object>
-  <object class="GtkImage" id="image21">
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="pixbuf">snap-icon-small.xpm</property>
+  <object class="GtkAdjustment" id="adjustment8">
+    <property name="upper">255</property>
+    <property name="step-increment">1</property>
   </object>
-  <object class="GtkImage" id="image23">
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="icon-name">view-fullscreen</property>
+  <object class="GtkAdjustment" id="adjustment9">
+    <property name="upper">255</property>
+    <property name="step-increment">1</property>
+  </object>
+  <object class="GtkPopover" id="menuitem1_menu">
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
+        <property name="margin-start">6</property>
+        <property name="margin-end">6</property>
+        <child>
+          <object class="GtkButton" id="imagemenuitem1">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">_Take Picture</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="imagemenuitem2">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Toggle _Full Screen</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+        <child><object class="GtkSeparator"><property name="visible">True</property></object></child>
+        <child>
+          <object class="GtkButton" id="quit">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">_Quit</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="menuitem3_menu">
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
+        <property name="margin-start">6</property>
+        <property name="margin-end">6</property>
+        <child>
+          <object class="GtkButton" id="imagemenuitem3">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">_Preferences</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="menuitem4_menu">
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
+        <property name="margin-start">6</property>
+        <property name="margin-end">6</property>
+        <child>
+          <object class="GtkCheckButton" id="showadjustment_item">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Show Adjustments</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="show_effects">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Show Effects</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="change_camera">
+            <property name="label" translatable="yes">_Change Camera</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="resolution_box">
+            <property name="visible">True</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkButton" id="small">
+                <property name="visible">True</property>
+                <property name="name">small</property>
+                <property name="label" translatable="yes">Small</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="menuitem6_menu">
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
+        <property name="margin-start">6</property>
+        <property name="margin-end">6</property>
+        <child>
+          <object class="GtkButton" id="imagemenuitem4">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">_About</property>
+            <property name="use-underline">True</property>
+          </object>
+        </child>
+      </object>
+    </child>
   </object>
   <object class="GtkWindow" id="main_window">
     <property name="can-focus">False</property>
@@ -57,161 +177,60 @@
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkMenuBar" id="menubar3">
+          <object class="GtkBox" id="menubar3">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkImageMenuItem" id="menuitem1">
-                <property name="label">gtk-file</property>
+              <object class="GtkMenuButton" id="menuitem1">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">_File</property>
                 <property name="use-underline">True</property>
-                <property name="use-stock">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menuitem1_menu">
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem1">
-                        <property name="label" translatable="yes">_Take Picture</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="image">image21</property>
-                        <property name="use-stock">False</property>
-                        <accelerator key="t" signal="activate" modifiers="GDK_CONTROL_MASK"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem2">
-                        <property name="label" translatable="yes">Toggle _Full Screen</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="image">image23</property>
-                        <property name="use-stock">False</property>
-                        <accelerator key="f" signal="activate" modifiers="GDK_CONTROL_MASK"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkSeparatorMenuItem" id="menuitem2">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="quit">
-                        <property name="label">gtk-quit</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="use-stock">True</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                <property name="popover">menuitem1_menu</property>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
             </child>
             <child>
-              <object class="GtkImageMenuItem" id="menuitem3">
-                <property name="label">gtk-edit</property>
+              <object class="GtkMenuButton" id="menuitem3">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="label">_Edit</property>
                 <property name="use-underline">True</property>
-                <property name="use-stock">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menuitem3_menu">
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem3">
-                        <property name="label">gtk-preferences</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="use-stock">True</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                <property name="popover">menuitem3_menu</property>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
             </child>
             <child>
-              <object class="GtkMenuItem" id="menuitem4">
+              <object class="GtkMenuButton" id="menuitem4">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">_View</property>
                 <property name="use-underline">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menuitem4_menu">
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkCheckMenuItem" id="showadjustment_item">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Show Adjustments</property>
-                        <property name="use-underline">True</property>
-                        <signal name="activate" handler="on_show_adjustments_activate" swapped="no"/>
-                        <accelerator key="a" signal="activate" modifiers="GDK_CONTROL_MASK"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkCheckMenuItem" id="show_effects">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Show Effects</property>
-                        <property name="use-underline">True</property>
-                        <signal name="activate" handler="on_show_effects_activate" swapped="no"/>
-                        <accelerator key="e" signal="activate" modifiers="GDK_CONTROL_MASK"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkMenuItem" id="change_camera">
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">_Change Camera</property>
-                        <property name="use-underline">True</property>
-                        <signal name="activate" handler="on_change_camera" swapped="no"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkSeparatorMenuItem" id="separator1">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkRadioMenuItem" id="small">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Small</property>
-                        <property name="use-underline">True</property>
-                        <signal name="activate" handler="activate" swapped="no"/>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                <property name="popover">menuitem4_menu</property>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
             </child>
             <child>
-              <object class="GtkImageMenuItem" id="menuitem6">
-                <property name="label">gtk-help</property>
+              <object class="GtkMenuButton" id="menuitem6">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">_Help</property>
                 <property name="use-underline">True</property>
-                <property name="use-stock">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menuitem6_menu">
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem4">
-                        <property name="label">gtk-about</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="use-stock">True</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                <property name="popover">menuitem6_menu</property>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -345,6 +364,19 @@
               </packing>
             </child>
             <child>
+              <object class="GtkButton" id="show_ctrls">
+                <property name="label" translatable="yes">Show Controls</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkAlignment" id="alignment6">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -395,7 +427,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -440,7 +472,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
@@ -451,7 +483,7 @@
           </packing>
         </child>
         <child>
-          <!-- n-columns=3 n-rows=6 -->
+          <!-- n-columns=3 n-rows=8 -->
           <object class="GtkGrid" id="adjustments_table">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -682,6 +714,74 @@
               <packing>
                 <property name="left-attach">2</property>
                 <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="threshold_icon">
+                <property name="can-focus">False</property>
+                <property name="icon-name">preferences-system</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="threshold_label">
+                <property name="can-focus">False</property>
+                <property name="halign">start</property>
+                <property name="label" translatable="yes">Threshold:</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScale" id="threshold_slider">
+                <property name="can-focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="adjustment">adjustment8</property>
+                <property name="digits">0</property>
+                <property name="value-pos">left</property>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="ch_threshold_icon">
+                <property name="can-focus">False</property>
+                <property name="icon-name">preferences-system</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">7</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="ch_threshold_label">
+                <property name="can-focus">False</property>
+                <property name="halign">start</property>
+                <property name="label" translatable="yes">Channel Threshold:</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">7</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScale" id="ch_threshold_slider">
+                <property name="can-focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="adjustment">adjustment9</property>
+                <property name="digits">0</property>
+                <property name="value-pos">left</property>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">7</property>
               </packing>
             </child>
           </object>

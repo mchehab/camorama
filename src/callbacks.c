@@ -326,12 +326,12 @@ gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *,
     return TRUE;
 }
 
-void on_quit_activate(GtkMenuItem *, cam_t *cam)
+void on_quit_activate(GtkWidget *, cam_t *cam)
 {
     g_application_quit(G_APPLICATION(cam->app));
 }
 
-void on_preferences1_activate(GtkMenuItem *, gpointer)
+void on_preferences1_activate(GtkWidget *, gpointer)
 {
     gtk_widget_show(prefswindow);
 }
@@ -442,6 +442,8 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
     unsigned int width = 0, height = 0;
 
     name = gtk_widget_get_name(widget);
+    gtk_popover_popdown(GTK_POPOVER(gtk_builder_get_object(cam->xml,
+                                                           "menuitem4_menu")));
 
     if (strcmp(name, "small") == 0) {
         width = cam->min_width;
@@ -487,25 +489,54 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
     set_image_scale(cam);
 }
 
-void on_show_adjustments_activate(GtkToggleButton *, cam_t *cam)
+void on_show_adjustments_activate(GtkWidget *button, cam_t *cam)
 {
-    if (gtk_widget_get_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")))) {
-        gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")));
-        cam->show_adjustments = FALSE;
+    GtkWidget *menu_button;
+    GtkWidget *toolbar_button;
+    GtkWidget *other_button;
+    gboolean other_active;
+    gboolean active;
 
-    } else {
+    g_object_get(button, "active", &active, NULL);
+
+    menu_button = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "showadjustment_item"));
+    toolbar_button = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                        "togglebutton1"));
+    other_button = button == menu_button ? toolbar_button : menu_button;
+
+    if (other_button) {
+        g_object_get(other_button, "active", &other_active, NULL);
+        if (other_active != active) {
+            g_signal_handlers_block_by_func(other_button,
+                                            on_show_adjustments_activate,
+                                            cam);
+            g_object_set(other_button, "active", active, NULL);
+            g_signal_handlers_unblock_by_func(other_button,
+                                              on_show_adjustments_activate,
+                                              cam);
+        }
+    }
+
+    if (active) {
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")));
         cam->show_adjustments = TRUE;
+    } else {
+        gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")));
+        cam->show_adjustments = FALSE;
     }
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_SHOW_ADJUSTMENTS,
                            cam->show_adjustments);
 }
 
-void on_show_effects_activate(GtkMenuItem *menuitem, cam_t *cam)
+void on_show_effects_activate(GtkWidget *button, cam_t *cam)
 {
     GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                            "scrolledwindow_effects"));
-    cam->show_effects = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem));
+    gboolean active;
+
+    g_object_get(button, "active", &active, NULL);
+    cam->show_effects = active;
 
     if (!cam->show_effects) {
         gtk_widget_hide(effects);
@@ -523,7 +554,7 @@ static void about_widget_destroy(GtkWidget *)
 }
 
 
-void on_about_activate(GtkMenuItem *, cam_t *cam)
+void on_about_activate(GtkWidget *, cam_t *cam)
 {
     const gchar *authors[] = {
         "Greg Jones  <greg@fixedgear.org>",
@@ -1466,9 +1497,8 @@ static void add_gtk_view_resolutions(cam_t *cam)
      */
 
     small_res = GTK_WIDGET(gtk_builder_get_object(cam->xml, "small"));
-    menu = GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"));
+    menu = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
 
-    /* The compact layout has no resolution submenu. */
     if (!small_res || !GTK_IS_CONTAINER(menu))
         return;
 
@@ -1486,48 +1516,32 @@ static void add_gtk_view_resolutions(cam_t *cam)
                 else
                     sprintf(name, _("%dx%d"), cam->res[i].x, cam->res[i].y);
 
-            new_res = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(small_res), name);
-            gtk_container_add(GTK_CONTAINER(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"))),
-                              new_res);
+            new_res = gtk_button_new_with_label(name);
+            gtk_container_add(GTK_CONTAINER(menu), new_res);
             gtk_widget_show(new_res);
-            g_signal_connect(new_res, "activate",
+            g_signal_connect(new_res, "clicked",
                              G_CALLBACK(on_change_size_activate), cam);
             gtk_widget_set_name(new_res, name);
-
-            if (cam->width == cam->res[i].x && cam->height == cam->res[i].y)
-                gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(new_res),
-                                               TRUE);
-            else
-                gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(new_res),
-                                               FALSE);
         }
 
         /* We won't actually use the small res */
         gtk_widget_hide(small_res);
     } else {
         g_signal_connect(gtk_builder_get_object(cam->xml, "small"),
-                         "activate", G_CALLBACK(on_change_size_activate),
+                         "clicked", G_CALLBACK(on_change_size_activate),
                          cam);
 
-        new_res = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(small_res),
-                                                                 "Medium");
-        gtk_container_add(GTK_CONTAINER(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"))),
-                          new_res);
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(new_res),
-                                       FALSE);
+        new_res = gtk_button_new_with_label("Medium");
+        gtk_container_add(GTK_CONTAINER(menu), new_res);
         gtk_widget_show(new_res);
-        g_signal_connect(new_res, "activate",
+        g_signal_connect(new_res, "clicked",
                          G_CALLBACK(on_change_size_activate), cam);
         gtk_widget_set_name(new_res, "medium");
 
-        new_res = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(small_res),
-                                                                 "Large");
-        gtk_container_add(GTK_CONTAINER(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"))),
-                          new_res);
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(new_res),
-                                       FALSE);
+        new_res = gtk_button_new_with_label("Large");
+        gtk_container_add(GTK_CONTAINER(menu), new_res);
         gtk_widget_show(new_res);
-        g_signal_connect(new_res, "activate",
+        g_signal_connect(new_res, "clicked",
                          G_CALLBACK(on_change_size_activate), cam);
         gtk_widget_set_name(new_res, "large");
     }
@@ -1582,7 +1596,7 @@ void start_camera(cam_t *cam)
 
     /* Second step: clean-up all resolutions */
 
-    container = GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"));
+    container = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
     children = GTK_IS_CONTAINER(container) ?
                gtk_container_get_children(GTK_CONTAINER(container)) : NULL;
     for (iter = children; iter != NULL; iter = g_list_next(iter)) {
