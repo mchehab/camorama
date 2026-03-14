@@ -1,6 +1,15 @@
 
 [![Translation status](https://translate.fedoraproject.org/widgets/camorama/-/svg-badge.svg)](https://translate.fedoraproject.org/engage/camorama/)
 
+# Intended Audience
+
+This project provides general-purpose software components intended primarily
+for integration, development, research, and infrastructure use by technical
+users.
+
+The project is not offered as a consumer-facing online service or
+managed platform.
+
 # Build
 
 The build dependencies vary along distributions.
