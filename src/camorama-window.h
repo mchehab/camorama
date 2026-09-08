@@ -29,6 +29,8 @@
 
 G_BEGIN_DECLS
 
+extern const gchar *const protos[3];
+
 void load_interface(cam_t *cam);
 
 G_END_DECLS

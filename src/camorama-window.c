@@ -39,7 +39,7 @@
 static GQuark menu_item_filter_type = 0;
 
 /* Supported URI protocol schemas */
-const gchar *const protos[] = { "ftp", "sftp", "smb" };
+const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 
 static void add_filter_clicked(GtkMenuItem *menuitem,
                                CamoramaFilterChain *chain)
