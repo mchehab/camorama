@@ -132,6 +132,7 @@ typedef struct camera {
 
     GtkApplication *app;
     GtkWidget *controls_window;
+    guint screensaver_inhibit_cookie;
 
     CamoramaFilterChain *filter_chain;
 

@@ -68,6 +68,10 @@ static void close_app(GtkWidget* widget, cam_t *cam)
             stop_streaming(cam);
     }
 
+    if (cam->screensaver_inhibit_cookie)
+        gtk_application_uninhibit(cam->app,
+                                  cam->screensaver_inhibit_cookie);
+
     cam_close(cam);
 
     if (cam->timeout_id)
@@ -245,6 +249,11 @@ static void activate(GtkApplication *app)
         cam->height = g_settings_get_int(cam->gc, CAM_SETTINGS_HEIGHT);
 
     start_camera(cam);
+
+    cam->screensaver_inhibit_cookie =
+        gtk_application_inhibit(cam->app, NULL,
+                                GTK_APPLICATION_INHIBIT_IDLE,
+                                _("Capturing video"));
 
     load_interface(cam);
 
