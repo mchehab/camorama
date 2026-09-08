@@ -8,25 +8,28 @@ The build dependencies vary along distributions.
 On Fedora:
 
 ```
-sudo dnf install gcc make gettext-devel libv4l-devel gtk3-devel cairo-devel \
-	gdk-pixbuf2-devel gnome-common
+sudo dnf install gcc meson ninja-build gettext libv4l-devel gtk3-devel \
+	gdk-pixbuf2-devel pulseaudio-libs-devel alsa-lib-devel
 ```
 
 On Ubuntu/Debian:
 
 ```
-sudo apt-get install gcc make gettext libv4l-dev libgtk-3-dev libcairo2-dev \
-	libgdk-pixbuf2.0-dev gnome-common
+sudo apt-get install gcc meson ninja-build gettext libv4l-dev libgtk-3-dev \
+	libgdk-pixbuf2.0-dev libpulse-dev libasound2-dev
 ```
 
 Once the dependencies are installed, building and installing camorama can
 be done with:
 
 ```
-./autogen.sh
-make
-sudo make install
+meson setup build
+meson compile -C build
+sudo meson install -C build
 ```
+
+GTK 3 is the default. To build the GTK 4 interface, configure a separate
+build directory with `meson setup build-gtk4 -Dgtk4=true`.
 
 # Run
 
