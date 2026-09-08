@@ -31,7 +31,7 @@ extern int frames2;
 extern int seconds;
 extern GtkWidget *dentry, *entry2, *string_entry;
 extern GtkWidget *host_entry, *protocol, *rdir_entry, *filename_entry;
-extern const gchar *const protos[];
+extern const gchar *const protos[3];
 
 /*
  * pref callbacks
@@ -213,6 +213,8 @@ static int apply_remote_pref(cam_t *cam)
         return 0;
 
     index = gtk_combo_box_get_active(GTK_COMBO_BOX(protocol));
+    if (index < 0 || index >= (int)G_N_ELEMENTS(protos))
+        return 0;
 
     host = g_strdup(gtk_entry_get_text((GtkEntry *) host_entry));
     rdir = g_strdup(gtk_entry_get_text((GtkEntry *) rdir_entry));
@@ -275,10 +277,13 @@ static int apply_remote_pref(cam_t *cam)
  */
 void prefs_func(GtkWidget *, cam_t *cam)
 {
-    if (gtk_file_chooser_get_current_folder((GtkFileChooser *) dentry)) {
+    gchar *pixdir;
+
+    pixdir = gtk_file_chooser_get_current_folder((GtkFileChooser *) dentry);
+    if (pixdir) {
         if (cam->pixdir)
             g_free(cam->pixdir);
-        cam->pixdir = gtk_file_chooser_get_current_folder((GtkFileChooser *) dentry);
+        cam->pixdir = pixdir;
         g_settings_set_string(cam->gc, CAM_SETTINGS_SAVE_DIR, cam->pixdir);
     } else {
         if (cam->debug == TRUE)
