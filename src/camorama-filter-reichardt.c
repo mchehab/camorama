@@ -57,7 +57,7 @@ typedef struct _CamoramaFilterClass CamoramaFilterReichardtClass;
 G_DEFINE_TYPE(CamoramaFilterReichardt, camorama_filter_reichardt,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_reichardt_init(CamoramaFilterReichardt *self)
+static void camorama_filter_reichardt_init(CamoramaFilterReichardt *)
 {
 }
 
@@ -145,7 +145,7 @@ static void MaybeNewMemory(gint width, gint height, gint depth)
 
 // This is the function that implements the filter
 
-static void camorama_filter_reichardt_filter(void *filter, guchar *image,
+static void camorama_filter_reichardt_filter(void *, guchar *image,
                                              gint width, gint height,
                                              gint depth)
 {

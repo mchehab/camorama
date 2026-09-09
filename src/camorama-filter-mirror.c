@@ -36,11 +36,11 @@ typedef struct _CamoramaFilterClass CamoramaFilterMirrorClass;
 G_DEFINE_TYPE(CamoramaFilterMirror, camorama_filter_mirror,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_mirror_init(CamoramaFilterMirror *self)
+static void camorama_filter_mirror_init(CamoramaFilterMirror *)
 {
 }
 
-static void camorama_filter_mirror_filter(void *filter, guchar *image,
+static void camorama_filter_mirror_filter(void *, guchar *image,
                                           gint width, gint height,
                                           gint depth)
 {

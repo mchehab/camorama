@@ -72,20 +72,20 @@ void rappend_func(GtkWidget *rb, cam_t *cam)
 
 }
 
-void jpg_func(GtkWidget *rb, cam_t *cam)
+void jpg_func(GtkWidget *, cam_t *cam)
 {
     cam->savetype = JPEG;
     g_settings_set_int(cam->gc, CAM_SETTINGS_FILE_TYPE, cam->savetype);
 
 }
 
-void png_func(GtkWidget *rb, cam_t *cam)
+void png_func(GtkWidget *, cam_t *cam)
 {
     cam->savetype = PNG;
     g_settings_set_int(cam->gc, CAM_SETTINGS_FILE_TYPE, cam->savetype);
 }
 
-void ppm_func(GtkWidget *rb, cam_t *cam)
+void ppm_func(GtkWidget *, cam_t *cam)
 {
     cam->savetype = PPM;
     g_settings_set_int(cam->gc, CAM_SETTINGS_FILE_TYPE, cam->savetype);
@@ -178,20 +178,20 @@ void interval_change(GtkWidget *sb, cam_t *cam)
     }
 }
 
-void rjpg_func(GtkWidget *rb, cam_t *cam)
+void rjpg_func(GtkWidget *, cam_t *cam)
 {
     cam->rsavetype = JPEG;
     g_settings_set_int(cam->gc, CAM_SETTINGS_REMOTE_FILE_TYPE, cam->rsavetype);
 
 }
 
-void rpng_func(GtkWidget *rb, cam_t *cam)
+void rpng_func(GtkWidget *, cam_t *cam)
 {
     cam->rsavetype = PNG;
     g_settings_set_int(cam->gc, CAM_SETTINGS_REMOTE_FILE_TYPE, cam->rsavetype);
 }
 
-void rppm_func(GtkWidget *rb, cam_t *cam)
+void rppm_func(GtkWidget *, cam_t *cam)
 {
     cam->rsavetype = PPM;
     g_settings_set_int(cam->gc, CAM_SETTINGS_REMOTE_FILE_TYPE, cam->rsavetype);
@@ -273,7 +273,7 @@ static int apply_remote_pref(cam_t *cam)
 /*
  * apply preferences
  */
-void prefs_func(GtkWidget *okbutton, cam_t *cam)
+void prefs_func(GtkWidget *, cam_t *cam)
 {
     if (gtk_file_chooser_get_current_folder((GtkFileChooser *) dentry)) {
         if (cam->pixdir)
@@ -314,24 +314,25 @@ void prefs_func(GtkWidget *okbutton, cam_t *cam)
     gtk_widget_hide(prefswindow);
 }
 
-gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *event,
+gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *,
                                    cam_t *cam)
 {
     prefs_func(widget, cam);
     return TRUE;
 }
 
-void on_quit_activate(GtkMenuItem *menuitem, cam_t *cam)
+void on_quit_activate(GtkMenuItem *, cam_t *cam)
 {
     g_application_quit(G_APPLICATION(cam->app));
 }
 
-void on_preferences1_activate(GtkMenuItem *menuitem, gpointer user_data)
+void on_preferences1_activate(GtkMenuItem *, gpointer)
 {
     gtk_widget_show(prefswindow);
 }
 
-static void get_geometry(cam_t *cam, unsigned int *width, unsigned int *height)
+static void get_geometry(cam_t *, unsigned int *width,
+                         unsigned int *height)
 {
     GdkRectangle geo;
     GdkWindow *win = gdk_screen_get_root_window(gdk_screen_get_default());
@@ -344,7 +345,7 @@ static void get_geometry(cam_t *cam, unsigned int *width, unsigned int *height)
     *height = geo.height;
 }
 
-gboolean on_configure_event(GtkMenuItem *menuitem, GdkEvent *event, cam_t *cam)
+gboolean on_configure_event(GtkMenuItem *, GdkEvent *, cam_t *cam)
 {
     GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
     gint width, height;
@@ -379,7 +380,7 @@ gboolean on_configure_event(GtkMenuItem *menuitem, GdkEvent *event, cam_t *cam)
     return FALSE;
 }
 
-gboolean on_window_state_event(GtkMenuItem *menuitem,
+gboolean on_window_state_event(GtkMenuItem *,
                                GdkEventWindowState *event, cam_t *cam)
 {
     if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) {
@@ -397,7 +398,7 @@ gboolean on_window_state_event(GtkMenuItem *menuitem,
     return GDK_EVENT_PROPAGATE;
 }
 
-void toggle_fullscreen(GtkWidget *widget, cam_t *cam)
+void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
     GdkWindowState state;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
@@ -480,7 +481,7 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
     set_image_scale(cam);
 }
 
-void on_show_adjustments_activate(GtkToggleButton *button, cam_t *cam)
+void on_show_adjustments_activate(GtkToggleButton *, cam_t *cam)
 {
     if (gtk_widget_get_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")))) {
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")));
@@ -513,14 +514,14 @@ void on_show_effects_activate(GtkMenuItem *menuitem, cam_t *cam)
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_SHOW_EFFECTS, cam->show_effects);
 }
 
-static void about_widget_destroy(GtkWidget *widget)
+static void about_widget_destroy(GtkWidget *)
 {
     gtk_widget_destroy(about);
     about = NULL;
 }
 
 
-void on_about_activate(GtkMenuItem *menuitem, cam_t *cam)
+void on_about_activate(GtkMenuItem *, cam_t *cam)
 {
     const gchar *authors[] = {
         "Greg Jones  <greg@fixedgear.org>",
@@ -654,7 +655,7 @@ void on_status_show(GtkWidget *sb, cam_t *cam)
     cam->status = sb;
 }
 
-void capture_func(GtkWidget *widget, cam_t *cam)
+void capture_func(GtkWidget *, cam_t *cam)
 {
     if (cam->debug == TRUE)
         printf("capture_func\nx = %d, y = %d, depth = %d, realloc size = %d\n",
@@ -868,14 +869,14 @@ static void reset_ctrls(GtkButton *btn, cam_t *cam)
     gtk_container_forall(GTK_CONTAINER(toplevel), send_update_signal, 0);
 }
 
-static void close_controls(GtkWidget* widget, cam_t *cam)
+static void close_controls(GtkWidget *, cam_t *cam)
 {
     g_mutex_lock(&cam->control_win_mutex);
     cam->controls_window = NULL;
     g_mutex_unlock(&cam->control_win_mutex);
 }
 
-void show_controls(GtkWidget *widget, cam_t *cam)
+void show_controls(GtkWidget *, cam_t *cam)
 {
     GtkWidget *window, *vbox, *grid, *button, *slider, *label, *combo, *btn;
     video_controls_t *ctrl;
@@ -1227,7 +1228,7 @@ struct devnodes *devices = NULL;
 
 static int handle_video_devs(const char *file,
                              const struct stat *st,
-                             int flag)
+                             int)
 {
     int dev_minor, first_device = -1, fd;
     unsigned int i;
@@ -1344,7 +1345,7 @@ static int sort_devices(const void *__a, const void *__b)
     return strcmp(a->fname, b->fname);
 }
 
-static void videodev_response(GtkDialog *dialog,
+static void videodev_response(GtkDialog *,
                               cam_t *cam)
 {
     GtkWidget *widget;
@@ -1421,7 +1422,7 @@ int select_video_dev(cam_t *cam)
     return ret;
 }
 
-void on_change_camera(GtkWidget *widget, cam_t *cam)
+void on_change_camera(GtkWidget *, cam_t *cam)
 {
     GtkWidget *window;
     gchar *old_cam;

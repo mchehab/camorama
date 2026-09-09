@@ -78,7 +78,7 @@ static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
 }
 
 static void delete_filter_clicked(GtkTreeSelection *sel,
-                                  GtkMenuItem *menuitem)
+                                  GtkMenuItem *)
 {
     GtkTreeModel *model;
     GList *paths = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -91,8 +91,8 @@ static void delete_filter_clicked(GtkTreeSelection *sel,
     g_list_free_full(paths, (GDestroyNotify) gtk_tree_path_free);
 }
 
-static void show_popup(cam_t *cam, GtkTreeView *treeview,
-                       GdkEventButton *ev)
+static void show_popup(cam_t *, GtkTreeView *treeview,
+                       GdkEventButton *)
 {
     GtkMenu *menu = GTK_MENU(gtk_menu_new());
     GtkWidget *item;
