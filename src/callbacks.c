@@ -1459,6 +1459,7 @@ void on_change_camera(GtkWidget *, cam_t *cam)
 static void add_gtk_view_resolutions(cam_t *cam)
 {
     GtkWidget *small_res, *new_res;
+    GtkWidget *menu;
     unsigned int i;
 
     /*
@@ -1468,6 +1469,11 @@ static void add_gtk_view_resolutions(cam_t *cam)
      */
 
     small_res = GTK_WIDGET(gtk_builder_get_object(cam->xml, "small"));
+    menu = GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"));
+
+    /* The compact layout has no resolution submenu. */
+    if (!small_res || !GTK_IS_CONTAINER(menu))
+        return;
 
     /* Get all supported resolutions by cam->pixformat */
     get_supported_resolutions(cam, FALSE);
@@ -1580,7 +1586,8 @@ void start_camera(cam_t *cam)
     /* Second step: clean-up all resolutions */
 
     container = GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4_menu"));
-    children = gtk_container_get_children(GTK_CONTAINER(container));
+    children = GTK_IS_CONTAINER(container) ?
+               gtk_container_get_children(GTK_CONTAINER(container)) : NULL;
     for (iter = children; iter != NULL; iter = g_list_next(iter)) {
         widget = GTK_WIDGET(iter->data);
         if (strstr(gtk_widget_get_name(widget), "x"))
