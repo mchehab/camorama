@@ -214,14 +214,14 @@ void load_interface(cam_t *cam)
     g_signal_connect_swapped(treeview, "popup-menu",
                              G_CALLBACK(treeview_popup_menu_cb), cam);
 
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(gtk_builder_get_object(cam->xml, "showadjustment_item")),
-                                   cam->show_adjustments);
-    if (cam->show_effects == FALSE) {
-        gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "scrolledwindow_effects")));
-        gtk_window_resize(GTK_WINDOW(window), 320, 240);
+    if (!cam->show_effects) {
+        GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
+                                        (cam->xml, "scrolledwindow_effects"));
+        if (effects) {
+            gtk_widget_hide(effects);
+            gtk_window_resize(GTK_WINDOW(window), 320, 240);
+        }
     }
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(gtk_builder_get_object(cam->xml, "show_effects")),
-                                   cam->show_effects);
 
     /* connect the signals in the interface
      * glade_xml_signal_autoconnect(xml);
@@ -237,9 +237,6 @@ void load_interface(cam_t *cam)
     g_signal_connect(G_OBJECT(prefswindow), "delete-event",
                      G_CALLBACK(delete_event_prefs_window), cam);
 
-    g_signal_connect(gtk_builder_get_object(cam->xml, "show_effects"),
-                     "activate", G_CALLBACK(on_show_effects_activate),
-                     cam);
     gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "togglebutton1")),
                                  cam->show_adjustments);
     g_signal_connect(gtk_builder_get_object(cam->xml, "togglebutton1"),
@@ -248,18 +245,22 @@ void load_interface(cam_t *cam)
 
     if (n_valid_devices > 1) {
         video_dev = GTK_WIDGET(gtk_builder_get_object(cam->xml, "change_camera"));
-        gtk_widget_show(video_dev);
-        g_signal_connect(video_dev, "activate",
-                         G_CALLBACK(on_change_camera), cam);
+        if (video_dev) {
+            gtk_widget_show(video_dev);
+            g_signal_connect(video_dev, "activate",
+                             G_CALLBACK(on_change_camera), cam);
+        }
     }
 
-    g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem1"),
-                     "activate", G_CALLBACK(capture_func), cam);
+    if (gtk_builder_get_object(cam->xml, "imagemenuitem1"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem1"),
+                         "activate", G_CALLBACK(capture_func), cam);
     g_signal_connect(gtk_builder_get_object(cam->xml, "button1"),
                      "clicked", G_CALLBACK(capture_func), cam);
 
-    g_signal_connect(gtk_builder_get_object(cam->xml, "show_ctrls"),
-                     "clicked", G_CALLBACK(show_controls), cam);
+    if (gtk_builder_get_object(cam->xml, "show_ctrls"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "show_ctrls"),
+                         "clicked", G_CALLBACK(show_controls), cam);
 
     update_sliders(cam);
 
@@ -271,13 +272,16 @@ void load_interface(cam_t *cam)
     gtk_window_resize(GTK_WINDOW(window), 320, 240);
 
     /* buttons */
-    g_signal_connect(gtk_builder_get_object(cam->xml, "quit"), "activate",
-                     G_CALLBACK(on_quit_activate), cam);
-    g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem3"),
-                     "activate", G_CALLBACK(on_preferences1_activate),
-                     cam);
-    g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem4"),
-                     "activate", G_CALLBACK(on_about_activate), cam);
+    if (gtk_builder_get_object(cam->xml, "quit"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "quit"), "activate",
+                         G_CALLBACK(on_quit_activate), cam);
+    if (gtk_builder_get_object(cam->xml, "imagemenuitem3"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem3"),
+                         "activate", G_CALLBACK(on_preferences1_activate),
+                         cam);
+    if (gtk_builder_get_object(cam->xml, "imagemenuitem4"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem4"),
+                         "activate", G_CALLBACK(on_about_activate), cam);
 
     /* prefs */
     g_signal_connect(gtk_builder_get_object(cam->xml, "okbutton1"),
@@ -429,6 +433,7 @@ void load_interface(cam_t *cam)
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "button3"),
                      "clicked", G_CALLBACK(toggle_fullscreen), cam);
-    g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem2"),
-                     "activate", G_CALLBACK(toggle_fullscreen), cam);
+    if (gtk_builder_get_object(cam->xml, "imagemenuitem2"))
+        g_signal_connect(gtk_builder_get_object(cam->xml, "imagemenuitem2"),
+                         "activate", G_CALLBACK(toggle_fullscreen), cam);
 }
