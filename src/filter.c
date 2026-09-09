@@ -53,11 +53,11 @@ camorama_filter_hide(CamoramaFilter *self)
 /* GType stuff ifor CamoramaFilter */
 G_DEFINE_ABSTRACT_TYPE(CamoramaFilter, camorama_filter, G_TYPE_OBJECT);
 
-static void camorama_filter_init(CamoramaFilter *self)
+static void camorama_filter_init(CamoramaFilter *)
 {
 }
 
-static void camorama_filter_class_init(CamoramaFilterClass *self_class)
+static void camorama_filter_class_init(CamoramaFilterClass *)
 {
 }
 
@@ -74,12 +74,12 @@ typedef struct _CamoramaFilterClass CamoramaFilterInvertClass;
 G_DEFINE_TYPE(CamoramaFilterInvert, camorama_filter_invert,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_invert_init(CamoramaFilterInvert *self)
+static void camorama_filter_invert_init(CamoramaFilterInvert *)
 {
 }
 
 static void
-camorama_filter_invert_filter(void *filter, guchar *image, int x, int y,
+camorama_filter_invert_filter(void *, guchar *image, int x, int y,
                               int depth)
 {
     int i;
@@ -154,7 +154,7 @@ static void camorama_filter_threshold_hide(void *filter)
 
 static void
 camorama_filter_threshold_filter(void *filter, guchar *image, int x,
-                                 int y, int depth)
+                                 int y, int)
 {
     CamoramaFilterThreshold *self = filter;
     int i;
@@ -242,7 +242,7 @@ static void camorama_filter_threshold_channel_hide(void *filter)
 static void
 camorama_filter_threshold_channel_filter(void *filter,
                                          unsigned char *image, int x,
-                                         int y, int depth)
+                                         int y, int)
 {
     CamoramaFilterThresholdChannel *self = filter;
     int i;
@@ -284,12 +284,12 @@ typedef struct _CamoramaFilterClass CamoramaFilterWackyClass;
 G_DEFINE_TYPE(CamoramaFilterWacky, camorama_filter_wacky,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_wacky_init(CamoramaFilterWacky *self)
+static void camorama_filter_wacky_init(CamoramaFilterWacky *)
 {
 }
 
 static void
-camorama_filter_wacky_filter(void *filter, unsigned char *image, int x,
+camorama_filter_wacky_filter(void *, unsigned char *image, int x,
                              int y, int depth)
 {
     int i;
@@ -362,19 +362,19 @@ typedef struct _CamoramaFilterClass CamoramaFilterSmoothClass;
 G_DEFINE_TYPE(CamoramaFilterSmooth, camorama_filter_smooth,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_smooth_init(CamoramaFilterSmooth *self)
+static void camorama_filter_smooth_init(CamoramaFilterSmooth *)
 {
 }
 
 static void
-camorama_filter_smooth_filter(void *filter, guchar *image, int x, int y,
+camorama_filter_smooth_filter(void *, guchar *image, int x, int y,
                               int depth)
 {
     int i;
     int neighbours;
     int total0, total1, total2;
     unsigned char *image2, *image3;
-    int tr = 0, br = 0;
+    int tr = 0;
 
     image2 = malloc(sizeof(unsigned char) * x * y * depth);
     memcpy(image2, image, x * y * depth);
@@ -409,7 +409,6 @@ camorama_filter_smooth_filter(void *filter, guchar *image, int x, int y,
             image2 += (x + 1) * depth;
         }
         if (i > x * (y - 1)) {
-            br++;
             /*we are in the bottom row */
         } else {
             image2 += (x - 1) * depth;
@@ -468,13 +467,13 @@ typedef struct _CamoramaFilterClass CamoramaFilterMonoClass;
 G_DEFINE_TYPE(CamoramaFilterMono, camorama_filter_mono,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_mono_init(CamoramaFilterMono *self)
+static void camorama_filter_mono_init(CamoramaFilterMono *)
 {
 }
 
 static void
-camorama_filter_mono_filter(void *filter, unsigned char *image, int x,
-                            int y, int depth)
+camorama_filter_mono_filter(void *, unsigned char *image, int x,
+                            int y, int)
 {
     int i;
     int total, avg;
@@ -505,13 +504,13 @@ G_DEFINE_TYPE(CamoramaFilterMonoWeight, camorama_filter_mono_weight,
               CAMORAMA_TYPE_FILTER);
 
 static void
-camorama_filter_mono_weight_init(CamoramaFilterMonoWeight *self)
+camorama_filter_mono_weight_init(CamoramaFilterMonoWeight *)
 {
 }
 
 static void
-camorama_filter_mono_weight_filter(void *filter, unsigned char *image,
-                                   int x, int y, int depth)
+camorama_filter_mono_weight_filter(void *, unsigned char *image,
+                                   int x, int y, int)
 {
     int i;
     int avg;
@@ -542,14 +541,14 @@ typedef struct _CamoramaFilterClass CamoramaFilterSobelClass;
 G_DEFINE_TYPE(CamoramaFilterSobel, camorama_filter_sobel,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_sobel_init(CamoramaFilterSobel *self)
+static void camorama_filter_sobel_init(CamoramaFilterSobel *)
 {
 }
 
 /* fix this at some point, very slow */
 static void
-camorama_filter_sobel_filter(void *filter, unsigned char *image, int x,
-                             int y, int depth)
+camorama_filter_sobel_filter(void *, unsigned char *image, int x,
+                             int y, int)
 {
     int i, j, grad[3];
     int deltaX[3], deltaY[3];

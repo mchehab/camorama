@@ -63,7 +63,7 @@ void camorama_filter_chain_append(CamoramaFilterChain *self,
 }
 
 static gboolean camorama_filter_chain_apply_filter(GtkTreeModel *model,
-                                                   GtkTreePath *path,
+                                                   GtkTreePath *,
                                                    GtkTreeIter *iter,
                                                    gpointer user_data)
 {
@@ -79,7 +79,7 @@ static gboolean camorama_filter_chain_apply_filter(GtkTreeModel *model,
 }
 
 void camorama_filter_chain_hide(GtkTreeModel *model,
-                                    GtkTreePath *path,
+                                    GtkTreePath *,
                                     GtkTreeIter *iter)
 {
     CamoramaFilter *filter = NULL;
@@ -120,7 +120,6 @@ static void camorama_filter_chain_init(CamoramaFilterChain *self)
                                     column_types);
 }
 
-static void camorama_filter_chain_class_init(CamoramaFilterChainClass *
-                                             self)
+static void camorama_filter_chain_class_init(CamoramaFilterChainClass *)
 {
 }

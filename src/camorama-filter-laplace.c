@@ -38,11 +38,11 @@ typedef struct _CamoramaFilterClass CamoramaFilterLaplaceClass;
 G_DEFINE_TYPE(CamoramaFilterLaplace, camorama_filter_laplace,
               CAMORAMA_TYPE_FILTER);
 
-static void camorama_filter_laplace_init(CamoramaFilterLaplace *self)
+static void camorama_filter_laplace_init(CamoramaFilterLaplace *)
 {
 }
 
-static void camorama_filter_laplace_filter(void *filter, guchar *image,
+static void camorama_filter_laplace_filter(void *, guchar *image,
                                            int width, int height,
                                            int depth)
 {
