@@ -41,7 +41,7 @@ static GQuark menu_item_filter_type = 0;
 /* Supported URI protocol schemas */
 const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 
-static void add_filter_clicked(GtkMenuItem *menuitem,
+static void add_filter_clicked(GtkWidget *menuitem,
                                CamoramaFilterChain *chain)
 {
     GType filter_type = GPOINTER_TO_SIZE(g_object_get_qdata(G_OBJECT(menuitem),
@@ -78,7 +78,7 @@ static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
 }
 
 static void delete_filter_clicked(GtkTreeSelection *sel,
-                                  GtkMenuItem *)
+                                  GtkWidget *)
 {
     GtkTreeModel *model;
     GList *paths = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -91,8 +91,7 @@ static void delete_filter_clicked(GtkTreeSelection *sel,
     g_list_free_full(paths, (GDestroyNotify) gtk_tree_path_free);
 }
 
-static void show_popup(cam_t *, GtkTreeView *treeview,
-                       GdkEventButton *)
+static void show_popup(cam_t *, GtkTreeView *treeview)
 {
     GtkMenu *menu = GTK_MENU(gtk_menu_new());
     GtkWidget *item;
@@ -145,7 +144,7 @@ static void show_popup(cam_t *, GtkTreeView *treeview,
 
 static void treeview_popup_menu_cb(cam_t *cam, GtkTreeView *treeview)
 {
-    show_popup(cam, treeview, NULL);
+    show_popup(cam, treeview);
 }
 
 #if GTK_MAJOR_VERSION > 3
@@ -157,7 +156,7 @@ static gboolean treeview_clicked_cb(cam_t *cam, GtkButton *button)
                                                     "treeview_effects"));
 
     // FIXME: how to check if pressed button was button 3?
-    show_popup(cam, treeview, NULL);
+    show_popup(cam, treeview);
     return TRUE;
 }
 #else
@@ -167,7 +166,7 @@ static gboolean treeview_clicked_cb(cam_t *cam, GdkEventButton *ev,
     gboolean retval = GTK_WIDGET_GET_CLASS(treeview)->button_press_event(GTK_WIDGET(treeview), ev);
 
     if (ev->button == 3) {
-        show_popup(cam, treeview, NULL);
+        show_popup(cam, treeview);
         retval = TRUE;
     }
 
@@ -430,10 +429,12 @@ void load_interface(cam_t *cam)
                              cam->usestring);
 
     // Detect window resize calls
+#if GTK_MAJOR_VERSION < 4
     g_signal_connect(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")),
                      "configure-event", G_CALLBACK(on_configure_event), cam);
     g_signal_connect(window, "window-state-event",
                      G_CALLBACK(on_window_state_event), cam);
+#endif
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "button3"),
                      "clicked", G_CALLBACK(toggle_fullscreen), cam);

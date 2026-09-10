@@ -17,9 +17,11 @@ G_BEGIN_DECLS
 
 void on_change_size_activate(GtkWidget * widget, cam_t *cam);
 void on_quit_activate(GtkWidget *widget, cam_t *cam);
-gboolean on_configure_event(GtkMenuItem *menuitem, GdkEvent *event, cam_t *cam);
-gboolean on_window_state_event(GtkMenuItem *menuitem,
+gboolean on_configure_event(GtkWidget *widget, GdkEvent *event, cam_t *cam);
+#if GTK_MAJOR_VERSION < 4
+gboolean on_window_state_event(GtkWidget *widget,
                                GdkEventWindowState *event, cam_t *cam);
+#endif
 int delete_event(GtkWidget *, gpointer data);
 void cap_func(GtkWidget *, cam_t *);
 void rcap_func(GtkWidget *, cam_t *);
@@ -75,8 +77,9 @@ void zoom_change(GtkScale *, cam_t *);
 void colour_change(GtkScale *, cam_t *);
 void hue_change(GtkScale *, cam_t *);
 void wb_change(GtkScale *, cam_t *);
-gboolean on_drawingarea_expose_event(GtkWidget *, GdkEventExpose *,
-                                     cam_t *);
+#if GTK_MAJOR_VERSION < 4
+gboolean on_drawingarea_expose_event(GtkWidget *, GdkEventExpose *, cam_t *);
+#endif
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);
