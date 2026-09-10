@@ -1,4 +1,9 @@
-#include "callbacks.h"
+#include "gtk_common_callbacks.h"
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
 #include "interface.h"
 #include "support.h"
 #include "filter.h"
@@ -338,15 +343,10 @@ void on_preferences1_activate(GtkWidget *, gpointer)
     gtk_widget_show(prefswindow);
 }
 
-gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
+void gtk_common_update_image_scale(cam_t *cam, int width, int height)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
-    gint width, height;
     gchar *title;
     float scale;
-
-    width = gtk_widget_get_allocated_width(da);
-    height = gtk_widget_get_allocated_height(da);
 
     if (cam->scale > 0) {
 	scale = 1. * width / cam->width;
@@ -367,11 +367,19 @@ gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
     gtk_window_set_title(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))),
                          title);
     g_free(title);
+}
+
+gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
+{
+    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    gtk_common_update_image_scale(cam, gtk_widget_get_allocated_width(da),
+                                  gtk_widget_get_allocated_height(da));
 
     return FALSE;
 }
 
-static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
+void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
 {
     if (fullscreen) {
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
@@ -386,41 +394,15 @@ static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
     }
 }
 
-#if GTK_MAJOR_VERSION < 4
-gboolean on_window_state_event(GtkWidget *,
-                               GdkEventWindowState *event, cam_t *cam)
-{
-    show_fullscreen_ui(cam,
-                       event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN);
-
-    return GDK_EVENT_PROPAGATE;
-}
-#else
-void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *, cam_t *cam)
-{
-    show_fullscreen_ui(cam, gtk_window_is_fullscreen(window));
-}
-#endif
-
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
-    GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+    GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
-    gboolean is_full_screen;
-#if GTK_MAJOR_VERSION < 4
-    GdkWindowState state;
 
-    state = gdk_window_get_state (gtk_widget_get_window (GTK_WIDGET (window)));
-
-    is_full_screen = state & GDK_WINDOW_STATE_FULLSCREEN;
-#else
-    is_full_screen = gtk_window_is_fullscreen(GTK_WINDOW(window));
-#endif
-
-    if (is_full_screen) {
-        gtk_window_unfullscreen(GTK_WINDOW(window));
+    if (gtk_window_is_fullscreen(window)) {
+        gtk_window_unfullscreen(window);
     } else {
-        gtk_window_fullscreen(GTK_WINDOW(window));
+        gtk_window_fullscreen(window);
     }
 }
 
@@ -442,12 +424,9 @@ void set_image_scale(cam_t *cam)
         gtk_widget_set_hexpand(da, FALSE);
         gtk_widget_set_vexpand(da, FALSE);
         gtk_widget_set_size_request(da, cam->width, cam->height);
-#if GTK_MAJOR_VERSION > 3
+
         gtk_window_set_default_size(GTK_WINDOW(window), window_width,
                                     window_height);
-#else
-        gtk_window_resize(GTK_WINDOW(window), window_width, window_height);
-#endif
     }
 
     on_configure_event(NULL, NULL, cam);
@@ -621,51 +600,10 @@ static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 
 #define MULT(d, c, a, t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
 
-#if GTK_MAJOR_VERSION == 3
-/*
- * GTK 3 way: use a drawing callback
- */
-void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
-{
-    GdkWindow *window;
-    cairo_surface_t *surface;
-    const GdkRectangle rect = {
-        .x = 0, .y = 0,
-        .width = cam->width, .height = cam->height
-    };
-
-    if (!cam->pb)
-        return;
-
-    window = gtk_widget_get_window(widget);
-    surface = gdk_cairo_surface_create_from_pixbuf(cam->pb, 1, window);
-
-    if (cam->scale > 0 && cam->scale != 1.f)
-        cairo_scale(cr, cam->scale, cam->scale);
-
-    cairo_set_source_surface(cr, surface, 0, 0);
-    gdk_cairo_rectangle(cr, &rect);
-    cairo_fill(cr);
-    cairo_surface_destroy(surface);
-
-    frames++;
-    frames2++;
-}
-
 static inline void show_buffer(cam_t *cam)
 {
     gtk_widget_queue_draw(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")));
 }
-#else   /* TODO: add GTK 4 specific draw functions */
-void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
-{
-   #error "Can't draw yet with gtk > 3.94"
-}
-
-static inline void show_buffer(cam_t *cam)
-{
-}
-#endif
 
 /*
 * get image from cam - does all the work ;)

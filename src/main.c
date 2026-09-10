@@ -1,8 +1,12 @@
 #include "interface.h"
-
-#include "callbacks.h"
-#include "filter.h"
 #include "camorama-window.h"
+
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
+#include "filter.h"
 #include "camorama-globals.h"
 #include "support.h"
 #include <config.h>
@@ -410,7 +414,15 @@ static void activate(GtkApplication *app)
 
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
-    g_signal_connect(G_OBJECT(widget), "draw", G_CALLBACK(draw_callback), cam);
+#if GTK_MAJOR_VERSION > 3
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget),
+                                   gtk4_draw_frame, cam, NULL);
+    g_signal_connect(widget, "resize",
+                     G_CALLBACK(gtk4_drawing_area_resize), cam);
+#else
+    g_signal_connect(G_OBJECT(widget), "draw",
+                     G_CALLBACK(gtk3_draw_frame), cam);
+#endif
 
     g_signal_connect(G_OBJECT(window), "destroy",
                      G_CALLBACK (close_app), cam);

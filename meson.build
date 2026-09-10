@@ -45,7 +45,7 @@ meson.add_devenv(devenv)
 inc = include_directories('.', 'src')
 
 sources = files(
-  'src/callbacks.c',
+  'src/gtk_common_callbacks.c',
   'src/camorama-filter-chain.c',
   'src/camorama-filter-laplace.c',
   'src/camorama-filter-mirror.c',
@@ -57,6 +57,12 @@ sources = files(
   'src/support.c',
   'src/v4l.c',
 )
+
+if gtk4
+  sources += files('src/gtk4_callbacks.c')
+else
+  sources += files('src/gtk3_callbacks.c')
+endif
 
 executable('camorama', sources,
            dependencies: dependencies,

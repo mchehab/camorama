@@ -30,7 +30,11 @@
 
 #include <glib.h>
 #include <glib/gi18n.h>
-#include "callbacks.h"
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
 #include "camorama-filter-chain.h"
 #include "camorama-globals.h"
 #include "filter.h"
@@ -820,10 +824,10 @@ void load_interface(cam_t *cam)
     g_signal_connect(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")),
                      "configure-event", G_CALLBACK(on_configure_event), cam);
     g_signal_connect(window, "window-state-event",
-                     G_CALLBACK(on_window_state_event), cam);
+                     G_CALLBACK(gtk3_on_window_state_event), cam);
 #else
     g_signal_connect(window, "notify::fullscreened",
-                     G_CALLBACK(on_window_fullscreen_changed), cam);
+                     G_CALLBACK(gtk4_fullscreen_changed), cam);
 #endif
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "button3"),
