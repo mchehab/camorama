@@ -562,7 +562,7 @@ void on_show_effects_activate(GtkWidget *button, cam_t *cam)
 
 static void about_widget_destroy(GtkWidget *)
 {
-    gtk_widget_destroy(about);
+    gtk_common_destroy_widget(about);
     about = NULL;
 }
 
@@ -739,6 +739,28 @@ void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
     gtk3_set_file_chooser_folder(chooser, folder);
 #else
     gtk4_set_file_chooser_folder(chooser, folder);
+#endif
+}
+
+/*
+ * Helper functions to support dialogs
+ */
+
+gint gtk_common_dialog_run(GtkDialog *dialog)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_dialog_run(dialog);
+#else
+    return gtk4_dialog_run(dialog);
+#endif
+}
+
+void gtk_common_destroy_widget(GtkWidget *widget)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_destroy_widget(widget);
+#else
+    gtk4_destroy_widget(widget);
 #endif
 }
 
@@ -1399,7 +1421,7 @@ int select_video_dev(cam_t *cam)
 
     gtk_widget_show(window);
 
-    ret = gtk_dialog_run(GTK_DIALOG(window));
+    ret = gtk_common_dialog_run(GTK_DIALOG(window));
 
     cam->video_dev = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
 
@@ -1554,7 +1576,7 @@ void start_camera(cam_t *cam)
     for (iter = children; iter != NULL; iter = g_list_next(iter)) {
         widget = GTK_WIDGET(iter->data);
         if (strstr(gtk_widget_get_name(widget), "x"))
-            gtk_widget_destroy(widget);
+            gtk_common_destroy_widget(widget);
     }
 
     /* Third step: allocate them again */
