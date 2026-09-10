@@ -816,10 +816,12 @@ void load_interface(cam_t *cam)
                              cam->usestring);
 
     // Detect window resize calls
+#if GTK_MAJOR_VERSION < 4
     g_signal_connect(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")),
                      "configure-event", G_CALLBACK(on_configure_event), cam);
     g_signal_connect(window, "window-state-event",
                      G_CALLBACK(on_window_state_event), cam);
+#endif
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "button3"),
                      "clicked", G_CALLBACK(toggle_fullscreen), cam);

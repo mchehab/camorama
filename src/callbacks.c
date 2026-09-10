@@ -337,7 +337,7 @@ void on_preferences1_activate(GtkWidget *, gpointer)
     gtk_widget_show(prefswindow);
 }
 
-gboolean on_configure_event(GtkMenuItem *, GdkEvent *, cam_t *cam)
+gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
 {
     GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
     gint width, height;
@@ -370,7 +370,8 @@ gboolean on_configure_event(GtkMenuItem *, GdkEvent *, cam_t *cam)
     return FALSE;
 }
 
-gboolean on_window_state_event(GtkMenuItem *,
+#if GTK_MAJOR_VERSION < 4
+gboolean on_window_state_event(GtkWidget *,
                                GdkEventWindowState *event, cam_t *cam)
 {
     if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) {
@@ -387,6 +388,7 @@ gboolean on_window_state_event(GtkMenuItem *,
 
     return GDK_EVENT_PROPAGATE;
 }
+#endif
 
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
