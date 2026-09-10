@@ -394,6 +394,15 @@ void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
     }
 }
 
+void gtk_common_set_window_icons(GtkWindow *window, GtkWindow *prefswindow)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_set_window_icons(window, prefswindow);
+#else
+    gtk4_set_window_icons(window, prefswindow);
+#endif
+}
+
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
     GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(cam->xml,

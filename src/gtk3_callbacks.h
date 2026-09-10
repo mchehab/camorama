@@ -8,6 +8,7 @@ G_BEGIN_DECLS
 gboolean on_window_state_event(GtkWidget *widget,
                                GdkEventWindowState *event, cam_t *cam);
 gboolean gtk3_window_is_fullscreen(GtkWindow *window);
+void gtk3_set_window_icons(GtkWindow *window, GtkWindow *prefswindow);
 gboolean gtk3_draw_frame(GtkWidget *, cairo_t *, gpointer);
 gboolean on_drawingarea_expose_event(GtkWidget *, GdkEventExpose *, cam_t *);
 void gtk3_setup_effects_popup(GtkTreeView *treeview);

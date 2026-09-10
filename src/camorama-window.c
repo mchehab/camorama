@@ -48,7 +48,6 @@ const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 void load_interface(cam_t *cam)
 {
     unsigned int i;
-    GdkPixbuf *logo = NULL;
 #if GTK_MAJOR_VERSION >= 4
     GtkCellRenderer *cell;
 #endif
@@ -98,12 +97,7 @@ void load_interface(cam_t *cam)
      * glade_xml_signal_autoconnect(xml);
      * this won't work, can't pass data to callbacks.  have to do it individually :(*/
 
-    logo = gdk_pixbuf_new_from_file(PACKAGE_DATA_DIR
-                                    "/icons/hicolor/128x128/devices/camorama.png",
-                                    NULL);
-    gtk_window_set_default_icon(logo);
-    gtk_window_set_icon(GTK_WINDOW(window), logo);
-    gtk_window_set_icon(GTK_WINDOW(prefswindow), logo);
+    gtk_common_set_window_icons(GTK_WINDOW(window), GTK_WINDOW(prefswindow));
 
     g_signal_connect(G_OBJECT(prefswindow), "delete-event",
                      G_CALLBACK(delete_event_prefs_window), cam);

@@ -19,6 +19,17 @@ void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *, cam_t *cam)
 }
 
 /*
+ * Helper function to set window icons
+ */
+
+void gtk4_set_window_icons(GtkWindow *window, GtkWindow *prefswindow)
+{
+    gtk_window_set_default_icon_name("camorama");
+    gtk_window_set_icon_name(window, "camorama");
+    gtk_window_set_icon_name(prefswindow, "camorama");
+}
+
+/*
  * Helper function to support filling the image filling rectangle
  */
 

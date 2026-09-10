@@ -8,6 +8,7 @@ G_BEGIN_DECLS
 void gtk4_drawing_area_resize(GtkDrawingArea *, int, int, cam_t *cam);
 void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *pspec,
                                   cam_t *cam);
+void gtk4_set_window_icons(GtkWindow *window, GtkWindow *prefswindow);
 void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
 void gtk4_setup_effects_popup(GtkTreeView *treeview);
 void gtk4_show_effects_popup(GtkTreeView *treeview, GMenuModel *model,
