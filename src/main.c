@@ -126,17 +126,20 @@ static void save_window_geometry(cam_t *cam)
 
 #if GTK_MAJOR_VERSION > 3
 static void window_configured(GdkSurface *, int, int, cam_t *cam)
+{
+    remember_window_geometry(cam);
+    save_window_geometry(cam);
+}
+
 #else
 static gboolean window_configured(GtkWidget *, GdkEvent *, cam_t *cam)
-#endif
 {
     remember_window_geometry(cam);
     save_window_geometry(cam);
 
-#if GTK_MAJOR_VERSION < 4
     return GDK_EVENT_PROPAGATE;
-#endif
 }
+#endif
 
 static GOptionEntry options[] = {
     {"version", 'V', 0, G_OPTION_ARG_NONE, &ver,
@@ -168,7 +171,7 @@ static GOptionEntry options[] = {
     {NULL}
 };
 
-static void close_app(GtkWidget* widget, cam_t *cam)
+static void close_app(GtkWidget *, cam_t *cam)
 {
     if (cam->debug && cam->scale > 0)
         printf("Window geometry at close: %dx%d\n",
@@ -198,8 +201,6 @@ static void close_app(GtkWidget* widget, cam_t *cam)
 
     if (cam->timeout_fps_id)
         g_source_remove(cam->timeout_fps_id);
-
-    gtk_widget_destroy(widget);
 
     g_free(cam->video_dev);
     g_free(cam->pixdir);
