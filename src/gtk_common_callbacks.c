@@ -869,6 +869,16 @@ void show_controls(GtkWidget *, cam_t *cam)
             if (ret)
                 break;
 
+            if (ctrl->min == 0 && ctrl->max == 1) {
+                #if GTK_MAJOR_VERSION < 4
+                control = gtk3_create_control_button(ctrl, value);
+                #else
+                control = gtk4_create_control_button(ctrl, value);
+                #endif
+                gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
+                break;
+            }
+
             label = gtk_label_new(ctrl->name);
             gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
 
