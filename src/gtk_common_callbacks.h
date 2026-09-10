@@ -73,6 +73,9 @@ void hue_change(GtkScale *, cam_t *);
 void wb_change(GtkScale *, cam_t *);
 void gtk_common_update_image_scale(cam_t *cam, int width, int height);
 void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen);
+void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
+                                    gint32 value);
+void gtk_common_clear_controls_window(cam_t *cam);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);

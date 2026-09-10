@@ -9,6 +9,12 @@ void gtk4_drawing_area_resize(GtkDrawingArea *, int, int, cam_t *cam);
 void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *pspec,
                                   cam_t *cam);
 void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
+GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
+GtkWidget *gtk4_create_control_button(video_controls_t *ctrl, gint32 value);
+GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value);
+void gtk4_controls_box_append(GtkBox *box, GtkWidget *child);
+void gtk4_update_controls_window(GtkWidget *window);
+void gtk4_present_controls_window(GtkWindow *window);
 
 G_END_DECLS
 

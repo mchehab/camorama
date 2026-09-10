@@ -697,7 +697,8 @@ gint timeout_capture_func(cam_t *cam)
     return 1;
 }
 
-static void update_slider_value(video_controls_t *ctrl, cam_t *cam, gint32 value)
+void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
+                                    gint32 value)
 {
     switch(ctrl->id) {
     case V4L2_CID_CONTRAST:
@@ -744,7 +745,7 @@ static void update_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
         return;
 
     gtk_range_set_value((GtkRange *) sc1, value);
-    update_slider_value(ctrl, cam, value);
+    gtk_common_update_slider_value(ctrl, cam, value);
 }
 
 static void change_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
@@ -761,91 +762,30 @@ static void change_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
             return;
         gtk_range_set_value((GtkRange *) sc1, value);
     }
-    update_slider_value(ctrl, cam, value);
+    gtk_common_update_slider_value(ctrl, cam, value);
 }
 
-static void update_ctrl_button(GtkToggleButton *tgl, video_controls_t *ctrl)
+static void update_controls_window(cam_t *cam)
 {
-    cam_t *cam = ctrl->cam;
-    gint32 value;
-    int ret;
+    GtkWidget *window = NULL;
 
-    ret = cam_get_control(cam, ctrl->id, &value);
-    if (ret)
-        return;
+    g_mutex_lock(&cam->control_win_mutex);
+    if (cam->controls_window)
+        window = g_object_ref(cam->controls_window);
+    g_mutex_unlock(&cam->control_win_mutex);
 
-    gtk_toggle_button_set_active(tgl, value);
-    update_slider_value(ctrl, cam, value);
-}
-
-static void change_ctrl_button(GtkToggleButton *tgl, video_controls_t *ctrl)
-{
-    cam_t *cam = ctrl->cam;
-    gint32 value;
-    int ret;
-
-    value = gtk_toggle_button_get_active(tgl) ? 1 : 0;
-    ret = cam_set_control(cam, ctrl->id, &value);
-    if (ret) {
-        ret = cam_get_control(cam, ctrl->id, &value);
-        if (ret)
-            return;
-        gtk_toggle_button_set_active(tgl, value);
-    }
-    update_slider_value(ctrl, cam, value);
-}
-
-static void update_ctrl_menu(GtkComboBox *combo, video_controls_t *ctrl)
-{
-    cam_t *cam = ctrl->cam;
-    unsigned int i;
-    gint32 value;
-    int ret;
-
-    ret = cam_get_control(cam, ctrl->id, &value);
-    if (ret)
-        return;
-    for (i = 0; i < ctrl->menu_size; i++) {
-        if (ctrl->menu[i].value == value)
-            gtk_combo_box_set_active(combo, i);
+    if (window) {
+#if GTK_MAJOR_VERSION < 4
+        gtk3_update_controls_window(window);
+#else
+        gtk4_update_controls_window(window);
+#endif
+        g_object_unref(window);
     }
 }
 
-static void change_ctrl_menu(GtkComboBox *combo, video_controls_t *ctrl)
+static void reset_ctrls(GtkButton *, cam_t *cam)
 {
-    cam_t *cam = ctrl->cam;
-    gint32 value;
-    int ret;
-    int pos;
-
-    pos = gtk_combo_box_get_active(combo);
-    if (pos < 0)
-        return;
-
-    value = ctrl->menu[pos].value;
-
-    ret = cam_set_control(cam, ctrl->id, &value);
-    if (ret) {
-        ret = cam_get_control(cam, ctrl->id, &value);
-        if (ret)
-            return;
-
-        update_ctrl_menu(combo, ctrl);
-    }
-}
-
-static void send_update_signal(GtkWidget *widget, gpointer user_data)
-{
-    g_signal_emit_by_name(G_OBJECT(widget), "control_update", user_data);
-
-    /* Propagate to child containers */
-    if (GTK_IS_CONTAINER(widget))
-        gtk_container_forall(GTK_CONTAINER(widget), send_update_signal, 0);
-}
-
-static void reset_ctrls(GtkButton *btn, cam_t *cam)
-{
-    GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(btn));
     video_controls_t *ctrl = cam->controls;
     gint32 value;
 
@@ -868,10 +808,10 @@ static void reset_ctrls(GtkButton *btn, cam_t *cam)
         ctrl = ctrl->next;
     }
 
-    gtk_container_forall(GTK_CONTAINER(toplevel), send_update_signal, 0);
+    update_controls_window(cam);
 }
 
-static void close_controls(GtkWidget *, cam_t *cam)
+void gtk_common_clear_controls_window(cam_t *cam)
 {
     g_mutex_lock(&cam->control_win_mutex);
     cam->controls_window = NULL;
@@ -880,26 +820,33 @@ static void close_controls(GtkWidget *, cam_t *cam)
 
 void show_controls(GtkWidget *, cam_t *cam)
 {
-    GtkWidget *window, *vbox, *grid, *button, *slider, *label, *combo, *btn;
+    GtkWidget *window, *vbox, *grid, *control, *slider, *label, *btn;
     video_controls_t *ctrl;
     char *last_group = NULL;
     gint32 value;
-    unsigned int i;
     int row = 0;
     int ret;
 
-    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+#if GTK_MAJOR_VERSION < 4
+    window = gtk3_create_controls_window(vbox, cam);
+#else
+    window = gtk4_create_controls_window(vbox, cam);
+#endif
     gtk_window_set_title(GTK_WINDOW(window), "Camera controls");
     gtk_window_set_default_size(GTK_WINDOW(window), 80, 60);
 
-    g_signal_new("control_update", GTK_TYPE_WIDGET,
-                 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                 g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    if (!g_signal_lookup("control_update", GTK_TYPE_WIDGET))
+        g_signal_new("control_update", GTK_TYPE_WIDGET,
+                     G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+                     g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-    vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     grid = gtk_grid_new();
-    gtk_container_add (GTK_CONTAINER(window), vbox);
-    gtk_container_add (GTK_CONTAINER(vbox), grid);
+#if GTK_MAJOR_VERSION < 4
+    gtk3_controls_box_append(GTK_BOX(vbox), grid);
+#else
+    gtk4_controls_box_append(GTK_BOX(vbox), grid);
+#endif
 
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wswitch-enum"
@@ -942,13 +889,12 @@ void show_controls(GtkWidget *, cam_t *cam)
             if (ret)
                 break;
 
-            button = gtk_check_button_new_with_label(ctrl->name);
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), value);
-            gtk_grid_attach(GTK_GRID(grid), button, 1, row++, 1, 1);
-            g_signal_connect(button, "clicked",
-                             G_CALLBACK (change_ctrl_button), ctrl);
-            g_signal_connect(button, "control_update",
-                             G_CALLBACK(update_ctrl_button), ctrl);
+            #if GTK_MAJOR_VERSION < 4
+            control = gtk3_create_control_button(ctrl, value);
+            #else
+            control = gtk4_create_control_button(ctrl, value);
+            #endif
+            gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
             break;
         case V4L2_CTRL_TYPE_INTEGER_MENU:
         case V4L2_CTRL_TYPE_MENU:
@@ -959,18 +905,12 @@ void show_controls(GtkWidget *, cam_t *cam)
             label = gtk_label_new(ctrl->name);
             gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
 
-            combo = gtk_combo_box_text_new();
-            for (i = 0; i < ctrl->menu_size; i++) {
-                gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo),
-                                               ctrl->menu[i].name);
-                if (ctrl->menu[i].value == value)
-                    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), i);
-            }
-            gtk_grid_attach(GTK_GRID(grid), combo, 1, row++, 1, 1);
-            g_signal_connect(combo, "changed",
-                             G_CALLBACK (change_ctrl_menu), ctrl);
-            g_signal_connect(combo, "control_update",
-                             G_CALLBACK(update_ctrl_menu), ctrl);
+            #if GTK_MAJOR_VERSION < 4
+            control = gtk3_create_control_menu(ctrl, value);
+            #else
+            control = gtk4_create_control_menu(ctrl, value);
+            #endif
+            gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
             break;
         default:
             break;
@@ -980,18 +920,22 @@ void show_controls(GtkWidget *, cam_t *cam)
     #pragma GCC diagnostic pop
 
     btn = gtk_button_new_with_label("Reset to default");
-    gtk_container_add(GTK_CONTAINER (vbox),btn);
-    g_signal_connect(GTK_BUTTON(btn),
-                     "clicked", G_CALLBACK(reset_ctrls), cam);
-
-    g_signal_connect(G_OBJECT(window), "destroy",
-                     G_CALLBACK (close_controls), cam);
+#if GTK_MAJOR_VERSION < 4
+    gtk3_controls_box_append(GTK_BOX(vbox), btn);
+#else
+    gtk4_controls_box_append(GTK_BOX(vbox), btn);
+#endif
+    g_signal_connect(btn, "clicked", G_CALLBACK(reset_ctrls), cam);
 
     g_mutex_lock(&cam->control_win_mutex);
     cam->controls_window = window;
     g_mutex_unlock(&cam->control_win_mutex);
 
-    gtk_widget_show_all(window);
+#if GTK_MAJOR_VERSION < 4
+    gtk3_present_controls_window(GTK_WINDOW(window));
+#else
+    gtk4_present_controls_window(GTK_WINDOW(window));
+#endif
 }
 
 
@@ -1157,10 +1101,7 @@ void contrast_change(GtkScale *sc1, cam_t *cam)
     cam->contrast = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_CONTRAST, &cam->contrast);
 
-    g_mutex_lock(&cam->control_win_mutex);
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
-    g_mutex_unlock(&cam->control_win_mutex);
+    update_controls_window(cam);
 }
 
 void brightness_change(GtkScale *sc1, cam_t *cam)
@@ -1169,10 +1110,7 @@ void brightness_change(GtkScale *sc1, cam_t *cam)
     cam->brightness = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_BRIGHTNESS, &cam->brightness);
 
-    g_mutex_lock(&cam->control_win_mutex);
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
-    g_mutex_unlock(&cam->control_win_mutex);
+    update_controls_window(cam);
 }
 
 void zoom_change(GtkScale *sc1, cam_t *cam)
@@ -1181,8 +1119,7 @@ void zoom_change(GtkScale *sc1, cam_t *cam)
     cam->zoom = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, cam->zoom_cid, &cam->zoom);
 
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
+    update_controls_window(cam);
 }
 
 void colour_change(GtkScale *sc1, cam_t *cam)
@@ -1191,10 +1128,7 @@ void colour_change(GtkScale *sc1, cam_t *cam)
     cam->colour = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_SATURATION, &cam->colour);
 
-    g_mutex_lock(&cam->control_win_mutex);
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
-    g_mutex_unlock(&cam->control_win_mutex);
+    update_controls_window(cam);
 }
 
 void hue_change(GtkScale *sc1, cam_t *cam)
@@ -1203,10 +1137,7 @@ void hue_change(GtkScale *sc1, cam_t *cam)
     cam->hue = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_HUE, &cam->hue);
 
-    g_mutex_lock(&cam->control_win_mutex);
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
-    g_mutex_unlock(&cam->control_win_mutex);
+    update_controls_window(cam);
 }
 
 void wb_change(GtkScale *sc1, cam_t *cam)
@@ -1215,10 +1146,7 @@ void wb_change(GtkScale *sc1, cam_t *cam)
     cam->whiteness = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_WHITENESS, &cam->whiteness);
 
-    g_mutex_lock(&cam->control_win_mutex);
-    if (cam->controls_window)
-        gtk_container_forall(GTK_CONTAINER(cam->controls_window), send_update_signal, 0);
-    g_mutex_unlock(&cam->control_win_mutex);
+    update_controls_window(cam);
 }
 
 /*
