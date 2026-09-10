@@ -30,7 +30,11 @@
 
 #include <glib.h>
 #include <glib/gi18n.h>
-#include "callbacks.h"
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
 #include "camorama-filter-chain.h"
 #include "camorama-globals.h"
 #include "filter.h"

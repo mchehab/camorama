@@ -1,5 +1,5 @@
-#ifndef CAMORAMA_CALLBACKS_H
-#define CAMORAMA_CALLBACKS_H
+#ifndef CAMORAMA_GTK_COMMON_CALLBACKS_H
+#define CAMORAMA_GTK_COMMON_CALLBACKS_H
 
 #include "v4l.h"
 #include "fileio.h"
@@ -18,13 +18,6 @@ G_BEGIN_DECLS
 void on_change_size_activate(GtkWidget * widget, cam_t *cam);
 void on_quit_activate(GtkWidget *widget, cam_t *cam);
 gboolean on_configure_event(GtkWidget *widget, GdkEvent *event, cam_t *cam);
-#if GTK_MAJOR_VERSION < 4
-gboolean on_window_state_event(GtkWidget *widget,
-                               GdkEventWindowState *event, cam_t *cam);
-#else
-void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *pspec,
-                                  cam_t *cam);
-#endif
 int delete_event(GtkWidget *, gpointer data);
 void cap_func(GtkWidget *, cam_t *);
 void rcap_func(GtkWidget *, cam_t *);
@@ -43,13 +36,6 @@ void ppm_func(GtkWidget *, cam_t *);
 void rts_func(GtkWidget *, cam_t *);
 void rjpg_func(GtkWidget *, cam_t *);
 void rpng_func(GtkWidget *, cam_t *);
-#if GTK_MAJOR_VERSION < 4
-gboolean gtk3_draw_frame(GtkWidget *, cairo_t *, gpointer);
-#else
-void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
-void gtk4_drawing_area_resize(GtkDrawingArea *, int, int, cam_t *cam);
-#endif
-
 void rppm_func(GtkWidget *, cam_t *);
 void on_preferences1_activate(GtkWidget *widget, gpointer user_data);
 void on_about_activate(GtkWidget *widget, cam_t *cam);
@@ -85,9 +71,8 @@ void zoom_change(GtkScale *, cam_t *);
 void colour_change(GtkScale *, cam_t *);
 void hue_change(GtkScale *, cam_t *);
 void wb_change(GtkScale *, cam_t *);
-#if GTK_MAJOR_VERSION < 4
-gboolean on_drawingarea_expose_event(GtkWidget *, GdkEventExpose *, cam_t *);
-#endif
+void gtk_common_update_image_scale(cam_t *cam, int width, int height);
+void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);
@@ -96,4 +81,4 @@ void start_camera(cam_t *cam);
 
 G_END_DECLS
 
-#endif                          /* !CAMORAMA_CALLBACKS_H */
+#endif                          /* !CAMORAMA_GTK_COMMON_CALLBACKS_H */

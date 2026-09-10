@@ -1,4 +1,9 @@
-#include "callbacks.h"
+#include "gtk_common_callbacks.h"
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
 #include "interface.h"
 #include "support.h"
 #include "filter.h"
@@ -337,7 +342,7 @@ void on_preferences1_activate(GtkWidget *, gpointer)
     gtk_widget_show(prefswindow);
 }
 
-static void update_image_scale(cam_t *cam, int width, int height)
+void gtk_common_update_image_scale(cam_t *cam, int width, int height)
 {
     gchar *title;
     float scale;
@@ -367,21 +372,13 @@ gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
 {
     GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
-    update_image_scale(cam, gtk_widget_get_allocated_width(da),
-                       gtk_widget_get_allocated_height(da));
+    gtk_common_update_image_scale(cam, gtk_widget_get_allocated_width(da),
+                                  gtk_widget_get_allocated_height(da));
 
     return FALSE;
 }
 
-#if GTK_MAJOR_VERSION > 3
-void gtk4_drawing_area_resize(GtkDrawingArea *, int width, int height,
-                              cam_t *cam)
-{
-    update_image_scale(cam, width, height);
-}
-#endif
-
-static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
+void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
 {
     if (fullscreen) {
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
@@ -396,39 +393,22 @@ static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
     }
 }
 
-#if GTK_MAJOR_VERSION < 4
-gboolean on_window_state_event(GtkWidget *,
-                               GdkEventWindowState *event, cam_t *cam)
-{
-    show_fullscreen_ui(cam, event->new_window_state &
-                      GDK_WINDOW_STATE_FULLSCREEN);
-
-    return GDK_EVENT_PROPAGATE;
-}
-#else
-void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *, cam_t *cam)
-{
-    show_fullscreen_ui(cam, gtk_window_is_fullscreen(window));
-}
-#endif
-
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
-    GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+    GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
+    gboolean is_fullscreen;
 
-#if GTK_MAJOR_VERSION > 3
-    if (gtk_window_is_fullscreen(GTK_WINDOW(window))) {
+#if GTK_MAJOR_VERSION < 4
+    is_fullscreen = gtk3_window_is_fullscreen(window);
 #else
-    GdkWindowState state;
-
-    state = gdk_window_get_state (gtk_widget_get_window (GTK_WIDGET (window)));
-
-    if (state & GDK_WINDOW_STATE_FULLSCREEN) {
+    is_fullscreen = gtk_window_is_fullscreen(window);
 #endif
-        gtk_window_unfullscreen(GTK_WINDOW(window));
+
+    if (is_fullscreen) {
+        gtk_window_unfullscreen(window);
     } else {
-        gtk_window_fullscreen(GTK_WINDOW(window));
+        gtk_window_fullscreen(window);
     }
 }
 
@@ -628,64 +608,6 @@ static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 }
 
 #define MULT(d, c, a, t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
-
-#if GTK_MAJOR_VERSION == 3
-/*
- * GTK 3 way: use a drawing callback
- */
-gboolean gtk3_draw_frame(GtkWidget *widget, cairo_t *cr, gpointer data)
-{
-    cam_t *cam = data;
-    GdkWindow *window;
-    cairo_surface_t *surface;
-    const GdkRectangle rect = {
-        .x = 0, .y = 0,
-        .width = cam->width, .height = cam->height
-    };
-
-    if (!cam->pb)
-        return GDK_EVENT_PROPAGATE;
-
-    window = gtk_widget_get_window(widget);
-    surface = gdk_cairo_surface_create_from_pixbuf(cam->pb, 1, window);
-
-    if (cam->scale > 0 && cam->scale != 1.f)
-        cairo_scale(cr, cam->scale, cam->scale);
-
-    cairo_set_source_surface(cr, surface, 0, 0);
-    gdk_cairo_rectangle(cr, &rect);
-    cairo_fill(cr);
-    cairo_surface_destroy(surface);
-
-    frames++;
-    frames2++;
-
-    return GDK_EVENT_PROPAGATE;
-}
-
-#else
-void gtk4_draw_frame(GtkDrawingArea *, cairo_t *cr, int, int, gpointer data)
-{
-    cam_t *cam = data;
-    const GdkRectangle rect = {
-        .x = 0, .y = 0,
-        .width = cam->width, .height = cam->height
-    };
-
-    if (!cam->pb)
-        return;
-
-    if (cam->scale > 0 && cam->scale != 1.f)
-        cairo_scale(cr, cam->scale, cam->scale);
-
-    gdk_cairo_set_source_pixbuf(cr, cam->pb, 0, 0);
-    gdk_cairo_rectangle(cr, &rect);
-    cairo_fill(cr);
-
-    frames++;
-    frames2++;
-}
-#endif
 
 static inline void show_buffer(cam_t *cam)
 {

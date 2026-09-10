@@ -1,8 +1,12 @@
 #include "interface.h"
-
-#include "callbacks.h"
-#include "filter.h"
 #include "camorama-window.h"
+
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3_callbacks.h"
+#else
+#include "gtk4_callbacks.h"
+#endif
+#include "filter.h"
 #include "camorama-globals.h"
 #include "support.h"
 #include <config.h>
