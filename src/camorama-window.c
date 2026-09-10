@@ -37,153 +37,13 @@
 #endif
 #include "camorama-filter-chain.h"
 #include "camorama-globals.h"
-#include "filter.h"
 #include "support.h"
 #if GTK_MAJOR_VERSION < 4
 #include "gtk3-effects.h"
 #endif
 
-#if GTK_MAJOR_VERSION >= 4
-static GQuark menu_item_filter_type = 0;
-#endif
-
 /* Supported URI protocol schemas */
 const gchar *const protos[3] = { "ftp", "sftp", "smb" };
-
-#if GTK_MAJOR_VERSION >= 4
-static void add_filter_clicked(GtkWidget *menuitem,
-                               CamoramaFilterChain *chain)
-{
-    GType filter_type = GPOINTER_TO_SIZE(g_object_get_qdata(G_OBJECT(menuitem),
-                                                            menu_item_filter_type));
-    camorama_filter_chain_append(chain, filter_type);
-}
-
-struct weak_target {
-    GtkTreeModel *model;
-    GList *list;
-};
-
-static void reference_path(GtkTreePath *path, struct weak_target *target)
-{
-    target->list = g_list_prepend(target->list,
-                                  gtk_tree_row_reference_new(target->model,
-                                                             path));
-}
-
-static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
-{
-    GtkTreeIter iter;
-    GtkTreePath *path = gtk_tree_row_reference_get_path(ref);
-    CamoramaFilter *filter = NULL;
-
-    gtk_tree_model_get_iter(model, &iter, path);
-
-    gtk_tree_model_get(model, &iter,
-                       CAMORAMA_FILTER_CHAIN_COL_FILTER, &filter, -1);
-
-    camorama_filter_chain_hide(model, path, &iter);
-
-    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-}
-
-static void delete_filter_clicked(GtkTreeSelection *sel,
-                                  GtkWidget *)
-{
-    GtkTreeModel *model;
-    GList *paths = gtk_tree_selection_get_selected_rows(sel, &model);
-    struct weak_target target = { model, NULL };
-
-    g_list_foreach(paths, (GFunc)(reference_path), &target);
-    g_list_foreach(target.list, (GFunc)(delete_filter), model);
-    g_list_free_full(target.list,
-                     (GDestroyNotify) gtk_tree_row_reference_free);
-    g_list_free_full(paths, (GDestroyNotify) gtk_tree_path_free);
-}
-
-static void show_popup(cam_t *, GtkTreeView *treeview)
-{
-    GtkMenu *menu = GTK_MENU(gtk_menu_new());
-    GtkWidget *item;
-    GtkWidget *add_filters = gtk_menu_new();
-    GType *filters;
-    guint n_filters, i;
-    GtkTreeModel *model = gtk_tree_view_get_model(treeview);
-    GtkTreeSelection *sel = gtk_tree_view_get_selection(treeview);
-
-    gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
-
-    item = gtk_menu_item_new_with_mnemonic("_Delete");
-    g_signal_connect_swapped(item, "activate",
-                             G_CALLBACK(delete_filter_clicked), sel);
-    gtk_container_add(GTK_CONTAINER(menu), item);
-    gtk_container_add(GTK_CONTAINER(menu), gtk_separator_menu_item_new());
-
-    if (!gtk_tree_selection_count_selected_rows(sel))
-        gtk_widget_set_sensitive(item, FALSE);
-
-    item = gtk_menu_item_new_with_mnemonic(_("_Add Filter"));
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), add_filters);
-    gtk_container_add(GTK_CONTAINER(menu), item);
-
-    filters = g_type_children(CAMORAMA_TYPE_FILTER, &n_filters);
-    for (i = 0; i < n_filters; i++) {
-        CamoramaFilterClass *filter_class = g_type_class_ref(filters[i]);
-        gchar const *filter_name = filter_class->name;
-
-        if (!filter_name)
-            filter_name = g_type_name(filters[i]);
-
-        item = gtk_menu_item_new_with_label(filter_name);
-        g_object_set_qdata(G_OBJECT(item), menu_item_filter_type,
-                           GSIZE_TO_POINTER(filters[i]));
-        g_signal_connect(item, "activate", G_CALLBACK(add_filter_clicked),
-                         model);
-        gtk_container_add(GTK_CONTAINER(add_filters), item);
-        g_type_class_unref(filter_class);
-    }
-    g_free(filters);
-
-#if GTK_MAJOR_VERSION > 3
-    gtk_widget_show(GTK_WIDGET(menu));
-#else
-    gtk_widget_show_all(GTK_WIDGET(menu));
-#endif
-    gtk_menu_popup_at_pointer(menu, NULL);
-}
-
-static void treeview_popup_menu_cb(cam_t *cam, GtkTreeView *treeview)
-{
-    show_popup(cam, treeview);
-}
-
-#if GTK_MAJOR_VERSION > 3
-static gboolean treeview_clicked_cb(cam_t *cam, GtkButton *button)
-{
-    GtkTreeView *treeview;
-
-    treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
-                                                    "treeview_effects"));
-
-    // FIXME: how to check if pressed button was button 3?
-    show_popup(cam, treeview);
-    return TRUE;
-}
-#else
-static gboolean treeview_clicked_cb(cam_t *cam, GdkEventButton *ev,
-                                    GtkTreeView *treeview)
-{
-    gboolean retval = GTK_WIDGET_GET_CLASS(treeview)->button_press_event(GTK_WIDGET(treeview), ev);
-
-    if (ev->button == 3) {
-        show_popup(cam, treeview);
-        retval = TRUE;
-    }
-
-    return retval;
-}
-#endif
-#endif
 
 void load_interface(cam_t *cam)
 {
@@ -208,8 +68,6 @@ void load_interface(cam_t *cam)
 #if GTK_MAJOR_VERSION < 4
     gtk3_effects_setup(cam);
 #else
-    menu_item_filter_type =
-        g_quark_from_static_string("camorama-menu-item-filter-type");
     /* set up the tree view */
     treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
                                                     "treeview_effects"));
@@ -226,10 +84,7 @@ void load_interface(cam_t *cam)
 
     gtk_tree_view_set_model(treeview, GTK_TREE_MODEL(cam->filter_chain));
     g_object_unref(cam->filter_chain);
-    g_signal_connect_swapped(treeview, "button-press-event",
-                             G_CALLBACK(treeview_clicked_cb), cam);
-    g_signal_connect_swapped(treeview, "popup-menu",
-                             G_CALLBACK(treeview_popup_menu_cb), cam);
+    gtk_common_setup_effects_popup(treeview);
 #endif
 
     if (!cam->show_effects) {

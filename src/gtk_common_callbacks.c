@@ -7,6 +7,7 @@
 #include "interface.h"
 #include "support.h"
 #include "filter.h"
+#include "camorama-filter-chain.h"
 
 #include <assert.h>
 #include <ftw.h>
@@ -696,6 +697,185 @@ gint timeout_capture_func(cam_t *cam)
         remote_save(cam);
 
     return 1;
+}
+
+/*
+ * Helper functions to support the effects context popup
+ */
+
+static const char effects_popup_model_key[] = "camorama-effects-popup-model";
+static const char effects_popup_entries_key[] =
+    "camorama-effects-popup-entries";
+static const char effects_action_group_key[] = "camorama-effects-actions";
+static const char effects_delete_action_key[] =
+    "camorama-effects-delete-action";
+
+struct weak_target {
+    GtkTreeModel *model;
+    GList *list;
+};
+
+static void reference_path(GtkTreePath *path, struct weak_target *target)
+{
+    target->list = g_list_prepend(target->list,
+                                  gtk_tree_row_reference_new(target->model,
+                                                             path));
+}
+
+static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
+{
+    GtkTreeIter iter;
+    GtkTreePath *path = gtk_tree_row_reference_get_path(ref);
+
+    gtk_tree_model_get_iter(model, &iter, path);
+    camorama_filter_chain_hide(model, path, &iter);
+    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+}
+
+void gtk_common_delete_effects(GtkTreeView *treeview)
+{
+    GtkTreeSelection *selection = gtk_tree_view_get_selection(treeview);
+    GtkTreeModel *model;
+    GList *paths = gtk_tree_selection_get_selected_rows(selection, &model);
+    struct weak_target target = { model, NULL };
+
+    g_list_foreach(paths, (GFunc)reference_path, &target);
+    g_list_foreach(target.list, (GFunc)delete_filter, model);
+    g_list_free_full(target.list,
+                     (GDestroyNotify)gtk_tree_row_reference_free);
+    g_list_free_full(paths, (GDestroyNotify)gtk_tree_path_free);
+}
+
+void gtk_common_add_effect(GtkTreeView *treeview, GType filter_type)
+{
+    CamoramaFilterChain *chain;
+
+    chain = (CamoramaFilterChain *)gtk_tree_view_get_model(treeview);
+    camorama_filter_chain_append(chain, filter_type);
+}
+
+static void delete_filter_activated(GSimpleAction *, GVariant *,
+                                    GtkTreeView *treeview)
+{
+    gtk_common_delete_effects(treeview);
+}
+
+static void add_filter_activated(GSimpleAction *, GVariant *parameter,
+                                 GtkTreeView *treeview)
+{
+    gtk_common_add_effect(treeview, g_variant_get_uint64(parameter));
+}
+
+static void effect_menu_entry_free(effect_menu_entry_t *entry)
+{
+    g_free(entry->name);
+    g_free(entry);
+}
+
+void gtk_common_show_effects_popup(GtkTreeView *treeview, double x, double y)
+{
+    GSimpleAction *delete_action;
+    GActionGroup *actions;
+    GMenuModel *model;
+    GPtrArray *entries;
+    GtkTreeSelection *selection = gtk_tree_view_get_selection(treeview);
+
+    delete_action = g_object_get_data(G_OBJECT(treeview),
+                                      effects_delete_action_key);
+    g_simple_action_set_enabled(delete_action,
+        gtk_tree_selection_count_selected_rows(selection) > 0);
+
+    model = g_object_get_data(G_OBJECT(treeview), effects_popup_model_key);
+    entries = g_object_get_data(G_OBJECT(treeview), effects_popup_entries_key);
+    actions = g_object_get_data(G_OBJECT(treeview), effects_action_group_key);
+#if GTK_MAJOR_VERSION < 4
+    gtk3_show_effects_popup(treeview, model, actions, entries, x, y);
+#else
+    gtk4_show_effects_popup(treeview, model, actions, entries, x, y);
+#endif
+}
+
+void gtk_common_setup_effects_popup(GtkTreeView *treeview)
+{
+    GSimpleActionGroup *actions = g_simple_action_group_new();
+    GSimpleAction *action;
+    GMenu *menu = g_menu_new();
+    GMenu *section = g_menu_new();
+    GMenu *filters_menu = g_menu_new();
+    GPtrArray *entries;
+    GType *filters;
+    guint n_filters, i;
+
+    gtk_tree_selection_set_mode(gtk_tree_view_get_selection(treeview),
+                                GTK_SELECTION_MULTIPLE);
+
+    action = g_simple_action_new("delete", NULL);
+    g_signal_connect(action, "activate",
+                     G_CALLBACK(delete_filter_activated), treeview);
+    g_action_map_add_action(G_ACTION_MAP(actions), G_ACTION(action));
+    g_object_set_data_full(G_OBJECT(treeview), effects_delete_action_key,
+                           g_object_ref(action), g_object_unref);
+    g_object_unref(action);
+
+    action = g_simple_action_new("add", G_VARIANT_TYPE_UINT64);
+    g_signal_connect(action, "activate",
+                     G_CALLBACK(add_filter_activated), treeview);
+    g_action_map_add_action(G_ACTION_MAP(actions), G_ACTION(action));
+    g_object_unref(action);
+
+    gtk_widget_insert_action_group(GTK_WIDGET(treeview), "effects",
+                                   G_ACTION_GROUP(actions));
+    g_object_set_data_full(G_OBJECT(treeview), effects_action_group_key,
+                           g_object_ref(actions), g_object_unref);
+    g_object_unref(actions);
+
+    g_menu_append(section, _("_Delete"), "effects.delete");
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
+    g_object_unref(section);
+
+    entries = g_ptr_array_new_with_free_func(
+        (GDestroyNotify)effect_menu_entry_free);
+    filters = g_type_children(CAMORAMA_TYPE_FILTER, &n_filters);
+    for (i = 0; i < n_filters; i++) {
+        CamoramaFilterClass *filter_class = g_type_class_ref(filters[i]);
+        const gchar *filter_name = filter_class->name;
+        effect_menu_entry_t *entry = g_new(effect_menu_entry_t, 1);
+        GMenuItem *item;
+
+        if (!filter_name)
+            filter_name = g_type_name(filters[i]);
+
+        entry->type = filters[i];
+        entry->name = g_strdup(filter_name);
+        g_ptr_array_add(entries, entry);
+
+        item = g_menu_item_new(entry->name, NULL);
+        g_menu_item_set_action_and_target_value(item, "effects.add",
+                                                g_variant_new_uint64(
+                                                    filters[i]));
+        g_menu_append_item(filters_menu, item);
+        g_object_unref(item);
+        g_type_class_unref(filter_class);
+    }
+    g_free(filters);
+    g_object_set_data_full(G_OBJECT(treeview), effects_popup_entries_key,
+                           entries, (GDestroyNotify)g_ptr_array_unref);
+
+    section = g_menu_new();
+    g_menu_append_submenu(section, _("_Add Filter"),
+                          G_MENU_MODEL(filters_menu));
+    g_object_unref(filters_menu);
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
+    g_object_unref(section);
+
+    g_object_set_data_full(G_OBJECT(treeview), effects_popup_model_key, menu,
+                           g_object_unref);
+
+#if GTK_MAJOR_VERSION < 4
+    gtk3_setup_effects_popup(treeview);
+#else
+    gtk4_setup_effects_popup(treeview);
+#endif
 }
 
 void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,

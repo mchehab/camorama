@@ -1,6 +1,8 @@
 #include "gtk4_callbacks.h"
 #include "camorama-globals.h"
 
+#include <glib/gi18n.h>
+
 /*
  * Helper functions to support window area resize
  */
@@ -40,6 +42,71 @@ void gtk4_draw_frame(GtkDrawingArea *, cairo_t *cr, int, int, gpointer data)
 
     frames++;
     frames2++;
+}
+
+/*
+ * Helper functions to support the effects context popup
+ */
+
+static void gtk4_effects_popup_closed(GtkPopover *popover, gpointer)
+{
+    gtk_widget_unparent(GTK_WIDGET(popover));
+    g_object_unref(popover);
+}
+
+static void gtk4_effects_button_pressed(GtkGestureClick *, gint,
+                                        gdouble x, gdouble y,
+                                        GtkTreeView *treeview)
+{
+    gtk_common_show_effects_popup(treeview, x, y);
+}
+
+static gboolean gtk4_effects_key_pressed(GtkEventControllerKey *, guint keyval,
+                                         guint, GdkModifierType state,
+                                         GtkTreeView *treeview)
+{
+    if (keyval != GDK_KEY_Menu &&
+        (keyval != GDK_KEY_F10 || !(state & GDK_SHIFT_MASK)))
+        return GDK_EVENT_PROPAGATE;
+
+    gtk_common_show_effects_popup(
+        treeview, gtk_widget_get_width(GTK_WIDGET(treeview)) / 2,
+        gtk_widget_get_height(GTK_WIDGET(treeview)) / 2);
+
+    return GDK_EVENT_STOP;
+}
+
+void gtk4_setup_effects_popup(GtkTreeView *treeview)
+{
+    GtkGesture *gesture = gtk_gesture_click_new();
+    GtkEventController *key = gtk_event_controller_key_new();
+
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture),
+                                  GDK_BUTTON_SECONDARY);
+    g_signal_connect(gesture, "pressed",
+                     G_CALLBACK(gtk4_effects_button_pressed), treeview);
+    gtk_widget_add_controller(GTK_WIDGET(treeview),
+                              GTK_EVENT_CONTROLLER(gesture));
+
+    g_signal_connect(key, "key-pressed",
+                     G_CALLBACK(gtk4_effects_key_pressed), treeview);
+    gtk_widget_add_controller(GTK_WIDGET(treeview), key);
+}
+
+void gtk4_show_effects_popup(GtkTreeView *treeview, GMenuModel *model,
+                             GActionGroup *actions, GPtrArray *,
+                             double x, double y)
+{
+    GtkWidget *popover = gtk_popover_menu_new_from_model(model);
+    GdkRectangle rect = { x, y, 1, 1 };
+
+    gtk_widget_insert_action_group(popover, "effects", actions);
+    gtk_popover_set_pointing_to(GTK_POPOVER(popover), &rect);
+    g_object_ref_sink(popover);
+    gtk_widget_set_parent(popover, GTK_WIDGET(treeview));
+    g_signal_connect(popover, "closed",
+                     G_CALLBACK(gtk4_effects_popup_closed), NULL);
+    gtk_popover_popup(GTK_POPOVER(popover));
 }
 
 /*

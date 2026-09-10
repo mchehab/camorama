@@ -2,6 +2,7 @@
 #include "camorama-globals.h"
 
 #include <config.h>
+#include <glib/gi18n.h>
 
 /*
  * Helper functions to support window area resize
@@ -77,6 +78,107 @@ gboolean gtk3_draw_frame(GtkWidget *widget, cairo_t *cr, gpointer data)
     frames2++;
 
     return GDK_EVENT_PROPAGATE;
+}
+
+/*
+ * Helper functions to support the effects context popup
+ */
+
+static gboolean gtk3_effects_button_pressed(GtkTreeView *treeview,
+                                            GdkEventButton *event, gpointer)
+{
+    if (event->button != GDK_BUTTON_SECONDARY)
+        return GDK_EVENT_PROPAGATE;
+
+    GTK_WIDGET_GET_CLASS(treeview)->button_press_event(GTK_WIDGET(treeview),
+                                                       event);
+    gtk_common_show_effects_popup(treeview, event->x, event->y);
+
+    return GDK_EVENT_STOP;
+}
+
+static gboolean gtk3_effects_popup_menu(GtkTreeView *treeview, gpointer)
+{
+    gtk_common_show_effects_popup(treeview, -1, -1);
+
+    return GDK_EVENT_STOP;
+}
+
+void gtk3_setup_effects_popup(GtkTreeView *treeview)
+{
+    g_signal_connect(treeview, "button-press-event",
+                     G_CALLBACK(gtk3_effects_button_pressed), NULL);
+    g_signal_connect(treeview, "popup-menu",
+                     G_CALLBACK(gtk3_effects_popup_menu), NULL);
+}
+
+static void gtk3_delete_effects(GtkMenuItem *, GtkTreeView *treeview)
+{
+    gtk_common_delete_effects(treeview);
+}
+
+static void gtk3_add_effect(GtkMenuItem *item, GtkTreeView *treeview)
+{
+    GType filter_type;
+
+    filter_type = GPOINTER_TO_SIZE(
+        g_object_get_data(G_OBJECT(item), "camorama-filter-type"));
+    gtk_common_add_effect(treeview, filter_type);
+}
+
+static gboolean gtk3_destroy_effects_popup(gpointer menu)
+{
+    gtk_widget_destroy(menu);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void gtk3_effects_popup_deactivated(GtkWidget *menu, gpointer)
+{
+    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, gtk3_destroy_effects_popup,
+                    g_object_ref(menu), g_object_unref);
+}
+
+void gtk3_show_effects_popup(GtkTreeView *treeview, GMenuModel *,
+                             GActionGroup *, GPtrArray *entries,
+                             double, double)
+{
+    GtkWidget *menu = gtk_menu_new();
+    GtkWidget *add_filters = gtk_menu_new();
+    GtkWidget *item;
+    guint i;
+
+    gtk_menu_attach_to_widget(GTK_MENU(menu), GTK_WIDGET(treeview), NULL);
+
+    item = gtk_menu_item_new_with_mnemonic("_Delete");
+    g_signal_connect(item, "activate",
+                     G_CALLBACK(gtk3_delete_effects), treeview);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+                          gtk_separator_menu_item_new());
+    gtk_widget_set_sensitive(
+        item, gtk_tree_selection_count_selected_rows(
+            gtk_tree_view_get_selection(treeview)) > 0);
+
+    item = gtk_menu_item_new_with_mnemonic(_("_Add Filter"));
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), add_filters);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+    for (i = 0; i < entries->len; i++) {
+        effect_menu_entry_t *entry = g_ptr_array_index(entries, i);
+
+        item = gtk_menu_item_new_with_label(entry->name);
+        g_object_set_data(G_OBJECT(item), "camorama-filter-type",
+                          GSIZE_TO_POINTER(entry->type));
+        g_signal_connect(item, "activate",
+                         G_CALLBACK(gtk3_add_effect), treeview);
+        gtk_menu_shell_append(GTK_MENU_SHELL(add_filters), item);
+    }
+
+    g_signal_connect(menu, "deactivate",
+                     G_CALLBACK(gtk3_effects_popup_deactivated), NULL);
+    gtk_widget_show_all(menu);
+    gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 }
 
 /*

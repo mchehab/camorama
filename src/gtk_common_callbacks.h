@@ -10,6 +10,11 @@ struct devnodes {
     gboolean is_valid;
 };
 
+typedef struct {
+    GType type;
+    gchar *name;
+} effect_menu_entry_t;
+
 extern unsigned int n_devices, n_valid_devices;
 extern struct devnodes *devices;
 
@@ -76,6 +81,10 @@ void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen);
 void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
                                     gint32 value);
 void gtk_common_clear_controls_window(cam_t *cam);
+void gtk_common_setup_effects_popup(GtkTreeView *treeview);
+void gtk_common_show_effects_popup(GtkTreeView *treeview, double x, double y);
+void gtk_common_add_effect(GtkTreeView *treeview, GType filter_type);
+void gtk_common_delete_effects(GtkTreeView *treeview);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);
