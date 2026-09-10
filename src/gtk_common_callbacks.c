@@ -603,8 +603,9 @@ void on_about_activate(GtkWidget *, cam_t *cam)
 
 static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 {
+    /* cam_read() always returns RGB24 data in pic_buf. */
     camorama_filter_chain_apply(cam->filter_chain, pic_buf,
-                                cam->width, cam->height, cam->bpp / 8);
+                                cam->width, cam->height, 3);
 }
 
 #define MULT(d, c, a, t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
