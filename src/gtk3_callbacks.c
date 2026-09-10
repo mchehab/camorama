@@ -206,6 +206,20 @@ void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
 }
 
 /*
+ * Helper functions to support dialogs
+ */
+
+gint gtk3_dialog_run(GtkDialog *dialog)
+{
+    return gtk_dialog_run(dialog);
+}
+
+void gtk3_destroy_widget(GtkWidget *widget)
+{
+    gtk_widget_destroy(widget);
+}
+
+/*
  * Helper functions to support the camera controls window
  */
 

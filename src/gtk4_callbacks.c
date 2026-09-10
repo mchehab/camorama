@@ -159,6 +159,65 @@ void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
 }
 
 /*
+ * Helper functions to support dialogs
+ */
+
+struct gtk4_dialog_run_data {
+    GMainLoop *loop;
+    gint response;
+};
+
+static void gtk4_dialog_response(GtkDialog *, gint response,
+                                 struct gtk4_dialog_run_data *data)
+{
+    data->response = response;
+    g_main_loop_quit(data->loop);
+}
+
+static gboolean gtk4_dialog_close_requested(
+    GtkWindow *, struct gtk4_dialog_run_data *data)
+{
+    data->response = GTK_RESPONSE_DELETE_EVENT;
+    g_main_loop_quit(data->loop);
+
+    return TRUE;
+}
+
+gint gtk4_dialog_run(GtkDialog *dialog)
+{
+    struct gtk4_dialog_run_data data = {
+        .loop = g_main_loop_new(NULL, FALSE),
+        .response = GTK_RESPONSE_NONE,
+    };
+    gboolean modal = gtk_window_get_modal(GTK_WINDOW(dialog));
+    gulong response_id;
+    gulong close_id;
+
+    response_id = g_signal_connect(dialog, "response",
+                                   G_CALLBACK(gtk4_dialog_response), &data);
+    close_id = g_signal_connect(dialog, "close-request",
+                                G_CALLBACK(gtk4_dialog_close_requested),
+                                &data);
+    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+    gtk_window_present(GTK_WINDOW(dialog));
+    g_main_loop_run(data.loop);
+    gtk_window_set_modal(GTK_WINDOW(dialog), modal);
+    g_signal_handler_disconnect(dialog, response_id);
+    g_signal_handler_disconnect(dialog, close_id);
+    g_main_loop_unref(data.loop);
+
+    return data.response;
+}
+
+void gtk4_destroy_widget(GtkWidget *widget)
+{
+    if (GTK_IS_WINDOW(widget))
+        gtk_window_destroy(GTK_WINDOW(widget));
+    else if (gtk_widget_get_parent(widget))
+        gtk_widget_unparent(widget);
+}
+
+/*
  * Helper functions to support the camera controls window
  */
 

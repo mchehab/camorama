@@ -19,6 +19,8 @@ const gchar *gtk3_get_entry_text(GtkWidget *entry);
 void gtk3_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk3_get_file_chooser_folder(GtkWidget *chooser);
 void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
+gint gtk3_dialog_run(GtkDialog *dialog);
+void gtk3_destroy_widget(GtkWidget *widget);
 GtkWidget *gtk3_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk3_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk3_create_control_menu(video_controls_t *ctrl, gint32 value);
