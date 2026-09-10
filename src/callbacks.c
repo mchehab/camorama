@@ -337,15 +337,10 @@ void on_preferences1_activate(GtkWidget *, gpointer)
     gtk_widget_show(prefswindow);
 }
 
-gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
+static void update_image_scale(cam_t *cam, int width, int height)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
-    gint width, height;
     gchar *title;
     float scale;
-
-    width = gtk_widget_get_allocated_width(da);
-    height = gtk_widget_get_allocated_height(da);
 
     if (cam->scale > 0) {
 	scale = 1. * width / cam->width;
@@ -366,9 +361,25 @@ gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
     gtk_window_set_title(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))),
                          title);
     g_free(title);
+}
+
+gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
+{
+    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    update_image_scale(cam, gtk_widget_get_allocated_width(da),
+                       gtk_widget_get_allocated_height(da));
 
     return FALSE;
 }
+
+#if GTK_MAJOR_VERSION > 3
+void gtk4_drawing_area_resize(GtkDrawingArea *, int width, int height,
+                              cam_t *cam)
+{
+    update_image_scale(cam, width, height);
+}
+#endif
 
 static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
 {
@@ -622,8 +633,9 @@ static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 /*
  * GTK 3 way: use a drawing callback
  */
-void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
+gboolean gtk3_draw_frame(GtkWidget *widget, cairo_t *cr, gpointer data)
 {
+    cam_t *cam = data;
     GdkWindow *window;
     cairo_surface_t *surface;
     const GdkRectangle rect = {
@@ -632,7 +644,7 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
     };
 
     if (!cam->pb)
-        return;
+        return GDK_EVENT_PROPAGATE;
 
     window = gtk_widget_get_window(widget);
     surface = gdk_cairo_surface_create_from_pixbuf(cam->pb, 1, window);
@@ -647,22 +659,38 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
 
     frames++;
     frames2++;
+
+    return GDK_EVENT_PROPAGATE;
 }
+
+#else
+void gtk4_draw_frame(GtkDrawingArea *, cairo_t *cr, int, int, gpointer data)
+{
+    cam_t *cam = data;
+    const GdkRectangle rect = {
+        .x = 0, .y = 0,
+        .width = cam->width, .height = cam->height
+    };
+
+    if (!cam->pb)
+        return;
+
+    if (cam->scale > 0 && cam->scale != 1.f)
+        cairo_scale(cr, cam->scale, cam->scale);
+
+    gdk_cairo_set_source_pixbuf(cr, cam->pb, 0, 0);
+    gdk_cairo_rectangle(cr, &rect);
+    cairo_fill(cr);
+
+    frames++;
+    frames2++;
+}
+#endif
 
 static inline void show_buffer(cam_t *cam)
 {
     gtk_widget_queue_draw(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")));
 }
-#else   /* TODO: add GTK 4 specific draw functions */
-void draw_callback(GtkWidget *widget, cairo_t *cr, cam_t *cam)
-{
-   #error "Can't draw yet with gtk > 3.94"
-}
-
-static inline void show_buffer(cam_t *cam)
-{
-}
-#endif
 
 /*
 * get image from cam - does all the work ;)

@@ -43,7 +43,12 @@ void ppm_func(GtkWidget *, cam_t *);
 void rts_func(GtkWidget *, cam_t *);
 void rjpg_func(GtkWidget *, cam_t *);
 void rpng_func(GtkWidget *, cam_t *);
-void draw_callback(GtkWidget *, cairo_t *, cam_t *cam);
+#if GTK_MAJOR_VERSION < 4
+gboolean gtk3_draw_frame(GtkWidget *, cairo_t *, gpointer);
+#else
+void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
+void gtk4_drawing_area_resize(GtkDrawingArea *, int, int, cam_t *cam);
+#endif
 
 void rppm_func(GtkWidget *, cam_t *);
 void on_preferences1_activate(GtkWidget *widget, gpointer user_data);
