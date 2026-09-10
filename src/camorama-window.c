@@ -434,6 +434,9 @@ void load_interface(cam_t *cam)
                      "configure-event", G_CALLBACK(on_configure_event), cam);
     g_signal_connect(window, "window-state-event",
                      G_CALLBACK(on_window_state_event), cam);
+#else
+    g_signal_connect(window, "notify::fullscreened",
+                     G_CALLBACK(on_window_fullscreen_changed), cam);
 #endif
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "button3"),

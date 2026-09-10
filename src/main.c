@@ -168,7 +168,7 @@ static GOptionEntry options[] = {
     {NULL}
 };
 
-static void close_app(GtkWidget* widget, cam_t *cam)
+static void close_app(GtkWidget *, cam_t *cam)
 {
     if (cam->debug && cam->scale > 0)
         printf("Window geometry at close: %dx%d\n",
@@ -198,8 +198,6 @@ static void close_app(GtkWidget* widget, cam_t *cam)
 
     if (cam->timeout_fps_id)
         g_source_remove(cam->timeout_fps_id);
-
-    gtk_widget_destroy(widget);
 
     g_free(cam->video_dev);
     g_free(cam->pixdir);

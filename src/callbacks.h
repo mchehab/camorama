@@ -21,6 +21,9 @@ gboolean on_configure_event(GtkWidget *widget, GdkEvent *event, cam_t *cam);
 #if GTK_MAJOR_VERSION < 4
 gboolean on_window_state_event(GtkWidget *widget,
                                GdkEventWindowState *event, cam_t *cam);
+#else
+void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *pspec,
+                                  cam_t *cam);
 #endif
 int delete_event(GtkWidget *, gpointer data);
 void cap_func(GtkWidget *, cam_t *);

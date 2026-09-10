@@ -328,7 +328,8 @@ gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *,
 
 void on_quit_activate(GtkWidget *, cam_t *cam)
 {
-    g_application_quit(G_APPLICATION(cam->app));
+    gtk_window_close(GTK_WINDOW(gtk_builder_get_object(cam->xml,
+                                                       "main_window")));
 }
 
 void on_preferences1_activate(GtkWidget *, gpointer)
@@ -369,11 +370,9 @@ gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
     return FALSE;
 }
 
-#if GTK_MAJOR_VERSION < 4
-gboolean on_window_state_event(GtkWidget *,
-                               GdkEventWindowState *event, cam_t *cam)
+static void show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
 {
-    if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) {
+    if (fullscreen) {
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
@@ -384,20 +383,38 @@ gboolean on_window_state_event(GtkWidget *,
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
         gtk_widget_show(cam->status);
     }
+}
+
+#if GTK_MAJOR_VERSION < 4
+gboolean on_window_state_event(GtkWidget *,
+                               GdkEventWindowState *event, cam_t *cam)
+{
+    show_fullscreen_ui(cam, event->new_window_state &
+                      GDK_WINDOW_STATE_FULLSCREEN);
 
     return GDK_EVENT_PROPAGATE;
+}
+#else
+void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *, cam_t *cam)
+{
+    show_fullscreen_ui(cam, gtk_window_is_fullscreen(window));
 }
 #endif
 
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
-    GdkWindowState state;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
+
+#if GTK_MAJOR_VERSION > 3
+    if (gtk_window_is_fullscreen(GTK_WINDOW(window))) {
+#else
+    GdkWindowState state;
 
     state = gdk_window_get_state (gtk_widget_get_window (GTK_WIDGET (window)));
 
     if (state & GDK_WINDOW_STATE_FULLSCREEN) {
+#endif
         gtk_window_unfullscreen(GTK_WINDOW(window));
     } else {
         gtk_window_fullscreen(GTK_WINDOW(window));
