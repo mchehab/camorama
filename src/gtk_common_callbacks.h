@@ -93,6 +93,8 @@ void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
                                         const gchar *folder);
 gint gtk_common_dialog_run(GtkDialog *dialog);
 void gtk_common_destroy_widget(GtkWidget *widget);
+void gtk_common_box_append(GtkBox *box, GtkWidget *child);
+GList *gtk_common_get_children(GtkWidget *widget);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);

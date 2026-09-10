@@ -220,6 +220,23 @@ void gtk3_destroy_widget(GtkWidget *widget)
 }
 
 /*
+ * Helper functions to support container operations
+ */
+
+void gtk3_box_append(GtkBox *box, GtkWidget *child)
+{
+    gtk_container_add(GTK_CONTAINER(box), child);
+}
+
+GList *gtk3_get_children(GtkWidget *widget)
+{
+    if (!GTK_IS_CONTAINER(widget))
+        return NULL;
+
+    return gtk_container_get_children(GTK_CONTAINER(widget));
+}
+
+/*
  * Helper functions to support the camera controls window
  */
 
@@ -333,11 +350,6 @@ GtkWidget *gtk3_create_control_menu(video_controls_t *ctrl, gint32 value)
                      G_CALLBACK(gtk3_update_ctrl_menu), ctrl);
 
     return combo;
-}
-
-void gtk3_controls_box_append(GtkBox *box, GtkWidget *child)
-{
-    gtk_container_add(GTK_CONTAINER(box), child);
 }
 
 void gtk3_update_controls_window(GtkWidget *window)

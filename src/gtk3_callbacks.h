@@ -21,10 +21,11 @@ gchar *gtk3_get_file_chooser_folder(GtkWidget *chooser);
 void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 gint gtk3_dialog_run(GtkDialog *dialog);
 void gtk3_destroy_widget(GtkWidget *widget);
+void gtk3_box_append(GtkBox *box, GtkWidget *child);
+GList *gtk3_get_children(GtkWidget *widget);
 GtkWidget *gtk3_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk3_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk3_create_control_menu(video_controls_t *ctrl, gint32 value);
-void gtk3_controls_box_append(GtkBox *box, GtkWidget *child);
 void gtk3_update_controls_window(GtkWidget *window);
 void gtk3_present_controls_window(GtkWindow *window);
 

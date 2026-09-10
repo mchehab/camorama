@@ -20,10 +20,11 @@ gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
 void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 gint gtk4_dialog_run(GtkDialog *dialog);
 void gtk4_destroy_widget(GtkWidget *widget);
+void gtk4_box_append(GtkBox *box, GtkWidget *child);
+GList *gtk4_get_children(GtkWidget *widget);
 GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk4_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value);
-void gtk4_controls_box_append(GtkBox *box, GtkWidget *child);
 void gtk4_update_controls_window(GtkWidget *window);
 void gtk4_present_controls_window(GtkWindow *window);
 

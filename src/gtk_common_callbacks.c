@@ -950,6 +950,28 @@ void gtk_common_destroy_widget(GtkWidget *widget)
 #endif
 }
 
+/*
+ * Helper functions to support container operations
+ */
+
+void gtk_common_box_append(GtkBox *box, GtkWidget *child)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_box_append(box, child);
+#else
+    gtk4_box_append(box, child);
+#endif
+}
+
+GList *gtk_common_get_children(GtkWidget *widget)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_get_children(widget);
+#else
+    return gtk4_get_children(widget);
+#endif
+}
+
 void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
                                     gint32 value)
 {
@@ -1095,11 +1117,7 @@ void show_controls(GtkWidget *, cam_t *cam)
                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
     grid = gtk_grid_new();
-#if GTK_MAJOR_VERSION < 4
-    gtk3_controls_box_append(GTK_BOX(vbox), grid);
-#else
-    gtk4_controls_box_append(GTK_BOX(vbox), grid);
-#endif
+    gtk_common_box_append(GTK_BOX(vbox), grid);
 
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wswitch-enum"
@@ -1183,11 +1201,7 @@ void show_controls(GtkWidget *, cam_t *cam)
     #pragma GCC diagnostic pop
 
     btn = gtk_button_new_with_label("Reset to default");
-#if GTK_MAJOR_VERSION < 4
-    gtk3_controls_box_append(GTK_BOX(vbox), btn);
-#else
-    gtk4_controls_box_append(GTK_BOX(vbox), btn);
-#endif
+    gtk_common_box_append(GTK_BOX(vbox), btn);
     g_signal_connect(btn, "clicked", G_CALLBACK(reset_ctrls), cam);
 
     g_mutex_lock(&cam->control_win_mutex);
@@ -1659,7 +1673,7 @@ static void add_gtk_view_resolutions(cam_t *cam)
     small_res = GTK_WIDGET(gtk_builder_get_object(cam->xml, "small"));
     menu = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
 
-    if (!small_res || !GTK_IS_CONTAINER(menu))
+    if (!small_res || !menu)
         return;
 
     /* Get all supported resolutions by cam->pixformat */
@@ -1677,7 +1691,7 @@ static void add_gtk_view_resolutions(cam_t *cam)
                     sprintf(name, _("%dx%d"), cam->res[i].x, cam->res[i].y);
 
             new_res = gtk_button_new_with_label(name);
-            gtk_container_add(GTK_CONTAINER(menu), new_res);
+            gtk_common_box_append(GTK_BOX(menu), new_res);
             gtk_widget_show(new_res);
             g_signal_connect(new_res, "clicked",
                              G_CALLBACK(on_change_size_activate), cam);
@@ -1692,14 +1706,14 @@ static void add_gtk_view_resolutions(cam_t *cam)
                          cam);
 
         new_res = gtk_button_new_with_label("Medium");
-        gtk_container_add(GTK_CONTAINER(menu), new_res);
+        gtk_common_box_append(GTK_BOX(menu), new_res);
         gtk_widget_show(new_res);
         g_signal_connect(new_res, "clicked",
                          G_CALLBACK(on_change_size_activate), cam);
         gtk_widget_set_name(new_res, "medium");
 
         new_res = gtk_button_new_with_label("Large");
-        gtk_container_add(GTK_CONTAINER(menu), new_res);
+        gtk_common_box_append(GTK_BOX(menu), new_res);
         gtk_widget_show(new_res);
         g_signal_connect(new_res, "clicked",
                          G_CALLBACK(on_change_size_activate), cam);
@@ -1757,13 +1771,13 @@ void start_camera(cam_t *cam)
     /* Second step: clean-up all resolutions */
 
     container = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
-    children = GTK_IS_CONTAINER(container) ?
-               gtk_container_get_children(GTK_CONTAINER(container)) : NULL;
+    children = container ? gtk_common_get_children(container) : NULL;
     for (iter = children; iter != NULL; iter = g_list_next(iter)) {
         widget = GTK_WIDGET(iter->data);
         if (strstr(gtk_widget_get_name(widget), "x"))
             gtk_common_destroy_widget(widget);
     }
+    g_list_free(children);
 
     /* Third step: allocate them again */
 

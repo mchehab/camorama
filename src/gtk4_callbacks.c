@@ -211,10 +211,39 @@ gint gtk4_dialog_run(GtkDialog *dialog)
 
 void gtk4_destroy_widget(GtkWidget *widget)
 {
-    if (GTK_IS_WINDOW(widget))
+    GtkWidget *parent;
+
+    if (GTK_IS_WINDOW(widget)) {
         gtk_window_destroy(GTK_WINDOW(widget));
-    else if (gtk_widget_get_parent(widget))
+        return;
+    }
+
+    parent = gtk_widget_get_parent(widget);
+    if (GTK_IS_BOX(parent))
+        gtk_box_remove(GTK_BOX(parent), widget);
+    else if (parent)
         gtk_widget_unparent(widget);
+}
+
+/*
+ * Helper functions to support container operations
+ */
+
+void gtk4_box_append(GtkBox *box, GtkWidget *child)
+{
+    gtk_box_append(box, child);
+}
+
+GList *gtk4_get_children(GtkWidget *widget)
+{
+    GtkWidget *child;
+    GList *children = NULL;
+
+    for (child = gtk_widget_get_first_child(widget); child;
+         child = gtk_widget_get_next_sibling(child))
+        children = g_list_prepend(children, child);
+
+    return g_list_reverse(children);
 }
 
 /*
@@ -346,11 +375,6 @@ GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value)
                      G_CALLBACK(gtk4_update_ctrl_menu), ctrl);
 
     return combo;
-}
-
-void gtk4_controls_box_append(GtkBox *box, GtkWidget *child)
-{
-    gtk_box_append(box, child);
 }
 
 void gtk4_update_controls_window(GtkWidget *window)
