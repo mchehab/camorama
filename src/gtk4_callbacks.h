@@ -8,6 +8,10 @@ G_BEGIN_DECLS
 void gtk4_drawing_area_resize(GtkDrawingArea *, int, int, cam_t *cam);
 void gtk4_fullscreen_changed(GtkWindow *window, GParamSpec *pspec, cam_t *cam);
 void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
+const gchar *gtk4_get_entry_text(GtkWidget *entry);
+void gtk4_set_entry_text(GtkWidget *entry, const gchar *text);
+gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
+void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk4_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value);

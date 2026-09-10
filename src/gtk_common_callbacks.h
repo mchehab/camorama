@@ -76,6 +76,11 @@ void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen);
 void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
                                     gint32 value);
 void gtk_common_clear_controls_window(cam_t *cam);
+const gchar *gtk_common_get_entry_text(GtkWidget *entry);
+void gtk_common_set_entry_text(GtkWidget *entry, const gchar *text);
+gchar *gtk_common_get_file_chooser_folder(GtkWidget *chooser);
+void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
+                                        const gchar *folder);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);
