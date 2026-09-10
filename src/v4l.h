@@ -127,6 +127,8 @@ typedef struct camera {
     guint timeout_id, timeout_fps_id, idle_id;
     guint32 timeout_interval;
     GSettings *gc;
+    gboolean has_window_geometry_settings;
+    gint window_width, window_height;
     GtkBuilder *xml;
     GdkPixbuf *pb;
 

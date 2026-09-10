@@ -217,10 +217,8 @@ void load_interface(cam_t *cam)
     if (!cam->show_effects) {
         GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
                                         (cam->xml, "scrolledwindow_effects"));
-        if (effects) {
+        if (effects)
             gtk_widget_hide(effects);
-            gtk_window_resize(GTK_WINDOW(window), 320, 240);
-        }
     }
 
     /* connect the signals in the interface
@@ -267,9 +265,6 @@ void load_interface(cam_t *cam)
     if (cam->show_adjustments == FALSE)
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "adjustments_table")));
-
-    // Ensure that windows will be resized due to the controls
-    gtk_window_resize(GTK_WINDOW(window), 320, 240);
 
     /* buttons */
     if (gtk_builder_get_object(cam->xml, "quit"))

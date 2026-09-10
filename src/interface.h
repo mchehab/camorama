@@ -3,6 +3,8 @@
 #define CAM_SETTINGS_DEVICE                "device"
 #define CAM_SETTINGS_WIDTH                 "width"
 #define CAM_SETTINGS_HEIGHT                "height"
+#define CAM_SETTINGS_WINDOW_WIDTH          "window-width"
+#define CAM_SETTINGS_WINDOW_HEIGHT         "window-height"
 #define CAM_SETTINGS_SAVE_DIR              "save-dir"
 #define CAM_SETTINGS_SAVE_FILE             "save-file"
 #define CAM_SETTINGS_FILE_TYPE             "file-type"
