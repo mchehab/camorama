@@ -560,7 +560,6 @@ static void effect_info_free(struct effect_info *effect)
 void load_interface(cam_t *cam)
 {
     unsigned int i, n_filters;
-    GdkPixbuf *logo = NULL;
     GtkWidget *video_dev;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
@@ -613,12 +612,7 @@ void load_interface(cam_t *cam)
      * glade_xml_signal_autoconnect(xml);
      * this won't work, can't pass data to callbacks.  have to do it individually :(*/
 
-    logo = gdk_pixbuf_new_from_file(PACKAGE_DATA_DIR
-                                    "/icons/hicolor/128x128/devices/camorama.png",
-                                    NULL);
-    gtk_window_set_default_icon(logo);
-    gtk_window_set_icon(GTK_WINDOW(window), logo);
-    gtk_window_set_icon(GTK_WINDOW(prefswindow), logo);
+    gtk_common_set_window_icons(GTK_WINDOW(window), GTK_WINDOW(prefswindow));
 
     g_signal_connect(G_OBJECT(prefswindow), "delete-event",
                      G_CALLBACK(delete_event_prefs_window), cam);
