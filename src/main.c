@@ -26,6 +26,103 @@ static gchar *video_dev = NULL;
 static int x = 0, y = 0;
 static int input = 0;
 
+static void get_geometry(unsigned int *width, unsigned int *height)
+{
+    GdkRectangle geometry;
+    GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
+    GdkDisplay *display = gdk_display_get_default();
+    GdkMonitor *monitor = gdk_display_get_monitor_at_window(display, root);
+
+    gdk_monitor_get_geometry(monitor, &geometry);
+    *width = geometry.width;
+    *height = geometry.height;
+}
+
+static void set_initial_window_size(cam_t *cam)
+{
+    unsigned int orig_height = cam->height;
+    unsigned int orig_width = cam->width;
+    unsigned int max_width, max_height;
+    unsigned int width = 0, height = 0;
+    GtkWidget *window;
+
+    if (cam->scale <= 0)
+        return;
+
+    if (cam->has_window_geometry_settings) {
+        width = g_settings_get_int(cam->gc, CAM_SETTINGS_WINDOW_WIDTH);
+        height = g_settings_get_int(cam->gc, CAM_SETTINGS_WINDOW_HEIGHT);
+    }
+
+    if (!width)
+        width = orig_width;
+    else
+        orig_width = width;
+
+
+    if (!height)
+        height = orig_height;
+    else
+        orig_height = height;
+
+    get_geometry(&max_width, &max_height);
+
+    if (width > max_width) {
+        height = (guint64)height * max_width / width;
+        width = max_width;
+    }
+    if (height > max_height) {
+        width = (guint64)width * max_height / height;
+        height = max_height;
+    }
+
+    if (cam->debug) {
+        printf("Initial window geometry: %ux%u\n", width, height);
+
+        if (orig_width != width || orig_height != height)
+            printf("(Adjusting window geometry: %ux%u, monitor: %ux%u)\n",
+                orig_width, orig_height,
+                max_width, max_height);
+    }
+
+    window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"));
+    gtk_window_set_default_size(GTK_WINDOW(window), width, height);
+}
+
+static void remember_window_geometry(cam_t *cam)
+{
+    GtkWidget *window;
+
+    if (cam->scale <= 0)
+        return;
+
+    window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"));
+    if (!gtk_widget_get_mapped(window))
+        return;
+
+    cam->window_width = gtk_widget_get_allocated_width(window);
+    cam->window_height = gtk_widget_get_allocated_height(window);
+}
+
+static void save_window_geometry(cam_t *cam)
+{
+    if (!cam->has_window_geometry_settings || cam->window_width < 1 ||
+        cam->window_height < 1)
+        return;
+
+    g_settings_set_int(cam->gc, CAM_SETTINGS_WINDOW_WIDTH,
+                       cam->window_width);
+    g_settings_set_int(cam->gc, CAM_SETTINGS_WINDOW_HEIGHT,
+                       cam->window_height);
+}
+
+static gboolean window_configured(GtkWidget *, GdkEvent *, cam_t *cam)
+{
+    remember_window_geometry(cam);
+    save_window_geometry(cam);
+    return GDK_EVENT_PROPAGATE;
+}
+
 static GOptionEntry options[] = {
     {"version", 'V', 0, G_OPTION_ARG_NONE, &ver,
      N_("show version and exit"), NULL},
@@ -58,6 +155,13 @@ static GOptionEntry options[] = {
 
 static void close_app(GtkWidget* widget, cam_t *cam)
 {
+    if (cam->debug && cam->scale > 0)
+        printf("Window geometry at close: %dx%d\n",
+               cam->window_width, cam->window_height);
+
+    save_window_geometry(cam);
+    g_settings_sync();
+
     if (cam->idle_id)
         g_source_remove(cam->idle_id);
 
@@ -99,6 +203,7 @@ static void close_app(GtkWidget* widget, cam_t *cam)
 
 static void activate(GtkApplication *app)
 {
+    GSettingsSchema *schema = NULL;
     cam_t *cam = g_new0(cam_t, 1);
     const gchar *data_dir;
     g_autofree gchar *ui_file = NULL;
@@ -167,6 +272,14 @@ static void activate(GtkApplication *app)
     retrieve_video_dev(cam);
 
     cam->gc = g_settings_new(CAM_SETTINGS_SCHEMA);
+
+    g_object_get(cam->gc, "settings-schema", &schema, NULL);
+    cam->has_window_geometry_settings = g_settings_schema_has_key(schema,
+                                                                  CAM_SETTINGS_WINDOW_WIDTH);
+
+    cam->has_window_geometry_settings &= g_settings_schema_has_key(schema,
+                                                                   CAM_SETTINGS_WINDOW_HEIGHT);
+    g_settings_schema_unref(schema);
 
     if (!video_dev) {
         gchar const *gconf_device = g_settings_get_string(cam->gc,
@@ -255,6 +368,7 @@ static void activate(GtkApplication *app)
     else
         cam->height = g_settings_get_int(cam->gc, CAM_SETTINGS_HEIGHT);
 
+    set_initial_window_size(cam);
     start_camera(cam);
 
     cam->screensaver_inhibit_cookie =
@@ -262,13 +376,15 @@ static void activate(GtkApplication *app)
                                 GTK_APPLICATION_INHIBIT_IDLE,
                                 _("Capturing video"));
 
+    window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"));
+    g_signal_connect(window, "configure-event",
+                     G_CALLBACK(window_configured), cam);
+
     load_interface(cam);
 
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
     g_signal_connect(G_OBJECT(widget), "draw", G_CALLBACK(draw_callback), cam);
-
-    window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"));
 
     g_signal_connect(G_OBJECT(window), "destroy",
                      G_CALLBACK (close_app), cam);

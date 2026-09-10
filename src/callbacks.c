@@ -336,28 +336,12 @@ void on_preferences1_activate(GtkMenuItem *, gpointer)
     gtk_widget_show(prefswindow);
 }
 
-static void get_geometry(cam_t *, unsigned int *width,
-                         unsigned int *height)
-{
-    GdkRectangle geo;
-    GdkWindow *win = gdk_screen_get_root_window(gdk_screen_get_default());
-
-    GdkDisplay *display = gdk_display_get_default();
-    GdkMonitor *monitor = gdk_display_get_monitor_at_window(display, win);
-    gdk_monitor_get_geometry(monitor, &geo);
-
-    *width  = geo.width;
-    *height = geo.height;
-}
-
 gboolean on_configure_event(GtkMenuItem *, GdkEvent *, cam_t *cam)
 {
     GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
     gint width, height;
     gchar *title;
     float scale;
-
-    gtk_window_get_size(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))), &width, &height);
 
     width = gtk_widget_get_allocated_width(da);
     height = gtk_widget_get_allocated_height(da);
@@ -421,15 +405,32 @@ void toggle_fullscreen(GtkWidget *, cam_t *cam)
 
 void set_image_scale(cam_t *cam)
 {
-    unsigned int width, height;
+    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
-    get_geometry(cam, &width, &height);
+    if (cam->scale <= 0) {
+        GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                               "main_window"));
+        gint window_width = gtk_widget_get_allocated_width(window);
+        gint window_height = gtk_widget_get_allocated_height(window);
+        gint preview_width = gtk_widget_get_allocated_width(da);
+        gint preview_height = gtk_widget_get_allocated_height(da);
 
-    gtk_widget_set_size_request(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")),
-                                320,
-                                (320 * cam->height) / cam->width);
-    gtk_window_resize(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))),
-                      width, height);
+        window_width += cam->width - preview_width;
+        window_height += cam->height - preview_height;
+
+        gtk_widget_set_hexpand(da, FALSE);
+        gtk_widget_set_vexpand(da, FALSE);
+        gtk_widget_set_size_request(da, cam->width, cam->height);
+#if GTK_MAJOR_VERSION > 3
+        gtk_window_set_default_size(GTK_WINDOW(window), window_width,
+                                    window_height);
+#else
+        gtk_window_resize(GTK_WINDOW(window), window_width, window_height);
+#endif
+    }
+
+    on_configure_event(NULL, NULL, cam);
+    gtk_widget_queue_draw(da);
 
     g_settings_set_int(cam->gc, CAM_SETTINGS_WIDTH, cam->width);
     g_settings_set_int(cam->gc, CAM_SETTINGS_HEIGHT, cam->height);
@@ -490,8 +491,6 @@ void on_show_adjustments_activate(GtkToggleButton *, cam_t *cam)
 {
     if (gtk_widget_get_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")))) {
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "adjustments_table")));
-        gtk_window_resize(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))),
-                          320, 240);
         cam->show_adjustments = FALSE;
 
     } else {
@@ -510,8 +509,6 @@ void on_show_effects_activate(GtkMenuItem *menuitem, cam_t *cam)
 
     if (!cam->show_effects) {
         gtk_widget_hide(effects);
-        gtk_window_resize(GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"))),
-                          320, 240);
     } else {
         gtk_widget_show(effects);
     }
@@ -1604,7 +1601,6 @@ void start_camera(cam_t *cam)
     if (camera_cap(cam))
         exit(-1);
 
-    get_win_info(cam);
     set_win_info(cam);
     get_win_info(cam);
 
