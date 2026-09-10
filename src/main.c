@@ -7,7 +7,6 @@
 #include "support.h"
 #include <config.h>
 
-#include <gdk/gdkx.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <libv4l2.h>
@@ -29,11 +28,20 @@ static int input = 0;
 static void get_geometry(unsigned int *width, unsigned int *height)
 {
     GdkRectangle geometry;
+#if GTK_MAJOR_VERSION > 3
+    GdkDisplay *display = gdk_display_get_default();
+    GListModel *monitors = gdk_display_get_monitors(display);
+    GdkMonitor *monitor = g_list_model_get_item(monitors, 0);
+#else
     GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
     GdkDisplay *display = gdk_display_get_default();
     GdkMonitor *monitor = gdk_display_get_monitor_at_window(display, root);
+#endif
 
     gdk_monitor_get_geometry(monitor, &geometry);
+#if GTK_MAJOR_VERSION > 3
+    g_object_unref(monitor);
+#endif
     *width = geometry.width;
     *height = geometry.height;
 }
@@ -116,11 +124,18 @@ static void save_window_geometry(cam_t *cam)
                        cam->window_height);
 }
 
+#if GTK_MAJOR_VERSION > 3
+static void window_configured(GdkSurface *, int, int, cam_t *cam)
+#else
 static gboolean window_configured(GtkWidget *, GdkEvent *, cam_t *cam)
+#endif
 {
     remember_window_geometry(cam);
     save_window_geometry(cam);
+
+#if GTK_MAJOR_VERSION < 4
     return GDK_EVENT_PROPAGATE;
+#endif
 }
 
 static GOptionEntry options[] = {
@@ -377,10 +392,20 @@ static void activate(GtkApplication *app)
                                 _("Capturing video"));
 
     window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "main_window"));
+#if GTK_MAJOR_VERSION < 4
     g_signal_connect(window, "configure-event",
                      G_CALLBACK(window_configured), cam);
+#endif
 
     load_interface(cam);
+
+#if GTK_MAJOR_VERSION > 3
+    GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(window));
+
+    if (surface)
+        g_signal_connect(surface, "layout",
+                         G_CALLBACK(window_configured), cam);
+#endif
 
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
