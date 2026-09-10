@@ -13,6 +13,10 @@ void gtk4_setup_effects_popup(GtkTreeView *treeview);
 void gtk4_show_effects_popup(GtkTreeView *treeview, GMenuModel *model,
                              GActionGroup *actions, GPtrArray *entries,
                              double x, double y);
+const gchar *gtk4_get_entry_text(GtkWidget *entry);
+void gtk4_set_entry_text(GtkWidget *entry, const gchar *text);
+gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
+void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk4_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value);

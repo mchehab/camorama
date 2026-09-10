@@ -198,10 +198,9 @@ void load_interface(cam_t *cam)
     /* local */
     dentry = GTK_WIDGET(gtk_builder_get_object(cam->xml, "dentry"));
     entry2 = GTK_WIDGET(gtk_builder_get_object(cam->xml, "entry2"));
-    gtk_file_chooser_set_current_folder((GtkFileChooser *) dentry,
-                                        cam->pixdir);
+    gtk_common_set_file_chooser_folder(dentry, cam->pixdir);
 
-    gtk_entry_set_text(GTK_ENTRY(entry2), cam->capturefile);
+    gtk_common_set_entry_text(entry2, cam->capturefile);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "appendbutton"),
                      "toggled", G_CALLBACK(append_func), cam);
@@ -239,9 +238,9 @@ void load_interface(cam_t *cam)
     filename_entry = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                        "filename_entry"));
 
-    gtk_entry_set_text(GTK_ENTRY(host_entry), cam->host);
-    gtk_entry_set_text(GTK_ENTRY(rdir_entry), cam->rdir);
-    gtk_entry_set_text(GTK_ENTRY(filename_entry), cam->rcapturefile);
+    gtk_common_set_entry_text(host_entry, cam->host);
+    gtk_common_set_entry_text(rdir_entry, cam->rdir);
+    gtk_common_set_entry_text(filename_entry, cam->rcapturefile);
 
     if (!cam->proto)
         cam->proto = g_strdup(protos[0]);
@@ -290,7 +289,7 @@ void load_interface(cam_t *cam)
                                  cam->usestring);
 
     string_entry = GTK_WIDGET(gtk_builder_get_object(cam->xml, "string_entry"));
-    gtk_entry_set_text(GTK_ENTRY(string_entry), cam->ts_string);
+    gtk_common_set_entry_text(string_entry, cam->ts_string);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "tscb"),
                      "toggled", G_CALLBACK(drawdate_func), cam);

@@ -215,17 +215,17 @@ static int apply_remote_pref(cam_t *cam)
     int index;
     gchar *host, *rdir, *proto, *rfile, *uri;
 
-    if (!strlen(gtk_entry_get_text((GtkEntry *) host_entry)))
+    if (!strlen(gtk_common_get_entry_text(host_entry)))
         return 0;
 
     index = gtk_combo_box_get_active(GTK_COMBO_BOX(protocol));
     if (index < 0 || index >= (int)G_N_ELEMENTS(protos))
         return 0;
 
-    host = g_strdup(gtk_entry_get_text((GtkEntry *) host_entry));
-    rdir = g_strdup(gtk_entry_get_text((GtkEntry *) rdir_entry));
+    host = g_strdup(gtk_common_get_entry_text(host_entry));
+    rdir = g_strdup(gtk_common_get_entry_text(rdir_entry));
     proto = g_strdup(protos[index]);
-    rfile = g_strdup(gtk_entry_get_text((GtkEntry *) filename_entry));
+    rfile = g_strdup(gtk_common_get_entry_text(filename_entry));
 
     if (!host || !proto || !rdir || !rfile) {
         if (host)
@@ -285,7 +285,7 @@ void prefs_func(GtkWidget *, cam_t *cam)
 {
     gchar *pixdir;
 
-    pixdir = gtk_file_chooser_get_current_folder((GtkFileChooser *) dentry);
+    pixdir = gtk_common_get_file_chooser_folder(dentry);
     if (pixdir) {
         if (cam->pixdir)
             g_free(cam->pixdir);
@@ -303,18 +303,18 @@ void prefs_func(GtkWidget *, cam_t *cam)
     /*
      * this is stupid, even if the string is empty, it will not return NULL
      */
-    if (strlen(gtk_entry_get_text((GtkEntry *) entry2)) > 0) {
+    if (strlen(gtk_common_get_entry_text(entry2)) > 0) {
         if(cam->capturefile)
             g_free(cam->capturefile);
-        cam->capturefile = g_strdup(gtk_entry_get_text((GtkEntry *) entry2));
+        cam->capturefile = g_strdup(gtk_common_get_entry_text(entry2));
         g_settings_set_string(cam->gc, CAM_SETTINGS_SAVE_FILE,
                               cam->capturefile);
     }
 
-    if (strlen(gtk_entry_get_text((GtkEntry *) string_entry)) > 0) {
+    if (strlen(gtk_common_get_entry_text(string_entry)) > 0) {
         if (cam->ts_string)
             g_free(cam->ts_string);
-        cam->ts_string = g_strdup(gtk_entry_get_text((GtkEntry *)string_entry));
+        cam->ts_string = g_strdup(gtk_common_get_entry_text(string_entry));
         g_settings_set_string(cam->gc, CAM_SETTINGS_TIMESTAMP_STRING,
                               cam->ts_string);
     }
@@ -875,6 +875,47 @@ void gtk_common_setup_effects_popup(GtkTreeView *treeview)
     gtk3_setup_effects_popup(treeview);
 #else
     gtk4_setup_effects_popup(treeview);
+#endif
+}
+
+/*
+ * Helper functions to support preference widgets
+ */
+
+const gchar *gtk_common_get_entry_text(GtkWidget *entry)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_get_entry_text(entry);
+#else
+    return gtk4_get_entry_text(entry);
+#endif
+}
+
+void gtk_common_set_entry_text(GtkWidget *entry, const gchar *text)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_set_entry_text(entry, text);
+#else
+    gtk4_set_entry_text(entry, text);
+#endif
+}
+
+gchar *gtk_common_get_file_chooser_folder(GtkWidget *chooser)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_get_file_chooser_folder(chooser);
+#else
+    return gtk4_get_file_chooser_folder(chooser);
+#endif
+}
+
+void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
+                                        const gchar *folder)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_set_file_chooser_folder(chooser, folder);
+#else
+    gtk4_set_file_chooser_folder(chooser, folder);
 #endif
 }
 

@@ -182,6 +182,30 @@ void gtk3_show_effects_popup(GtkTreeView *treeview, GMenuModel *,
 }
 
 /*
+ * Helper functions to support preference widgets
+ */
+
+const gchar *gtk3_get_entry_text(GtkWidget *entry)
+{
+    return gtk_entry_get_text(GTK_ENTRY(entry));
+}
+
+void gtk3_set_entry_text(GtkWidget *entry, const gchar *text)
+{
+    gtk_entry_set_text(GTK_ENTRY(entry), text);
+}
+
+gchar *gtk3_get_file_chooser_folder(GtkWidget *chooser)
+{
+    return gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(chooser));
+}
+
+void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
+{
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), folder);
+}
+
+/*
  * Helper functions to support the camera controls window
  */
 

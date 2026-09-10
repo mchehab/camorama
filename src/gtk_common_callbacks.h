@@ -85,6 +85,11 @@ void gtk_common_setup_effects_popup(GtkTreeView *treeview);
 void gtk_common_show_effects_popup(GtkTreeView *treeview, double x, double y);
 void gtk_common_add_effect(GtkTreeView *treeview, GType filter_type);
 void gtk_common_delete_effects(GtkTreeView *treeview);
+const gchar *gtk_common_get_entry_text(GtkWidget *entry);
+void gtk_common_set_entry_text(GtkWidget *entry, const gchar *text);
+gchar *gtk_common_get_file_chooser_folder(GtkWidget *chooser);
+void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
+                                        const gchar *folder);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);

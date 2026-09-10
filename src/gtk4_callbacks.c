@@ -110,6 +110,44 @@ void gtk4_show_effects_popup(GtkTreeView *treeview, GMenuModel *model,
 }
 
 /*
+ * Helper functions to support preference widgets
+ */
+
+const gchar *gtk4_get_entry_text(GtkWidget *entry)
+{
+    return gtk_editable_get_text(GTK_EDITABLE(entry));
+}
+
+void gtk4_set_entry_text(GtkWidget *entry, const gchar *text)
+{
+    gtk_editable_set_text(GTK_EDITABLE(entry), text);
+}
+
+gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser)
+{
+    GFile *file = gtk_file_chooser_get_current_folder(
+        GTK_FILE_CHOOSER(chooser));
+    gchar *folder;
+
+    if (!file)
+        return NULL;
+
+    folder = g_file_get_path(file);
+    g_object_unref(file);
+
+    return folder;
+}
+
+void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
+{
+    GFile *file = g_file_new_for_path(folder);
+
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), file,
+                                        NULL);
+    g_object_unref(file);
+}
+
+/*
  * Helper functions to support the camera controls window
  */
 
