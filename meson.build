@@ -15,8 +15,6 @@ endif
 dependencies = [
   dependency('gdk-pixbuf-2.0'),
   dependency('libv4l2'),
-  dependency('libpulse-simple'),
-  dependency('alsa'),
   gtk_dep,
   cc.find_library('m'),
 ]
