@@ -100,6 +100,8 @@ static void close_app(GtkWidget* widget, cam_t *cam)
 static void activate(GtkApplication *app)
 {
     cam_t *cam = g_new0(cam_t, 1);
+    const gchar *data_dir;
+    g_autofree gchar *ui_file = NULL;
     GtkWidget *widget, *window;
     unsigned int i;
 
@@ -150,9 +152,14 @@ static void activate(GtkApplication *app)
 
     cam->xml = gtk_builder_new();
 
-    if (!gtk_builder_add_from_file(cam->xml,
-                                   PACKAGE_DATA_DIR "/camorama/" CAMORAMA_UI,
-                                   NULL)) {
+    data_dir = g_getenv("CAMORAMA_DATA_DIR");
+    if (data_dir)
+        ui_file = g_build_filename(data_dir, CAMORAMA_UI, NULL);
+    else
+        ui_file = g_build_filename(PACKAGE_DATA_DIR, "camorama",
+                                   CAMORAMA_UI, NULL);
+
+    if (!gtk_builder_add_from_file(cam->xml, ui_file, NULL)) {
         error_dialog(_("Couldn't load builder file"));
         exit(1);
     }

@@ -59,6 +59,19 @@ subdir('po')
 
 subdir('data')
 
+# Allow the program to be run directly from the build tree with
+# `meson devenv -C <builddir>`.  GSettings data is generated in the build
+# directory, while the UI and image files can be used from the source tree.
+devenv = environment()
+devenv.set('GSETTINGS_SCHEMA_DIR', join_paths(meson.current_build_dir(),
+                                              'data'))
+devenv.set('CAMORAMA_DATA_DIR', join_paths(meson.current_build_dir(),
+                                           'data'))
+devenv.set('CAMORAMA_ICON_FILE', join_paths(meson.current_source_dir(),
+                                            'pixmaps',
+                                            'camorama-128.png'))
+meson.add_devenv(devenv)
+
 desktop = i18n.merge_file(input: 'camorama.desktop.in',
                           output: 'camorama.desktop',
                           type: 'desktop',
