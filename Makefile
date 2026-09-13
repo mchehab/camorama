@@ -26,5 +26,8 @@ install: build/build.ninja
 uninstall: build/build.ninja
 	@ninja -C build uninstall
 
+devenv: all
+	@meson devenv -C build
+
 distclean:
 	rm -rf build/

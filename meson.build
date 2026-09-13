@@ -31,6 +31,17 @@ conf.set_quoted('PACKAGE_LOCALE_DIR', join_paths(get_option('prefix'),
 conf.set_quoted('GETTEXT_PACKAGE', meson.project_name())
 configure_file(output: 'config.h', configuration: conf)
 
+# Directories to be used by meson devenv. Overrides PACKAGE_DATA_DIR if set
+devenv = environment()
+devenv.set('GSETTINGS_SCHEMA_DIR', join_paths(meson.current_build_dir(),
+                                              'data'))
+devenv.set('CAMORAMA_DATA_DIR', join_paths(meson.current_build_dir(),
+                                           'data'))
+devenv.set('CAMORAMA_ICON_FILE', join_paths(meson.current_source_dir(),
+                                            'pixmaps',
+                                            'camorama-128.png'))
+meson.add_devenv(devenv)
+
 inc = include_directories('.', 'src')
 
 sources = files(
@@ -56,7 +67,6 @@ executable('camorama', sources,
 
 i18n = import('i18n')
 subdir('po')
-
 subdir('data')
 
 desktop = i18n.merge_file(input: 'camorama.desktop.in',

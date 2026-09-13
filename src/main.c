@@ -99,8 +99,10 @@ static void close_app(GtkWidget* widget, cam_t *cam)
 
 static void activate(GtkApplication *app)
 {
+    g_autofree gchar *ui_builder_file = NULL;
     cam_t *cam = g_new0(cam_t, 1);
     GtkWidget *widget, *window;
+    const gchar *data_dir;
     unsigned int i;
 
     /* set non-zero default values */
@@ -145,14 +147,19 @@ static void activate(GtkApplication *app)
 
     if (disable_scaler) {
         printf("Disabling auto scaling\n");
-	cam->scale = -1.;
+        cam->scale = -1.;
     }
 
     cam->xml = gtk_builder_new();
 
-    if (!gtk_builder_add_from_file(cam->xml,
-                                   PACKAGE_DATA_DIR "/camorama/" CAMORAMA_UI,
-                                   NULL)) {
+    data_dir = g_getenv("CAMORAMA_DATA_DIR");
+    if (data_dir)
+        ui_builder_file = g_build_filename(data_dir, CAMORAMA_UI, NULL);
+    else
+        ui_builder_file = g_build_filename(PACKAGE_DATA_DIR, "camorama",
+                                           CAMORAMA_UI, NULL);
+
+    if (!gtk_builder_add_from_file(cam->xml, ui_builder_file, NULL)) {
         error_dialog(_("Couldn't load builder file"));
         exit(1);
     }

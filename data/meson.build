@@ -12,15 +12,22 @@ custom_target('gsettings-compile',
                         '@OUTDIR@'],
               build_by_default: true)
 
+configure_file(input: camorama_ui, output: camorama_ui, copy: true)
 install_data(camorama_ui,
              install_dir: join_paths(get_option('datadir'), 'camorama'))
-install_data(
-  'pixmaps/snap-icon.xpm',
-  'pixmaps/snap-icon-small.xpm',
-  'pixmaps/contrast.png',
-  'pixmaps/zoom.png',
-  'pixmaps/colourness.png',
-  'pixmaps/brightness.png',
-  'pixmaps/whiteness.png',
-  'pixmaps/stock-tool-hue-saturation-16.png',
-  install_dir: join_paths(get_option('datadir'), 'camorama'))
+
+pixmaps = [
+  'snap-icon.xpm',
+  'snap-icon-small.xpm',
+  'contrast.png',
+  'zoom.png',
+  'colourness.png',
+  'brightness.png',
+  'whiteness.png',
+  'stock-tool-hue-saturation-16.png',
+]
+
+foreach image : pixmaps
+  configure_file(input: 'pixmaps/' + image, output: image, copy: true,
+                 install_dir: join_paths(get_option('datadir'), 'camorama'))
+endforeach
