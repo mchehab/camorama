@@ -229,6 +229,7 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
 static void activate(GtkApplication *app)
 {
     GSettingsSchema *schema = NULL;
+    GError *error = NULL;
     cam_t *cam = g_new0(cam_t, 1);
     const gchar *data_dir;
     g_autofree gchar *ui_file = NULL;
@@ -289,8 +290,13 @@ static void activate(GtkApplication *app)
         ui_file = g_build_filename(PACKAGE_DATA_DIR, "camorama",
                                    CAMORAMA_UI, NULL);
 
-    if (!gtk_builder_add_from_file(cam->xml, ui_file, NULL)) {
-        error_dialog(_("Couldn't load builder file"));
+    if (!gtk_builder_add_from_file(cam->xml, ui_file, &error) || error) {
+        char *message = g_strdup_printf(_("Couldn't load builder file: %s"),
+                                        error ? error->message : _("unknown error"));
+
+        g_clear_error(&error);
+        error_dialog(message);
+        g_free(message);
         exit(1);
     }
 
