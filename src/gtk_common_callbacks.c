@@ -364,7 +364,11 @@ void gtk_common_update_image_scale(cam_t *cam, int width, int height)
 
 gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+    GtkWidget *da = cam->da ?
+                    cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return GDK_EVENT_PROPAGATE;
 
     gtk_common_update_image_scale(cam, gtk_widget_get_allocated_width(da),
                                   gtk_widget_get_allocated_height(da));
@@ -378,12 +382,14 @@ void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
-        gtk_widget_hide(cam->status);
+        if (GTK_IS_WIDGET(cam->status))
+            gtk_widget_hide(cam->status);
     } else {
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4")));
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
-        gtk_widget_show(cam->status);
+        if (GTK_IS_WIDGET(cam->status))
+            gtk_widget_show(cam->status);
     }
 }
 
@@ -428,7 +434,11 @@ void toggle_fullscreen(GtkWidget *, cam_t *cam)
 
 void set_image_scale(cam_t *cam)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+    GtkWidget *da = cam->da ?
+    cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return;
 
     if (cam->scale <= 0) {
         GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
@@ -613,7 +623,6 @@ void on_about_activate(GtkWidget *, cam_t *cam)
 
 static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 {
-    /* cam_read() always returns RGB24 data in pic_buf. */
     camorama_filter_chain_apply(cam->filter_chain, pic_buf,
                                 cam->width, cam->height, 3);
 }
@@ -622,7 +631,13 @@ static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 
 static inline void show_buffer(cam_t *cam)
 {
-    gtk_widget_queue_draw(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")));
+    GtkWidget *da = cam->da ?
+                    cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return;
+
+    gtk_widget_queue_draw(da);
 }
 
 /*
@@ -673,7 +688,8 @@ gint fps(cam_t *cam)
 
 void on_status_show(GtkWidget *sb, cam_t *cam)
 {
-    cam->status = sb;
+    if (GTK_IS_STATUSBAR(sb))
+        cam->status = sb;
 }
 
 void capture_func(GtkWidget *, cam_t *cam)
