@@ -51,7 +51,7 @@ void capture_func2(GtkWidget *, cam_t *);
 void capture_func(GtkWidget *, cam_t *);
 void toggle_fullscreen(GtkWidget *, cam_t *);
 gint timeout_capture_func(cam_t *);
-gint fps(GtkWidget *);
+gint fps(cam_t *);
 gint timeout_func(cam_t *);
 void edge_func1(GtkToggleButton *, gpointer);
 void sobel_func(GtkToggleButton *, gpointer);

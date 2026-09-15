@@ -656,8 +656,16 @@ gint timeout_func(cam_t *cam)
     return TRUE;
 }
 
-gint fps(GtkWidget *sb)
+gint fps(cam_t *cam)
 {
+    GtkWidget *sb = cam ? cam->status : NULL;
+
+    if (!cam || !GTK_IS_STATUSBAR(sb)) {
+        if (cam)
+            cam->timeout_fps_id = 0;
+        return 0;
+    }
+
     gchar *stat;
     guint cont = gtk_statusbar_get_context_id(GTK_STATUSBAR(sb), "context");
 
@@ -667,7 +675,7 @@ gint fps(GtkWidget *sb)
     frames = 0;
     gtk_statusbar_push(GTK_STATUSBAR(sb), cont, stat);
     g_free(stat);
-    return 1;
+    return TRUE;
 }
 
 void on_status_show(GtkWidget *sb, cam_t *cam)

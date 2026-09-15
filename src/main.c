@@ -172,7 +172,7 @@ static GOptionEntry options[] = {
     {NULL}
 };
 
-static void close_app(GtkWidget *, cam_t *cam)
+static gboolean close_app(GtkWidget *, cam_t *cam)
 {
     if (cam->debug && cam->scale > 0)
         printf("Window geometry at close: %dx%d\n",
@@ -183,6 +183,7 @@ static void close_app(GtkWidget *, cam_t *cam)
 
     if (cam->idle_id)
         g_source_remove(cam->idle_id);
+    cam->idle_id = 0;
 
     if (cam->read == FALSE) {
         if (cam->userptr)
@@ -199,9 +200,15 @@ static void close_app(GtkWidget *, cam_t *cam)
 
     if (cam->timeout_id)
         g_source_remove(cam->timeout_id);
+    cam->timeout_id = 0;
 
     if (cam->timeout_fps_id)
         g_source_remove(cam->timeout_fps_id);
+    cam->timeout_fps_id = 0;
+
+    g_clear_object(&cam->filter_chain);
+    g_clear_object(&cam->status);
+    g_clear_object(&cam->da);
 
     g_free(cam->video_dev);
     g_free(cam->pixdir);
@@ -216,6 +223,7 @@ static void close_app(GtkWidget *, cam_t *cam)
     g_object_unref (G_OBJECT (cam->xml));
     g_object_unref (G_OBJECT (cam->gc));
 
+    return GDK_EVENT_PROPAGATE;
 }
 
 static void activate(GtkApplication *app)
@@ -411,22 +419,35 @@ static void activate(GtkApplication *app)
 
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
 
+    cam->da = NULL;
+    if (GTK_IS_WIDGET(widget))
+        cam->da = g_object_ref(widget);
+
+    if (GTK_IS_WIDGET(widget)) {
 #if GTK_MAJOR_VERSION > 3
-    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget),
-                                   gtk4_draw_frame, cam, NULL);
-    g_signal_connect(widget, "resize",
-                     G_CALLBACK(gtk4_drawing_area_resize), cam);
+        gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget),
+                                       gtk4_draw_frame, cam, NULL);
+        g_signal_connect(widget, "resize",
+                         G_CALLBACK(gtk4_drawing_area_resize), cam);
 #else
-    g_signal_connect(G_OBJECT(widget), "draw",
-                     G_CALLBACK(gtk3_draw_frame), cam);
+        g_signal_connect(G_OBJECT(widget), "draw",
+                         G_CALLBACK(gtk3_draw_frame), cam);
 #endif
 
-    g_signal_connect(G_OBJECT(window), "destroy",
-                     G_CALLBACK (close_app), cam);
+#if GTK_MAJOR_VERSION < 4
+        g_signal_connect(window, "destroy", G_CALLBACK(close_app), cam);
+#else
+        g_signal_connect(window, "close-request", G_CALLBACK(close_app), cam);
+#endif
 
-    gtk_widget_show(widget);
+        gtk_widget_show(widget);
 
-    cam->timeout_fps_id = g_timeout_add(2000, (GSourceFunc) fps, cam->status);
+        if (GTK_IS_STATUSBAR(cam->status))
+            cam->timeout_fps_id = g_timeout_add(2000, (GSourceFunc) fps,
+                                                cam);
+        else if (cam->debug)
+            printf("Unable to start FPS timeout, status widget is not a statusbar\n");
+    }
 }
 
 int main(int argc, char *argv[])
