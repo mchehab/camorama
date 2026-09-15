@@ -364,7 +364,11 @@ void gtk_common_update_image_scale(cam_t *cam, int width, int height)
 
 gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+    GtkWidget *da = cam->da ?
+                        cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return GDK_EVENT_PROPAGATE;
 
     gtk_common_update_image_scale(cam, gtk_widget_get_allocated_width(da),
                                   gtk_widget_get_allocated_height(da));
@@ -378,12 +382,14 @@ void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen)
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4")));
         gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
-        gtk_widget_hide(cam->status);
+        if (GTK_IS_WIDGET(cam->status))
+            gtk_widget_hide(cam->status);
     } else {
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem3")));
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "menuitem4")));
         gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31")));
-        gtk_widget_show(cam->status);
+        if (GTK_IS_WIDGET(cam->status))
+            gtk_widget_show(cam->status);
     }
 }
 
@@ -432,7 +438,11 @@ void toggle_fullscreen(GtkWidget *, cam_t *cam)
 
 void set_image_scale(cam_t *cam)
 {
-    GtkWidget *da = GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+    GtkWidget *da = cam->da ?
+                        cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return;
 
     if (cam->scale <= 0) {
         GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
@@ -621,6 +631,9 @@ void on_about_activate(GtkWidget *, cam_t *cam)
 static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 {
     /* cam_read() always returns RGB24 data in pic_buf. */
+    if (!GTK_IS_LIST_STORE(cam->filter_chain))
+        return;
+
     camorama_filter_chain_apply(cam->filter_chain, pic_buf,
                                 cam->width, cam->height, 3);
 }
@@ -629,7 +642,13 @@ static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 
 static inline void show_buffer(cam_t *cam)
 {
-    gtk_widget_queue_draw(GTK_WIDGET(gtk_builder_get_object(cam->xml, "da")));
+    GtkWidget *da = cam->da ?
+                        cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
+
+    if (!GTK_IS_WIDGET(da))
+        return;
+
+    gtk_widget_queue_draw(da);
 }
 
 /*
@@ -680,7 +699,8 @@ gint fps(cam_t *cam)
 
 void on_status_show(GtkWidget *sb, cam_t *cam)
 {
-    cam->status = sb;
+    if (GTK_IS_STATUSBAR(sb))
+        cam->status = sb;
 }
 
 void capture_func(GtkWidget *, cam_t *cam)
@@ -741,6 +761,9 @@ struct weak_target {
 
 static void reference_path(GtkTreePath *path, struct weak_target *target)
 {
+    if (!path || !target)
+        return;
+
     target->list = g_list_prepend(target->list,
                                   gtk_tree_row_reference_new(target->model,
                                                              path));
@@ -751,16 +774,40 @@ static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
     GtkTreeIter iter;
     GtkTreePath *path = gtk_tree_row_reference_get_path(ref);
 
-    gtk_tree_model_get_iter(model, &iter, path);
+    if (!GTK_IS_TREE_MODEL(model) || !path)
+        goto out;
+
+    if (!gtk_tree_model_get_iter(model, &iter, path))
+        goto out;
+
     camorama_filter_chain_hide(model, path, &iter);
-    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+
+    if (GTK_IS_LIST_STORE(model))
+        gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+
+out:
+    gtk_tree_path_free(path);
 }
 
 void gtk_common_delete_effects(GtkTreeView *treeview)
 {
-    GtkTreeSelection *selection = gtk_tree_view_get_selection(treeview);
+    GtkTreeSelection *selection;
     GtkTreeModel *model;
-    GList *paths = gtk_tree_selection_get_selected_rows(selection, &model);
+    GList *paths;
+
+    if (!GTK_IS_TREE_VIEW(treeview))
+        return;
+
+    selection = gtk_tree_view_get_selection(treeview);
+    if (!selection)
+        return;
+
+    paths = gtk_tree_selection_get_selected_rows(selection, &model);
+    if (!GTK_IS_TREE_MODEL(model)) {
+        g_list_free_full(paths, (GDestroyNotify)gtk_tree_path_free);
+        return;
+    }
+
     struct weak_target target = { model, NULL };
 
     g_list_foreach(paths, (GFunc)reference_path, &target);
@@ -774,7 +821,13 @@ void gtk_common_add_effect(GtkTreeView *treeview, GType filter_type)
 {
     CamoramaFilterChain *chain;
 
+    if (!GTK_IS_TREE_VIEW(treeview))
+        return;
+
     chain = (CamoramaFilterChain *)gtk_tree_view_get_model(treeview);
+    if (!GTK_IS_LIST_STORE(chain))
+        return;
+
     camorama_filter_chain_append(chain, filter_type);
 }
 
@@ -834,16 +887,18 @@ void gtk_common_setup_effects_popup(GtkTreeView *treeview)
                                 GTK_SELECTION_MULTIPLE);
 
     action = g_simple_action_new("delete", NULL);
-    g_signal_connect(action, "activate",
-                     G_CALLBACK(delete_filter_activated), treeview);
+    g_signal_connect_object(action, "activate",
+                           G_CALLBACK(delete_filter_activated),
+                           G_OBJECT(treeview), 0);
     g_action_map_add_action(G_ACTION_MAP(actions), G_ACTION(action));
     g_object_set_data_full(G_OBJECT(treeview), effects_delete_action_key,
                            g_object_ref(action), g_object_unref);
     g_object_unref(action);
 
     action = g_simple_action_new("add", G_VARIANT_TYPE_UINT64);
-    g_signal_connect(action, "activate",
-                     G_CALLBACK(add_filter_activated), treeview);
+    g_signal_connect_object(action, "activate",
+                           G_CALLBACK(add_filter_activated),
+                           G_OBJECT(treeview), 0);
     g_action_map_add_action(G_ACTION_MAP(actions), G_ACTION(action));
     g_object_unref(action);
 
