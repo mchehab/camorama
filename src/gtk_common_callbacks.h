@@ -47,8 +47,6 @@ void on_about_activate(GtkWidget *widget, cam_t *cam);
 void on_show_adjustments_activate(GtkWidget *button, cam_t *);
 void on_show_effects_activate(GtkWidget *button, cam_t *);
 void prefs_func(GtkWidget *, cam_t *);
-gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *event,
-                                   cam_t *cam);
 void capture_func2(GtkWidget *, cam_t *);
 void capture_func(GtkWidget *, cam_t *);
 void toggle_fullscreen(GtkWidget *, cam_t *);

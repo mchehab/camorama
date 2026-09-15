@@ -219,6 +219,13 @@ void gtk3_destroy_widget(GtkWidget *widget)
     gtk_widget_destroy(widget);
 }
 
+gboolean gtk3_close_prefs_window(GtkWidget *widget, GdkEvent *, cam_t *cam)
+{
+    prefs_func(widget, cam);
+
+    return GDK_EVENT_STOP;
+}
+
 /*
  * Helper functions to support container operations
  */

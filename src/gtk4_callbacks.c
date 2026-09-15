@@ -225,6 +225,13 @@ void gtk4_destroy_widget(GtkWidget *widget)
         gtk_widget_unparent(widget);
 }
 
+gboolean gtk4_close_prefs_window(GtkWindow *window, cam_t *cam)
+{
+    prefs_func(GTK_WIDGET(window), cam);
+
+    return GDK_EVENT_STOP;
+}
+
 /*
  * Helper functions to support container operations
  */

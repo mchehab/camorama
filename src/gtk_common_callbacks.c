@@ -325,13 +325,6 @@ void prefs_func(GtkWidget *, cam_t *cam)
     gtk_widget_hide(prefswindow);
 }
 
-gboolean delete_event_prefs_window(GtkWidget *widget, GdkEvent *,
-                                   cam_t *cam)
-{
-    prefs_func(widget, cam);
-    return TRUE;
-}
-
 void on_quit_activate(GtkWidget *, cam_t *cam)
 {
     gtk_window_close(GTK_WINDOW(gtk_builder_get_object(cam->xml,

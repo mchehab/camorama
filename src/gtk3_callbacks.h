@@ -21,6 +21,8 @@ gchar *gtk3_get_file_chooser_folder(GtkWidget *chooser);
 void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 gint gtk3_dialog_run(GtkDialog *dialog);
 void gtk3_destroy_widget(GtkWidget *widget);
+gboolean gtk3_close_prefs_window(GtkWidget *widget, GdkEvent *event,
+                                 cam_t *cam);
 void gtk3_box_append(GtkBox *box, GtkWidget *child);
 GList *gtk3_get_children(GtkWidget *widget);
 GtkWidget *gtk3_create_controls_window(GtkWidget *child, cam_t *cam);

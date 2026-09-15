@@ -20,6 +20,7 @@ gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
 void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 gint gtk4_dialog_run(GtkDialog *dialog);
 void gtk4_destroy_widget(GtkWidget *widget);
+gboolean gtk4_close_prefs_window(GtkWindow *window, cam_t *cam);
 void gtk4_box_append(GtkBox *box, GtkWidget *child);
 GList *gtk4_get_children(GtkWidget *widget);
 GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
