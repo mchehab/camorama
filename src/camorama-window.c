@@ -614,8 +614,13 @@ void load_interface(cam_t *cam)
 
     gtk_common_set_window_icons(GTK_WINDOW(window), GTK_WINDOW(prefswindow));
 
-    g_signal_connect(G_OBJECT(prefswindow), "delete-event",
-                     G_CALLBACK(delete_event_prefs_window), cam);
+#if GTK_MAJOR_VERSION < 4
+    g_signal_connect(prefswindow, "delete-event",
+                     G_CALLBACK(gtk3_close_prefs_window), cam);
+#else
+    g_signal_connect(prefswindow, "close-request",
+                     G_CALLBACK(gtk4_close_prefs_window), cam);
+#endif
 
     g_object_set(gtk_builder_get_object(cam->xml, "showadjustment_item"),
                  "active", cam->show_adjustments, NULL);
@@ -626,9 +631,8 @@ void load_interface(cam_t *cam)
     g_signal_connect(gtk_builder_get_object(cam->xml, "show_effects"),
                      "toggled", G_CALLBACK(on_show_effects_activate), cam);
 
-    gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(
-                                 gtk_builder_get_object(cam->xml,
-                                                        "togglebutton1")),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                    "togglebutton1")),
                                  cam->show_adjustments);
     g_signal_connect(gtk_builder_get_object(cam->xml, "togglebutton1"),
                      "toggled", G_CALLBACK(on_show_adjustments_activate),
@@ -679,24 +683,20 @@ void load_interface(cam_t *cam)
     g_signal_connect(gtk_builder_get_object(cam->xml, "captured_cb"),
                      "toggled", G_CALLBACK(cap_func), cam);
 
-    gtk_toggle_button_set_active((GtkToggleButton *)
-                                 gtk_builder_get_object(cam->xml,
-                                                        "captured_cb"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "captured_cb")),
                                  cam->cap);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "rcapture"),
                      "toggled", G_CALLBACK(rcap_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)
-                                 gtk_builder_get_object(cam->xml,
-                                                        "rcapture"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "rcapture")),
                                  cam->rcap);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "acapture"),
                      "toggled", G_CALLBACK(acap_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)
-                                 gtk_builder_get_object(cam->xml,
-                                                        "acapture"),
-                                 cam->acap);
+    gtk_common_set_toggle_active(
+        GTK_WIDGET(gtk_builder_get_object(cam->xml, "acapture")), cam->acap);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "interval_entry"),
                      "value-changed", G_CALLBACK(interval_change), cam);
@@ -715,31 +715,29 @@ void load_interface(cam_t *cam)
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "appendbutton"),
                      "toggled", G_CALLBACK(append_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)
-                                 gtk_builder_get_object(cam->xml,
-                                                        "appendbutton"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "appendbutton")),
                                  cam->timefn);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "jpgb"),
                      "toggled", G_CALLBACK(jpg_func), cam);
     if (cam->savetype == JPEG) {
-        gtk_toggle_button_set_active((GtkToggleButton *)
-                                     gtk_builder_get_object(cam->xml,
-                                                            "jpgb"), TRUE);
+        gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                       "jpgb")),
+                                     TRUE);
     }
     g_signal_connect(gtk_builder_get_object(cam->xml, "pngb"),
                      "toggled", G_CALLBACK(png_func), cam);
     if (cam->savetype == PNG) {
-        gtk_toggle_button_set_active((GtkToggleButton *)
-                                     gtk_builder_get_object(cam->xml,
-                                                            "pngb"), TRUE);
+        gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                       "pngb")),
+                                     TRUE);
     }
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "tsbutton"),
                      "toggled", G_CALLBACK(ts_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)
-                                 gtk_builder_get_object(cam->xml,
-                                                        "tsbutton"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "tsbutton")),
                                  cam->timestamp);
 
     /* remote */
@@ -772,31 +770,36 @@ void load_interface(cam_t *cam)
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "timecb"),
                      "toggled", G_CALLBACK(rappend_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)gtk_builder_get_object(cam->xml, "timecb"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "timecb")),
                                  cam->rtimefn);
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "fjpgb"),
                      "toggled", G_CALLBACK(rjpg_func), cam);
     if (cam->rsavetype == JPEG) {
-        gtk_toggle_button_set_active((GtkToggleButton *)gtk_builder_get_object(cam->xml, "fjpgb"),
+        gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                       "fjpgb")),
                                      TRUE);
     }
     g_signal_connect(gtk_builder_get_object(cam->xml, "fpngb"),
                      "toggled", G_CALLBACK(rpng_func), cam);
     if (cam->rsavetype == PNG) {
-        gtk_toggle_button_set_active((GtkToggleButton *)gtk_builder_get_object(cam->xml, "fpngb"),
+        gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                       "fpngb")),
                                      TRUE);
     }
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "tsbutton2"),
                      "toggled", G_CALLBACK(rts_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)gtk_builder_get_object(cam->xml, "tsbutton2"),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "tsbutton2")),
                                  cam->rtimestamp);
 
     /* timestamp */
     g_signal_connect(gtk_builder_get_object(cam->xml, "cscb"),
                      "toggled", G_CALLBACK(customstring_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "cscb")),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "cscb")),
                                  cam->usestring);
 
     string_entry = GTK_WIDGET(gtk_builder_get_object(cam->xml, "string_entry"));
@@ -804,10 +807,20 @@ void load_interface(cam_t *cam)
 
     g_signal_connect(gtk_builder_get_object(cam->xml, "tscb"),
                      "toggled", G_CALLBACK(drawdate_func), cam);
-    gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "tscb")),
+    gtk_common_set_toggle_active(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                   "tscb")),
                                  cam->usedate);
 
-    cam->status = GTK_WIDGET(gtk_builder_get_object(cam->xml, "status"));
+    GtkWidget *status = GTK_WIDGET(gtk_builder_get_object(cam->xml, "status"));
+
+    cam->status = NULL;
+    if (GTK_IS_STATUSBAR(status))
+        cam->status = g_object_ref(status);
+
+    if (!cam->status) {
+        g_warning("Unable to locate GtkStatusbar status widget in UI");
+    }
+
     set_sensitive(cam);
     gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_get_object(cam->xml, "string_entry")),
                              cam->usestring);
