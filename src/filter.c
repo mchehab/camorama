@@ -125,12 +125,12 @@ static void camorama_filter_threshold_show(void *filter,
 
     CAMORAMA_FILTER_GET_CLASS(self)->data = data;
 
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "threshold_icon")));
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "threshold_label")));
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "threshold_slider")));
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "threshold_icon")), TRUE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "threshold_label")), TRUE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "threshold_slider")), TRUE);;
 
     gtk_range_set_value((GtkRange *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "threshold_slider")),
                         self->threshold);
@@ -144,12 +144,12 @@ static void camorama_filter_threshold_hide(void *filter)
     CamoramaFilterThreshold *self = filter;
 
     cam_t *cam = CAMORAMA_FILTER_GET_CLASS(self)->data;
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "threshold_icon")));
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "threshold_slider")));
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "threshold_label")));
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "threshold_icon")), FALSE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "threshold_slider")), FALSE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "threshold_label")), FALSE);;
 }
 
 static void
@@ -212,12 +212,12 @@ static void camorama_filter_threshold_channel_show(void *filter,
 
     CAMORAMA_FILTER_GET_CLASS(self)->data = data;
 
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "ch_threshold_icon")));
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "ch_threshold_label")));
-    gtk_widget_show(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                      "ch_threshold_slider")));
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "ch_threshold_icon")), TRUE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "ch_threshold_label")), TRUE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                      "ch_threshold_slider")), TRUE);;
 
     gtk_range_set_value((GtkRange *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "ch_threshold_slider")),
                         self->threshold);
@@ -231,12 +231,12 @@ static void camorama_filter_threshold_channel_hide(void *filter)
     CamoramaFilterThreshold *self = filter;
 
     cam_t *cam = CAMORAMA_FILTER_GET_CLASS(self)->data;
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "ch_threshold_icon")));
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "ch_threshold_slider")));
-    gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                     "ch_threshold_label")));
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "ch_threshold_icon")), FALSE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "ch_threshold_slider")), FALSE);;
+    gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                     "ch_threshold_label")), FALSE);;
 }
 
 static void

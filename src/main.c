@@ -446,7 +446,7 @@ static void activate(GtkApplication *app)
         g_signal_connect(window, "close-request", G_CALLBACK(close_app), cam);
 #endif
 
-        gtk_widget_show(widget);
+        gtk_widget_set_visible(widget, TRUE);;
 
         if (GTK_IS_STATUSBAR(cam->status))
             cam->timeout_fps_id = g_timeout_add(2000, (GSourceFunc) fps,

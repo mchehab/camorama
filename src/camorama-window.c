@@ -55,7 +55,7 @@ void load_interface(cam_t *cam)
 
     gtk_application_add_window(cam->app, GTK_WINDOW(window));
 
-    gtk_widget_show(window);
+    gtk_widget_set_visible(window, TRUE);;
 
     prefswindow = GTK_WIDGET(gtk_builder_get_object(cam->xml, "prefswindow"));
 
@@ -84,7 +84,7 @@ void load_interface(cam_t *cam)
         GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
                                         (cam->xml, "scrolledwindow_effects"));
         if (effects)
-            gtk_widget_hide(effects);
+            gtk_widget_set_visible(effects, FALSE);;
     }
 
     /* connect the signals in the interface
@@ -120,7 +120,7 @@ void load_interface(cam_t *cam)
     if (n_valid_devices > 1) {
         video_dev = GTK_WIDGET(gtk_builder_get_object(cam->xml, "change_camera"));
         if (video_dev) {
-            gtk_widget_show(video_dev);
+            gtk_widget_set_visible(video_dev, TRUE);;
             g_signal_connect(video_dev, "clicked",
                              G_CALLBACK(on_change_camera), cam);
         }
@@ -139,8 +139,8 @@ void load_interface(cam_t *cam)
     update_sliders(cam);
 
     if (cam->show_adjustments == FALSE)
-        gtk_widget_hide(GTK_WIDGET(gtk_builder_get_object(cam->xml,
-                                                          "adjustments_table")));
+        gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                          "adjustments_table")), FALSE);;
 
     /* buttons */
     if (gtk_builder_get_object(cam->xml, "quit"))
