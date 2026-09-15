@@ -8,6 +8,9 @@
 void gtk4_drawing_area_resize(GtkDrawingArea *, int width, int height,
                               cam_t *cam)
 {
+    if (cam->scale == 0.f)
+        cam->scale = 1.f;
+
     gtk_common_update_image_scale(cam, width, height);
 }
 
