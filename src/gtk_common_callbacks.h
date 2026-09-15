@@ -79,6 +79,8 @@ void wb_change(GtkScale *, cam_t *);
 void gtk_common_update_image_scale(cam_t *cam, int width, int height);
 void gtk_common_show_fullscreen_ui(cam_t *cam, gboolean fullscreen);
 void gtk_common_set_window_icons(GtkWindow *window, GtkWindow *prefswindow);
+gboolean gtk_common_get_toggle_active(GtkWidget *button);
+void gtk_common_set_toggle_active(GtkWidget *button, gboolean active);
 void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
                                     gint32 value);
 void gtk_common_clear_controls_window(cam_t *cam);

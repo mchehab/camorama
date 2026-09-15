@@ -45,13 +45,13 @@ extern const gchar *const protos[3];
 
 void ts_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->timestamp = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->timestamp = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_TIMESTAMP, cam->timestamp);
 }
 
 void customstring_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->usestring = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->usestring = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_USE_CUSTOM_STRING,
                            cam->usestring);
     gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_get_object(cam->xml, "string_entry")),
@@ -60,20 +60,20 @@ void customstring_func(GtkWidget *rb, cam_t *cam)
 
 void drawdate_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->usedate = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->usedate = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_DRAWDATE, cam->usedate);
 }
 
 void append_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->timefn = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->timefn = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_LOCAL_APPEND_TS, cam->timefn);
 
 }
 
 void rappend_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->rtimefn = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->rtimefn = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_REMOTE_APPEND_TS, cam->rtimefn);
 
 }
@@ -126,7 +126,7 @@ void set_sensitive(cam_t *cam)
 
 void cap_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->cap = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->cap = gtk_common_get_toggle_active(rb);
 
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_LOCAL_CAPTURE, cam->cap);
     set_sensitive(cam);
@@ -134,7 +134,7 @@ void cap_func(GtkWidget *rb, cam_t *cam)
 
 void rcap_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->rcap = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->rcap = gtk_common_get_toggle_active(rb);
 
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_REMOTE_CAPTURE, cam->rcap);
     set_sensitive(cam);
@@ -143,7 +143,7 @@ void rcap_func(GtkWidget *rb, cam_t *cam)
 
 void acap_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->acap = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->acap = gtk_common_get_toggle_active(rb);
 
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_AUTO_CAPTURE, cam->acap);
 
@@ -205,7 +205,7 @@ void rppm_func(GtkWidget *, cam_t *cam)
 
 void rts_func(GtkWidget *rb, cam_t *cam)
 {
-    cam->rtimestamp = gtk_toggle_button_get_active((GtkToggleButton *) rb);
+    cam->rtimestamp = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_REMOTE_TIMESTAMP,
                            cam->rtimestamp);
 }
@@ -401,6 +401,20 @@ void gtk_common_set_window_icons(GtkWindow *window, GtkWindow *prefswindow)
 #else
     gtk4_set_window_icons(window, prefswindow);
 #endif
+}
+
+gboolean gtk_common_get_toggle_active(GtkWidget *button)
+{
+    gboolean active;
+
+    g_object_get(button, "active", &active, NULL);
+
+    return active;
+}
+
+void gtk_common_set_toggle_active(GtkWidget *button, gboolean active)
+{
+    g_object_set(button, "active", active, NULL);
 }
 
 void toggle_fullscreen(GtkWidget *, cam_t *cam)
