@@ -134,28 +134,67 @@ void gtk4_set_entry_text(GtkWidget *entry, const gchar *text)
     gtk_editable_set_text(GTK_EDITABLE(entry), text);
 }
 
+static const char file_chooser_folder_key[] =
+    "camorama-file-chooser-folder";
+
+static void gtk4_file_chooser_response(GtkNativeDialog *dialog,
+                                       gint response, GtkButton *button)
+{
+    GFile *file;
+    gchar *folder = NULL;
+
+    if (response == GTK_RESPONSE_ACCEPT) {
+        file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
+        if (file) {
+            folder = g_file_get_path(file);
+            g_object_unref(file);
+        }
+    }
+
+    if (folder) {
+        gtk_button_set_label(button, folder);
+        g_object_set_data_full(G_OBJECT(button), file_chooser_folder_key,
+                               folder, g_free);
+    }
+
+    g_object_unref(dialog);
+}
+
+static void gtk4_file_chooser_clicked(GtkButton *button, gpointer)
+{
+    GtkFileChooserNative *dialog;
+    const gchar *folder;
+    GFile *file;
+
+    dialog = gtk_file_chooser_native_new(
+        _("Select a Directory"),
+        GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button))),
+        GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, _("_Select"), _("_Cancel"));
+    folder = g_object_get_data(G_OBJECT(button), file_chooser_folder_key);
+    if (folder) {
+        file = g_file_new_for_path(folder);
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), file,
+                                            NULL);
+        g_object_unref(file);
+    }
+    g_signal_connect(dialog, "response",
+                     G_CALLBACK(gtk4_file_chooser_response), button);
+    gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+}
+
 gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser)
 {
-    GFile *file = gtk_file_chooser_get_current_folder(
-        GTK_FILE_CHOOSER(chooser));
-    gchar *folder;
-
-    if (!file)
-        return NULL;
-
-    folder = g_file_get_path(file);
-    g_object_unref(file);
-
-    return folder;
+    return g_strdup(g_object_get_data(G_OBJECT(chooser),
+                                      file_chooser_folder_key));
 }
 
 void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
 {
-    GFile *file = g_file_new_for_path(folder);
-
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), file,
-                                        NULL);
-    g_object_unref(file);
+    gtk_button_set_label(GTK_BUTTON(chooser), folder);
+    g_object_set_data_full(G_OBJECT(chooser), file_chooser_folder_key,
+                          g_strdup(folder), g_free);
+    g_signal_connect(chooser, "clicked",
+                     G_CALLBACK(gtk4_file_chooser_clicked), NULL);
 }
 
 /*
