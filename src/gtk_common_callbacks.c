@@ -1944,12 +1944,10 @@ void start_camera(cam_t *cam)
         exit(0);
     }
 
-    if (cam->read) {
-	cam->tmp = malloc(cam->sizeimage);
-	if (!cam->pic_buf) {
-	    printf("Failed to allocate memory for read buffer\n");
-	    exit(0);
-	}
+    cam->tmp = malloc(cam->sizeimage);
+    if (!cam->tmp) {
+        printf("Failed to allocate memory for input buffer\n");
+        exit(0);
     }
 
     if (cam->read)
