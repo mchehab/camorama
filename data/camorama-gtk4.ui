@@ -597,10 +597,10 @@
       </object>
     </property>
   </object>
-  <object class="GtkDialog" id="prefswindow">
+  <object class="GtkWindow" id="prefswindow">
     <property name="resizable">False</property>
     <property name="transient-for">main_window</property>
-    <child internal-child="content_area">
+    <property name="child">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="orientation">vertical</property>
         <child>
@@ -1278,26 +1278,32 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="GtkBox" id="prefs_actions">
+            <property name="halign">end</property>
+            <property name="spacing">6</property>
+            <property name="margin-top">6</property>
+            <property name="margin-bottom">6</property>
+            <property name="margin-start">6</property>
+            <property name="margin-end">6</property>
+            <child>
+              <object class="GtkButton" id="helpbutton1">
+                <property name="label" translatable="yes">_Help</property>
+                <property name="focusable">True</property>
+                <property name="use-underline">True</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="okbutton1">
+                <property name="label" translatable="yes">_Close</property>
+                <property name="focusable">True</property>
+                <property name="use-underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
-    </child>
-    <child type="action">
-      <object class="GtkButton" id="helpbutton1">
-        <property name="label" translatable="yes">_Help</property>
-        <property name="focusable">True</property>
-        <property name="use-underline">True</property>
-      </object>
-    </child>
-    <child type="action">
-      <object class="GtkButton" id="okbutton1">
-        <property name="label" translatable="yes">_Close</property>
-        <property name="focusable">True</property>
-        <property name="use-underline">True</property>
-      </object>
-    </child>
-    <action-widgets>
-      <action-widget response="-11">helpbutton1</action-widget>
-      <action-widget response="-7">okbutton1</action-widget>
-    </action-widgets>
+    </property>
   </object>
   <object class="GtkDialog" id="videodev_window">
     <property name="modal">True</property>
