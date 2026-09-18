@@ -1,3 +1,7 @@
+#include <config.h>
+
+#include <errno.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,7 +9,26 @@
 #include "img_convert.h"
 #include "v4l.h"
 
+#ifdef HAVE_FFMPEG
+#include <libavcodec/avcodec.h>
+#include <libavutil/error.h>
+#include <libavutil/pixfmt.h>
+#include <libswscale/swscale.h>
+#endif
+
 #define BYTE_CLAMP(a) CLAMP(a, 0, 255)
+
+struct img_converter {
+#ifdef HAVE_FFMPEG
+    AVCodecContext *codec;
+    AVFrame *frame;
+    AVPacket *packet;
+    struct SwsContext *sws;
+    unsigned int pixformat;
+#else
+    int unavailable;
+#endif
+};
 
 /* Formats that are natively supported */
 static const struct img_format supported_formats[] = {
@@ -676,4 +699,148 @@ void img_get_colorspace_data(cam_t *cam,
                 (c->quantization == V4L2_QUANTIZATION_FULL_RANGE) ?
                 "full-range" : "limited-range");
     }
+}
+
+gboolean img_codec_supported(unsigned int pixformat)
+{
+#ifdef HAVE_FFMPEG
+    return pixformat == V4L2_PIX_FMT_MJPEG ||
+           pixformat == V4L2_PIX_FMT_H264;
+#else
+    (void)pixformat;
+    return FALSE;
+#endif
+}
+
+#ifdef HAVE_FFMPEG
+static enum AVCodecID codec_id_from_pixformat(unsigned int pixformat)
+{
+    switch (pixformat) {
+    case V4L2_PIX_FMT_MJPEG:
+        return AV_CODEC_ID_MJPEG;
+    case V4L2_PIX_FMT_H264:
+        return AV_CODEC_ID_H264;
+    default:
+        return AV_CODEC_ID_NONE;
+    }
+}
+
+static int prepare_converter(img_converter_t **converter,
+                             unsigned int pixformat)
+{
+    img_converter_t *new_converter;
+    const AVCodec *codec;
+    enum AVCodecID codec_id;
+    int ret;
+
+    if (*converter && (*converter)->pixformat == pixformat)
+        return 0;
+
+    img_converter_free(*converter);
+    *converter = NULL;
+
+    codec_id = codec_id_from_pixformat(pixformat);
+    codec = avcodec_find_decoder(codec_id);
+    if (!codec)
+        return AVERROR_DECODER_NOT_FOUND;
+
+    new_converter = g_new0(img_converter_t, 1);
+    new_converter->codec = avcodec_alloc_context3(codec);
+    new_converter->frame = av_frame_alloc();
+    new_converter->packet = av_packet_alloc();
+    if (!new_converter->codec || !new_converter->frame ||
+        !new_converter->packet) {
+        img_converter_free(new_converter);
+        return AVERROR(ENOMEM);
+    }
+
+    ret = avcodec_open2(new_converter->codec, codec, NULL);
+    if (ret < 0) {
+        img_converter_free(new_converter);
+        return ret;
+    }
+
+    new_converter->pixformat = pixformat;
+    *converter = new_converter;
+    return 0;
+}
+#endif
+
+int img_decode_to_rgb24(img_converter_t **converter,
+                        unsigned int pixformat,
+                        const unsigned char *input, size_t input_size,
+                        unsigned char *output,
+                        unsigned int width, unsigned int height)
+{
+#ifdef HAVE_FFMPEG
+    uint8_t *destination[] = { output, NULL, NULL, NULL };
+    int destination_stride[] = { width * 3, 0, 0, 0 };
+    img_converter_t *state;
+    int ret;
+
+    if (!converter || !input || !output || input_size > INT_MAX)
+        return AVERROR(EINVAL);
+
+    ret = prepare_converter(converter, pixformat);
+    if (ret < 0)
+        return ret;
+    state = *converter;
+
+    state->packet->data = (uint8_t *)input;
+    state->packet->size = input_size;
+    ret = avcodec_send_packet(state->codec, state->packet);
+    state->packet->data = NULL;
+    state->packet->size = 0;
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_receive_frame(state->codec, state->frame);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+        return 0;
+    if (ret < 0)
+        return ret;
+
+    state->sws = sws_getCachedContext(state->sws,
+                                      state->frame->width,
+                                      state->frame->height,
+                                      state->frame->format,
+                                      width, height, AV_PIX_FMT_RGB24,
+                                      SWS_BILINEAR, NULL, NULL, NULL);
+    if (!state->sws)
+        return AVERROR(ENOMEM);
+
+    ret = sws_scale(state->sws,
+                    (const uint8_t *const *)state->frame->data,
+                    state->frame->linesize, 0, state->frame->height,
+                    destination, destination_stride);
+    if (ret != (int)height)
+        return AVERROR(EIO);
+
+    return width * height * 3;
+#else
+    (void)converter;
+    (void)pixformat;
+    (void)input;
+    (void)input_size;
+    (void)output;
+    (void)width;
+    (void)height;
+    return -ENOTSUP;
+#endif
+}
+
+void img_converter_free(img_converter_t *converter)
+{
+#ifdef HAVE_FFMPEG
+    if (!converter)
+        return;
+
+    sws_freeContext(converter->sws);
+    av_packet_free(&converter->packet);
+    av_frame_free(&converter->frame);
+    avcodec_free_context(&converter->codec);
+    g_free(converter);
+#else
+    (void)converter;
+#endif
 }
