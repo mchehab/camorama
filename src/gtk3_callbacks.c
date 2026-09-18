@@ -129,6 +129,37 @@ gboolean gtk3_close_prefs_window(GtkWidget *widget, GdkEvent *, cam_t *cam)
     return GDK_EVENT_STOP;
 }
 
+int gtk3_error_dialog(char *message)
+{
+    GtkApplication *app;
+    GtkWindow *parent = NULL;
+    GtkWidget *dialog;
+    int test;
+
+    app = GTK_APPLICATION(g_application_get_default());
+    if (GTK_IS_APPLICATION(app))
+        parent = gtk_application_get_active_window(app);
+
+    /*
+     * Startup errors can happen before the main window has been presented.
+     * GTK warns when a dialog is mapped without a transient parent, so keep
+     * those errors on stderr instead of creating an orphaned dialog.
+     */
+    if (!parent) {
+        g_printerr("Camorama: %s\n", message);
+        return 0;
+    }
+
+    dialog = gtk_message_dialog_new(parent,
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_ERROR,
+                                    GTK_BUTTONS_CLOSE, "%s", message);
+
+    test = gtk3_dialog_run(GTK_DIALOG(dialog));
+    gtk_common_destroy_widget(dialog);
+    return test;
+}
+
 /*
  * Helper functions to support container operations
  */

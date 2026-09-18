@@ -15,15 +15,10 @@
 
 int error_dialog(char *message)
 {
-    GtkWidget *dialog;
-    int test;
 
-    dialog = gtk_message_dialog_new(NULL,
-                                    GTK_DIALOG_DESTROY_WITH_PARENT,
-                                    GTK_MESSAGE_ERROR,
-                                    GTK_BUTTONS_CLOSE, "%s", message);
-
-    test = gtk_common_dialog_run(GTK_DIALOG(dialog));
-    gtk_common_destroy_widget(dialog);
-    return test;
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_error_dialog(message);
+#else
+    return gtk4_error_dialog(message);
+#endif
 }
