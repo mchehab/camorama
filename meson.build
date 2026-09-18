@@ -56,6 +56,7 @@ inc = include_directories('.', 'src')
 sources = files(
   'src/camera-backend.c',
   'src/gtk_common_callbacks.c',
+  'src/img_convert.c',
   'src/camorama-filter-chain.c',
   'src/camorama-filter-laplace.c',
   'src/camorama-filter-mirror.c',
