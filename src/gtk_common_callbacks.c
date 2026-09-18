@@ -7,6 +7,7 @@
 #include "interface.h"
 #include "support.h"
 #include "filter.h"
+#include "streaming.h"
 
 #include "camorama-window.h"
 
@@ -638,44 +639,6 @@ void on_about_activate(GtkWidget *, cam_t *cam)
     g_signal_connect(about, "response",
                      G_CALLBACK(about_widget_destroy), NULL);
     gtk_widget_set_visible(about, TRUE);;
-}
-
-#define MULT(d, c, a, t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
-
-static inline void show_buffer(cam_t *cam)
-{
-    GtkWidget *da = cam->da ?
-                    cam->da : GTK_WIDGET(gtk_builder_get_object(cam->xml, "da"));
-
-    if (!GTK_IS_WIDGET(da))
-        return;
-
-    gtk_widget_queue_draw(da);
-}
-
-/*
-* get image from cam - does all the work ;)
-*/
-gint timeout_func(cam_t *cam)
-{
-    unsigned char *pic_buf = cam_read(cam);
-
-    if (!pic_buf)
-        return TRUE;
-
-    g_mutex_lock(&cam->pixbuf_mutex);
-    camorama_filter_chain_apply(cam->filter_chain, pic_buf,
-                                cam->width, cam->height, 3);
-
-    cam->pb = gdk_pixbuf_new_from_data(pic_buf, GDK_COLORSPACE_RGB, FALSE, 8,
-                                       cam->width, cam->height,
-                                       (cam->width * 3),
-                                       NULL, NULL);
-    g_mutex_unlock(&cam->pixbuf_mutex);
-
-    show_buffer(cam);
-
-    return TRUE;
 }
 
 gint fps(cam_t *cam)

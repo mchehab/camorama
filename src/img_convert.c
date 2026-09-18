@@ -1,9 +1,12 @@
+#include <config.h>
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "img_bayer.h"
 #include "img_convert.h"
+#include "img_ffmpeg.h"
 #include "v4l.h"
 
 #define BYTE_CLAMP(a) CLAMP(a, 0, 255)
@@ -39,6 +42,10 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_SGBRG8,   8, -1, -1, 1},
     { V4L2_PIX_FMT_SGRBG8,   8, -1, -1, 1},
     { V4L2_PIX_FMT_SRGGB8,   8, -1, -1, 1},
+#ifdef HAVE_FFMPEG
+    { V4L2_PIX_FMT_MJPEG,     0, -1, -1, 1},
+    { V4L2_PIX_FMT_H264,      0, -1, -1, 1},
+#endif
 };
 
 #define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
@@ -266,6 +273,13 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
         img_bayer_to_rgb24(inbuf, cam->pic_buf, width, height,
                            bytesperline, cam->pixformat);
         return width * height * 3;
+#ifdef HAVE_FFMPEG
+    case V4L2_PIX_FMT_MJPEG:
+    case V4L2_PIX_FMT_H264:
+        return img_ffmpeg_to_rgb24(&cam->converter, cam->pixformat,
+                                   inbuf, cam->sizeimage, cam->pic_buf,
+                                   width, height);
+#endif
     default:
         break;
     }

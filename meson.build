@@ -17,6 +17,7 @@ sources = [
   'src/main.c',
   'src/media-devices.c',
   'src/support.c',
+  'src/streaming.c',
   'src/v4l.c',
 ]
 
@@ -51,9 +52,26 @@ else
     enable_audio = false
 endif
 
+ffmpeg_deps = [
+  dependency('libavcodec', required: get_option('ffmpeg')),
+  dependency('libavutil', required: get_option('ffmpeg')),
+  dependency('libswscale', required: get_option('ffmpeg')),
+]
+
+enable_ffmpeg = true
+foreach dep : ffmpeg_deps
+  enable_ffmpeg = enable_ffmpeg and dep.found()
+endforeach
+
+if enable_ffmpeg
+  dependencies += ffmpeg_deps
+  sources += 'src/img_ffmpeg.c'
+endif
+
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
 conf.set('HAVE_AUDIO', enable_audio)
+conf.set('HAVE_FFMPEG', enable_ffmpeg)
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -123,6 +141,7 @@ summary(
     {
         'GTK interface': gtk4 ? 'GTK 4' : 'GTK 3',
         'Audio routing': enable_audio,
+        'FFmpeg': enable_ffmpeg,
     },
     bool_yn: true,
     section: 'Configuration'

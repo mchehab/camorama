@@ -154,6 +154,9 @@ typedef struct camera {
         void *start;
         size_t length;
     } *buffers;
+
+    /* Stateful decoder used by compressed image formats. */
+    struct img_ffmpeg_data *converter;
 } cam_t;
 
 int cam_open(cam_t *cam, int oflag);

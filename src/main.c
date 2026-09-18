@@ -10,6 +10,7 @@
 #include "camorama-globals.h"
 #include "audio.h"
 #include "support.h"
+#include "streaming.h"
 #include <config.h>
 
 #include <glib/gi18n.h>
