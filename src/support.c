@@ -15,10 +15,26 @@
 
 int error_dialog(char *message)
 {
+    GtkApplication *app;
+    GtkWindow *parent = NULL;
     GtkWidget *dialog;
     int test;
 
-    dialog = gtk_message_dialog_new(NULL,
+    app = GTK_APPLICATION(g_application_get_default());
+    if (GTK_IS_APPLICATION(app))
+        parent = gtk_application_get_active_window(app);
+
+    /*
+     * Startup errors can happen before the main window has been presented.
+     * GTK warns when a dialog is mapped without a transient parent, so keep
+     * those errors on stderr instead of creating an orphaned dialog.
+     */
+    if (!parent) {
+        g_printerr("Camorama: %s\n", message);
+        return 0;
+    }
+
+    dialog = gtk_message_dialog_new(parent,
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_ERROR,
                                     GTK_BUTTONS_CLOSE, "%s", message);
