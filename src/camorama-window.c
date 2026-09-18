@@ -775,11 +775,14 @@ void load_interface(cam_t *cam)
     if (!cam->proto)
         cam->proto = g_strdup(protos[0]);
 
+#if GTK_MAJOR_VERSION >= 4
+    gtk4_choice_setup(protocol);
+#endif
+
     for (i = 0; i < G_N_ELEMENTS(protos); i++) {
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(protocol),
-                                       protos[i]);
+        gtk_common_choice_append(protocol, protos[i]);
         if (!strcmp(cam->proto, protos[i]))
-            gtk_combo_box_set_active(GTK_COMBO_BOX(protocol), i);
+            gtk_common_choice_set_active(protocol, i);
     }
 
     if (cam->cap && cam->host && cam->proto && cam->rdir) {
