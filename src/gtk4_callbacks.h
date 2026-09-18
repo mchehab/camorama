@@ -19,6 +19,7 @@ void gtk4_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
 void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 gint gtk4_dialog_run(GtkDialog *dialog);
+gint gtk4_window_run(GtkWindow *window, GtkWidget *response_widget);
 void gtk4_destroy_widget(GtkWidget *widget);
 gboolean gtk4_close_prefs_window(GtkWindow *window, cam_t *cam);
 void gtk4_box_append(GtkBox *box, GtkWidget *child);

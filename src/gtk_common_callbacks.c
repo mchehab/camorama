@@ -1628,7 +1628,7 @@ static int sort_devices(const void *__a, const void *__b)
     return strcmp(a->fname, b->fname);
 }
 
-static void videodev_response(GtkDialog *,
+static void videodev_response(GtkButton *,
                               cam_t *cam)
 {
     GtkWidget *widget;
@@ -1679,7 +1679,7 @@ void retrieve_video_dev(cam_t *cam)
 
 int select_video_dev(cam_t *cam)
 {
-    GtkWidget *window, *widget;
+    GtkWidget *window, *widget, *okbutton;
     int ret;
 
     /* Only ask if there are multiple cameras */
@@ -1692,12 +1692,17 @@ int select_video_dev(cam_t *cam)
 
     window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_window"));
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_combo"));
+    okbutton = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(widget), 0);
 
     gtk_widget_set_visible(window, TRUE);;
 
+#if GTK_MAJOR_VERSION < 4
     ret = gtk_common_dialog_run(GTK_DIALOG(window));
+#else
+    ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
+#endif
 
     cam->video_dev = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
 
