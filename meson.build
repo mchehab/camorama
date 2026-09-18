@@ -21,12 +21,26 @@ dependencies = [
 
 libcamera_dep = dependency('libcamera', required: get_option('libcamera'))
 if libcamera_dep.found()
-  add_languages('cpp', required: true)
+  add_languages('cpp', required: true, native: false)
+endif
+
+ffmpeg_deps = [
+  dependency('libavcodec', required: get_option('ffmpeg')),
+  dependency('libavutil', required: get_option('ffmpeg')),
+  dependency('libswscale', required: get_option('ffmpeg')),
+]
+ffmpeg_found = true
+foreach dep : ffmpeg_deps
+  ffmpeg_found = ffmpeg_found and dep.found()
+endforeach
+if ffmpeg_found
+  dependencies += ffmpeg_deps
 endif
 
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
 conf.set('HAVE_LIBCAMERA', libcamera_dep.found())
+conf.set('HAVE_FFMPEG', ffmpeg_found)
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -40,6 +54,7 @@ configure_file(output: 'config.h', configuration: conf)
 inc = include_directories('.', 'src')
 
 sources = files(
+  'src/camera-backend.c',
   'src/gtk_common_callbacks.c',
   'src/camorama-filter-chain.c',
   'src/camorama-filter-laplace.c',
@@ -122,3 +137,8 @@ endforeach
 
 summary('GTK interface', gtk4 ? 'GTK 4' : 'GTK 3',
         section: 'Configuration')
+
+summary({
+  'libcamera': libcamera_dep.found(),
+  'FFmpeg': ffmpeg_found,
+}, section: 'Optional features', bool_yn: true)

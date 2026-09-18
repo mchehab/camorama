@@ -14,14 +14,16 @@ managed platform.
 
 The build dependencies vary along distributions.
 
-On Fedora (add `libcamera-devel` to build the optional libcamera backend):
+On Fedora (add `libcamera-devel` for libcamera and `ffmpeg-free-devel` for
+optional FFmpeg support):
 
 ```
 sudo dnf install gcc meson ninja-build gettext libv4l-devel gtk3-devel \
 	gdk-pixbuf2-devel pulseaudio-libs-devel alsa-lib-devel
 ```
 
-On Ubuntu/Debian (add `libcamera-dev` to build the optional libcamera backend):
+On Ubuntu/Debian (add `libcamera-dev` for libcamera and `libavcodec-dev`,
+`libavutil-dev`, and `libswscale-dev` for optional FFmpeg support):
 
 ```
 sudo apt-get install gcc meson ninja-build gettext libv4l-dev libgtk-3-dev \
@@ -42,6 +44,9 @@ build directory with `meson setup build-gtk4 -Dgtk4=true`.
 
 Libcamera support is detected automatically. It can be required with
 `-Dlibcamera=enabled` or omitted with `-Dlibcamera=disabled`.
+
+FFmpeg support is also detected automatically. It can be required with
+`-Dffmpeg=enabled` or omitted with `-Dffmpeg=disabled`.
 
 # Run
 

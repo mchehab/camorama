@@ -4,9 +4,12 @@
 #include <string.h>
 #include <config.h>
 
-#include "camorama-libcamera.h"
+#include "camera-backend.h"
 #include "libcamera-bridge.h"
 #include "support.h"
+
+static void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
+                                       unsigned int *height);
 
 static void show_libcamera_error(const char *operation, char *detail)
 {
@@ -19,17 +22,13 @@ static void show_libcamera_error(const char *operation, char *detail)
     libcamera_bridge_free_string(detail);
 }
 
-gboolean libcamera_backend_available(void)
-{
-    return TRUE;
-}
-
-int libcamera_cam_open(cam_t *cam)
+static int libcamera_cam_open(cam_t *cam, int oflag)
 {
     libcamera_bridge_t *bridge;
     const char *camera_id;
     char *error = NULL;
 
+    (void)oflag;
     bridge = libcamera_bridge_create(cam->video_dev, cam->debug, &error);
     if (!bridge) {
         show_libcamera_error(_("could not open camera"), error);
@@ -43,7 +42,7 @@ int libcamera_cam_open(cam_t *cam)
     return 0;
 }
 
-int libcamera_cam_close(cam_t *cam)
+static int libcamera_cam_close(cam_t *cam)
 {
     if (cam->libcamera) {
         libcamera_bridge_destroy(cam->libcamera);
@@ -53,23 +52,27 @@ int libcamera_cam_close(cam_t *cam)
     return 0;
 }
 
-unsigned char *libcamera_cam_read(cam_t *cam)
+static unsigned char *libcamera_cam_read(cam_t *cam)
 {
     char *error = NULL;
     size_t size = (size_t)cam->width * cam->height * 3;
 
+    g_mutex_lock(&cam->pixbuf_mutex);
     if (libcamera_bridge_read(cam->libcamera, cam->pic_buf, size, 1000,
                               &error)) {
         if (cam->debug && error)
             g_warning("libcamera: %s", error);
         libcamera_bridge_free_string(error);
+        g_mutex_unlock(&cam->pixbuf_mutex);
         return NULL;
     }
 
+    cam->frame_number++;
+    g_mutex_unlock(&cam->pixbuf_mutex);
     return cam->pic_buf;
 }
 
-void libcamera_get_supported_resolutions(cam_t *cam)
+static void libcamera_get_supported_resolutions(cam_t *cam)
 {
     libcamera_bridge_t *bridge = cam->libcamera;
     unsigned int count, i;
@@ -99,7 +102,7 @@ void libcamera_get_supported_resolutions(cam_t *cam)
     }
 }
 
-int libcamera_camera_cap(cam_t *cam)
+static int libcamera_camera_cap(cam_t *cam)
 {
     const char *name;
     unsigned int i;
@@ -145,13 +148,13 @@ int libcamera_camera_cap(cam_t *cam)
     return 0;
 }
 
-void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
-                                unsigned int *height)
+static void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
+                                       unsigned int *height)
 {
     libcamera_bridge_try_size(cam->libcamera, width, height);
 }
 
-void libcamera_set_win_info(cam_t *cam)
+static void libcamera_set_win_info(cam_t *cam)
 {
     char *error = NULL;
     unsigned int stride = 0;
@@ -168,12 +171,12 @@ void libcamera_set_win_info(cam_t *cam)
     cam->sizeimage = stride * cam->height;
 }
 
-void libcamera_get_win_info(cam_t *cam)
+static void libcamera_get_win_info(cam_t *cam)
 {
     (void)cam;
 }
 
-void libcamera_get_pic_info(cam_t *cam)
+static void libcamera_get_pic_info(cam_t *cam)
 {
     cam_free_controls(cam);
     cam->contrast = -1;
@@ -185,7 +188,7 @@ void libcamera_get_pic_info(cam_t *cam)
     cam->zoom_cid = 0;
 }
 
-void libcamera_start_streaming(cam_t *cam)
+static void libcamera_start_streaming(cam_t *cam)
 {
     char *error = NULL;
 
@@ -195,8 +198,63 @@ void libcamera_start_streaming(cam_t *cam)
     }
 }
 
-void libcamera_stop_streaming(cam_t *cam)
+static void libcamera_stop_streaming(cam_t *cam)
 {
     if (cam->libcamera)
         libcamera_bridge_stop(cam->libcamera);
 }
+
+static int libcamera_query_controls(cam_t *cam)
+{
+    cam_free_controls(cam);
+    return 0;
+}
+
+static int libcamera_set_control(cam_t *cam, guint32 id, void *value)
+{
+    (void)cam;
+    (void)id;
+    (void)value;
+    return -1;
+}
+
+static int libcamera_get_control(cam_t *cam, guint32 id, void *value)
+{
+    (void)cam;
+    (void)id;
+    (void)value;
+    return -1;
+}
+
+static void libcamera_supported_resolutions(cam_t *cam,
+                                             gboolean all_supported)
+{
+    (void)all_supported;
+    libcamera_get_supported_resolutions(cam);
+}
+
+static void libcamera_try_win_info(cam_t *cam, unsigned int pixformat,
+                                   unsigned int *width,
+                                   unsigned int *height)
+{
+    (void)pixformat;
+    libcamera_try_set_win_info(cam, width, height);
+}
+
+const camera_backend_t libcamera_camera_backend = {
+    .name = "libcamera",
+    .open = libcamera_cam_open,
+    .close = libcamera_cam_close,
+    .read = libcamera_cam_read,
+    .query_controls = libcamera_query_controls,
+    .set_control = libcamera_set_control,
+    .get_control = libcamera_get_control,
+    .camera_cap = libcamera_camera_cap,
+    .get_pic_info = libcamera_get_pic_info,
+    .get_win_info = libcamera_get_win_info,
+    .try_set_win_info = libcamera_try_win_info,
+    .set_win_info = libcamera_set_win_info,
+    .get_supported_resolutions = libcamera_supported_resolutions,
+    .start_streaming = libcamera_start_streaming,
+    .stop_streaming = libcamera_stop_streaming,
+};

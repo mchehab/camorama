@@ -118,7 +118,7 @@ typedef struct camera {
     int savetype, rsavetype;
     gchar *ts_string;
     gchar *date_format;
-    gboolean debug, read, userptr, use_libv4l, use_libcamera, hidden;
+    gboolean debug, read, userptr, use_libv4l, hidden;
     gboolean cap, rcap, acap, show_adjustments, show_effects;
     gboolean timestamp, rtimestamp, usedate, usestring;
     gboolean rtimefn, timefn;
@@ -152,12 +152,14 @@ typedef struct camera {
 
     /* Opaque state owned by src/libcamera.c. */
     void *libcamera;
+
+    /* Selected capture backend. */
+    const struct camera_backend *backend;
 } cam_t;
 
 int cam_open(cam_t *cam, int oflag);
 int cam_close(cam_t *cam);
 unsigned char *cam_read(cam_t *cam);
-int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg);
 int cam_query_controls(cam_t *cam);
 void cam_free_controls(cam_t *cam);
 video_controls_t *cam_find_control_per_id(cam_t *cam, guint32 id);

@@ -1,4 +1,5 @@
 #include "gtk_common_callbacks.h"
+#include "camera-backend.h"
 #if GTK_MAJOR_VERSION < 4
 #include "gtk3_callbacks.h"
 #else
@@ -1920,7 +1921,7 @@ void start_camera(cam_t *cam)
     else
         cam->dev = cam_open(cam, O_RDWR | O_NONBLOCK);
 
-    if (cam->dev < 0 && cam->use_libcamera)
+    if (cam->dev < 0 && camera_backend_is_libcamera(cam))
         exit(EXIT_FAILURE);
 
     if (camera_cap(cam))
