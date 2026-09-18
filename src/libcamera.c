@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include "camera-backend.h"
+#include "img_convert.h"
 #include "libcamera-bridge.h"
 #include "support.h"
 
@@ -55,11 +56,15 @@ static int libcamera_cam_close(cam_t *cam)
 static unsigned char *libcamera_cam_read(cam_t *cam)
 {
     char *error = NULL;
-    size_t size = (size_t)cam->width * cam->height * 3;
+    size_t bytes_used = 0;
+    int ret;
 
     g_mutex_lock(&cam->pixbuf_mutex);
-    if (libcamera_bridge_read(cam->libcamera, cam->pic_buf, size, 1000,
-                              &error)) {
+    ret = libcamera_bridge_read(cam->libcamera, cam->tmp, cam->sizeimage,
+                                1000, &bytes_used, &error);
+    if (!ret)
+        ret = img_convert_to_rgb24(cam, cam->tmp, bytes_used);
+    if (ret <= 0) {
         if (cam->debug && error)
             g_warning("libcamera: %s", error);
         libcamera_bridge_free_string(error);
@@ -94,7 +99,7 @@ static void libcamera_get_supported_resolutions(cam_t *cam)
 
         if (libcamera_bridge_get_size(bridge, i, &res->x, &res->y))
             continue;
-        res->pixformat = V4L2_PIX_FMT_RGB24;
+        res->pixformat = libcamera_bridge_pixel_format(bridge);
         res->depth = 24;
         res->max_fps = -1;
         res->order = 0;
@@ -157,18 +162,21 @@ static void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
 static void libcamera_set_win_info(cam_t *cam)
 {
     char *error = NULL;
+    unsigned int frame_size = 0;
+    unsigned int pixformat = 0;
     unsigned int stride = 0;
 
     if (libcamera_bridge_configure(cam->libcamera, &cam->width, &cam->height,
-                                   &stride, &error)) {
+                                   &stride, &frame_size, &pixformat,
+                                   &error)) {
         show_libcamera_error(_("could not configure camera"), error);
         exit(EXIT_FAILURE);
     }
 
-    cam->pixformat = V4L2_PIX_FMT_RGB24;
+    cam->pixformat = pixformat;
     cam->bpp = 24;
     cam->bytesperline = stride;
-    cam->sizeimage = stride * cam->height;
+    cam->sizeimage = frame_size;
 }
 
 static void libcamera_get_win_info(cam_t *cam)

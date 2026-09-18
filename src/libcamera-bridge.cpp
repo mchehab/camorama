@@ -16,6 +16,7 @@
 #include <libcamera/libcamera.h>
 #include <libcamera/version.h>
 
+#include "img_convert.h"
 #include "libcamera-bridge.h"
 
 using namespace libcamera;
@@ -42,6 +43,52 @@ std::string error_code(const char *operation, int ret)
     int code = ret < 0 ? -ret : ret;
 
     return std::string(operation) + ": " + std::strerror(code);
+}
+
+uint32_t camorama_pixel_format(const PixelFormat &format)
+{
+    /* libcamera names packed RGB formats by bit significance. */
+    if (format == formats::BGR888)
+        return V4L2_PIX_FMT_RGB24;
+    if (format == formats::RGB888)
+        return V4L2_PIX_FMT_BGR24;
+
+    return format.fourcc();
+}
+
+enum class FormatRank {
+    MJPEG,
+    H264,
+    RGB,
+    RAW,
+    UNSUPPORTED,
+};
+
+FormatRank format_rank(uint32_t format)
+{
+    if (format == V4L2_PIX_FMT_MJPEG)
+        return FormatRank::MJPEG;
+    if (format == V4L2_PIX_FMT_H264)
+        return FormatRank::H264;
+    if (format == V4L2_PIX_FMT_RGB24 || format == V4L2_PIX_FMT_BGR24)
+        return FormatRank::RGB;
+    return FormatRank::RAW;
+}
+
+bool single_plane_format(uint32_t format)
+{
+    switch (format) {
+    case V4L2_PIX_FMT_NV12:
+    case V4L2_PIX_FMT_NV21:
+    case V4L2_PIX_FMT_NV16:
+    case V4L2_PIX_FMT_NV61:
+    case V4L2_PIX_FMT_YUV420:
+    case V4L2_PIX_FMT_YVU420:
+    case V4L2_PIX_FMT_YUV422P:
+        return false;
+    default:
+        return true;
+    }
 }
 
 struct Mapping {
@@ -132,16 +179,20 @@ struct libcamera_bridge {
         const StreamFormats &formats = config->at(0).formats();
         const auto pixel_formats = formats.pixelformats();
 
-        if (std::find(pixel_formats.begin(), pixel_formats.end(),
-                      formats::BGR888) != pixel_formats.end()) {
-            pixel_format = formats::BGR888;
-            swap_red_blue = false;
-        } else if (std::find(pixel_formats.begin(), pixel_formats.end(),
-                             formats::RGB888) != pixel_formats.end()) {
-            pixel_format = formats::RGB888;
-            swap_red_blue = true;
-        } else {
-            error = "camera cannot provide an RGB888 viewfinder stream";
+        FormatRank best_rank = FormatRank::UNSUPPORTED;
+        for (const PixelFormat &candidate : pixel_formats) {
+            uint32_t format = camorama_pixel_format(candidate);
+            FormatRank rank = format_rank(format);
+
+            if (!img_format_get(format) || !single_plane_format(format) ||
+                rank >= best_rank)
+                continue;
+            pixel_format = candidate;
+            v4l2_pixel_format = format;
+            best_rank = rank;
+        }
+        if (!pixel_format.isValid()) {
+            error = "camera cannot provide a supported viewfinder stream";
             return -ENOTSUP;
         }
 
@@ -192,8 +243,10 @@ struct libcamera_bridge {
     }
 
     int configure(unsigned int &requested_width,
-                  unsigned int &requested_height, unsigned int &output_stride,
-                  std::string &error)
+                  unsigned int &requested_height,
+                  unsigned int &output_stride,
+                  unsigned int &output_frame_size,
+                  unsigned int &output_pixformat, std::string &error)
     {
         stopCapture();
         configured = false;
@@ -230,9 +283,12 @@ struct libcamera_bridge {
         width = stream_config.size.width;
         height = stream_config.size.height;
         stride = stream_config.stride;
+        frame_size = stream_config.frameSize;
         requested_width = width;
         requested_height = height;
         output_stride = stride;
+        output_frame_size = frame_size;
+        output_pixformat = v4l2_pixel_format;
         configured = true;
 
         return 0;
@@ -272,7 +328,7 @@ struct libcamera_bridge {
                 releaseBuffers();
                 return -errno;
             }
-            if (plane.length < static_cast<size_t>(stride) * height) {
+            if (plane.length < frame_size) {
                 munmap(base, mapped_length);
                 error = "capture buffer is smaller than the configured image";
                 releaseBuffers();
@@ -342,25 +398,13 @@ struct libcamera_bridge {
         if (request->status() == Request::RequestComplete &&
             buffer && mapping != mappings.end() &&
             buffer->metadata().status == FrameMetadata::FrameSuccess) {
-            const unsigned char *source =
-                mapping->second.data;
-            const size_t row_size = static_cast<size_t>(width) * 3;
-            std::vector<unsigned char> frame(row_size * height);
+            const unsigned char *source = mapping->second.data;
+            size_t bytes_used =
+                buffer->metadata().planes().front().bytesused;
 
-            for (unsigned int y = 0; y < height; y++) {
-                const unsigned char *row = source + static_cast<size_t>(y) * stride;
-                unsigned char *destination = frame.data() + y * row_size;
-
-                if (!swap_red_blue) {
-                    std::memcpy(destination, row, row_size);
-                } else {
-                    for (unsigned int x = 0; x < width; x++) {
-                        destination[x * 3] = row[x * 3 + 2];
-                        destination[x * 3 + 1] = row[x * 3 + 1];
-                        destination[x * 3 + 2] = row[x * 3];
-                    }
-                }
-            }
+            if (!bytes_used || bytes_used > buffer->planes().front().length)
+                bytes_used = frame_size;
+            std::vector<unsigned char> frame(source, source + bytes_used);
 
             {
                 std::lock_guard<std::mutex> guard(frame_mutex);
@@ -382,15 +426,11 @@ struct libcamera_bridge {
     }
 
     int readFrame(unsigned char *output, size_t output_size,
-                  unsigned int timeout_ms, std::string &error)
+                  unsigned int timeout_ms, size_t &bytes_used,
+                  std::string &error)
     {
-        const size_t expected = static_cast<size_t>(width) * height * 3;
         std::unique_lock<std::mutex> lock(frame_mutex);
 
-        if (output_size < expected) {
-            error = "output buffer is too small";
-            return -ENOSPC;
-        }
         const uint64_t previous = delivered_generation;
         if (!frame_ready.wait_for(lock, std::chrono::milliseconds(timeout_ms),
                                   [&] { return frame_generation != previous ||
@@ -398,12 +438,17 @@ struct libcamera_bridge {
             error = "timed out waiting for a frame";
             return -ETIMEDOUT;
         }
-        if (!running || latest_frame.size() != expected) {
+        if (!running || latest_frame.empty()) {
             error = "capture stopped while waiting for a frame";
             return -EPIPE;
         }
+        if (output_size < latest_frame.size()) {
+            error = "output buffer is too small";
+            return -ENOSPC;
+        }
 
-        std::memcpy(output, latest_frame.data(), expected);
+        std::memcpy(output, latest_frame.data(), latest_frame.size());
+        bytes_used = latest_frame.size();
         delivered_generation = frame_generation;
         return 0;
     }
@@ -438,12 +483,13 @@ struct libcamera_bridge {
     std::string id;
     std::string name;
     PixelFormat pixel_format;
-    bool swap_red_blue = false;
+    uint32_t v4l2_pixel_format = 0;
     std::vector<Size> sizes;
     Stream *stream = nullptr;
     unsigned int width = 0;
     unsigned int height = 0;
     unsigned int stride = 0;
+    unsigned int frame_size = 0;
     bool configured = false;
     bool started = false;
     std::atomic<bool> running{ false };
@@ -487,6 +533,11 @@ const char *libcamera_bridge_camera_name(const libcamera_bridge_t *bridge)
     return bridge->name.c_str();
 }
 
+unsigned int libcamera_bridge_pixel_format(const libcamera_bridge_t *bridge)
+{
+    return bridge->v4l2_pixel_format;
+}
+
 unsigned int libcamera_bridge_num_sizes(const libcamera_bridge_t *bridge)
 {
     return bridge->sizes.size();
@@ -513,10 +564,13 @@ void libcamera_bridge_try_size(const libcamera_bridge_t *bridge,
 
 int libcamera_bridge_configure(libcamera_bridge_t *bridge,
                                unsigned int *width, unsigned int *height,
-                               unsigned int *stride, char **error)
+                               unsigned int *stride,
+                               unsigned int *frame_size,
+                               unsigned int *pixformat, char **error)
 {
     std::string message;
-    int ret = bridge->configure(*width, *height, *stride, message);
+    int ret = bridge->configure(*width, *height, *stride, *frame_size,
+                                *pixformat, message);
     if (ret)
         set_error(error, message);
     return ret;
@@ -538,10 +592,11 @@ void libcamera_bridge_stop(libcamera_bridge_t *bridge)
 
 int libcamera_bridge_read(libcamera_bridge_t *bridge, unsigned char *output,
                           size_t output_size, unsigned int timeout_ms,
-                          char **error)
+                          size_t *bytes_used, char **error)
 {
     std::string message;
-    int ret = bridge->readFrame(output, output_size, timeout_ms, message);
+    int ret = bridge->readFrame(output, output_size, timeout_ms,
+                                *bytes_used, message);
     if (ret)
         set_error(error, message);
     return ret;
