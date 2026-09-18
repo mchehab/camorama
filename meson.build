@@ -47,6 +47,10 @@ sources = files(
   'src/v4l.c',
 )
 
+if not gtk4
+  sources += files('src/gtk3-effects.c')
+endif
+
 executable('camorama', sources,
            dependencies: dependencies,
            include_directories: inc,

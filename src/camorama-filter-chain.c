@@ -38,28 +38,68 @@ CamoramaFilterChain *camorama_filter_chain_new(void)
     return g_object_new(CAMORAMA_TYPE_FILTER_CHAIN, NULL);
 }
 
-void camorama_filter_chain_append(CamoramaFilterChain *self,
-                                  GType filter_type)
+static void camorama_filter_chain_set_filter(CamoramaFilterChain *self,
+                                             GtkTreeIter *iter,
+                                             GType filter_type)
 {
-    GtkTreeIter iter;
-    GtkListStore *store;
     CamoramaFilter *filter;
     gpointer data;
 
     g_return_if_fail(g_type_is_a(filter_type, CAMORAMA_TYPE_FILTER));
 
-    store = GTK_LIST_STORE(self);
-    gtk_list_store_append(store, &iter);
     filter = g_object_new(filter_type, NULL);
-
     data = CAMORAMA_FILTER_CHAIN_GET_CLASS(self)->data;
     camorama_filter_show(filter, data);
 
-    gtk_list_store_set(store, &iter,
+    gtk_list_store_set(GTK_LIST_STORE(self), iter,
                        CAMORAMA_FILTER_CHAIN_COL_FILTER, filter,
                        CAMORAMA_FILTER_CHAIN_COL_NAME,
                        camorama_filter_get_name(filter), -1);
     g_object_unref(filter);
+}
+
+void camorama_filter_chain_append(CamoramaFilterChain *self,
+                                  GType filter_type)
+{
+    GtkTreeIter iter;
+
+    gtk_list_store_append(GTK_LIST_STORE(self), &iter);
+    camorama_filter_chain_set_filter(self, &iter, filter_type);
+}
+
+void camorama_filter_chain_insert(CamoramaFilterChain *self,
+                                  guint position, GType filter_type)
+{
+    GtkTreeIter iter;
+
+    gtk_list_store_insert(GTK_LIST_STORE(self), &iter, position);
+    camorama_filter_chain_set_filter(self, &iter, filter_type);
+}
+
+void camorama_filter_chain_replace(CamoramaFilterChain *self,
+                                   guint position, GType filter_type)
+{
+    GtkTreeIter iter;
+
+    if (!gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(self), &iter, NULL,
+                                       position))
+        return;
+
+    camorama_filter_chain_hide(GTK_TREE_MODEL(self), NULL, &iter);
+    camorama_filter_chain_set_filter(self, &iter, filter_type);
+}
+
+void camorama_filter_chain_remove(CamoramaFilterChain *self,
+                                  guint position)
+{
+    GtkTreeIter iter;
+
+    if (!gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(self), &iter, NULL,
+                                       position))
+        return;
+
+    camorama_filter_chain_hide(GTK_TREE_MODEL(self), NULL, &iter);
+    gtk_list_store_remove(GTK_LIST_STORE(self), &iter);
 }
 
 static gboolean camorama_filter_chain_apply_filter(GtkTreeModel *model,

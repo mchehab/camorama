@@ -275,20 +275,21 @@
               <object class="GtkScrolledWindow" id="scrolledwindow_effects">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hexpand">False</property>
+                <property name="valign">start</property>
                 <property name="hscrollbar-policy">never</property>
+                <property name="propagate-natural-height">True</property>
                 <property name="shadow-type">in</property>
                 <child>
-                  <object class="GtkTreeView" id="treeview_effects">
+                  <object class="GtkListBox" id="effects_list">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
-                    </child>
+                    <property name="selection-mode">none</property>
                   </object>
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">1</property>
               </packing>

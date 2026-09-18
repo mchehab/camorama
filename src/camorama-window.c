@@ -35,12 +35,18 @@
 #include "camorama-globals.h"
 #include "filter.h"
 #include "support.h"
+#if GTK_MAJOR_VERSION < 4
+#include "gtk3-effects.h"
+#endif
 
+#if GTK_MAJOR_VERSION >= 4
 static GQuark menu_item_filter_type = 0;
+#endif
 
 /* Supported URI protocol schemas */
 const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 
+#if GTK_MAJOR_VERSION >= 4
 static void add_filter_clicked(GtkWidget *menuitem,
                                CamoramaFilterChain *chain)
 {
@@ -173,16 +179,21 @@ static gboolean treeview_clicked_cb(cam_t *cam, GdkEventButton *ev,
     return retval;
 }
 #endif
+#endif
 
 void load_interface(cam_t *cam)
 {
     unsigned int i;
     GdkPixbuf *logo = NULL;
+#if GTK_MAJOR_VERSION >= 4
     GtkCellRenderer *cell;
+#endif
     GtkWidget *video_dev;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
+#if GTK_MAJOR_VERSION >= 4
     GtkTreeView *treeview;
+#endif
 
     gtk_application_add_window(cam->app, GTK_WINDOW(window));
 
@@ -190,8 +201,11 @@ void load_interface(cam_t *cam)
 
     prefswindow = GTK_WIDGET(gtk_builder_get_object(cam->xml, "prefswindow"));
 
-    menu_item_filter_type = g_quark_from_static_string("camorama-menu-item-filter-type");
-
+#if GTK_MAJOR_VERSION < 4
+    gtk3_effects_setup(cam);
+#else
+    menu_item_filter_type =
+        g_quark_from_static_string("camorama-menu-item-filter-type");
     /* set up the tree view */
     treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
                                                     "treeview_effects"));
@@ -212,6 +226,7 @@ void load_interface(cam_t *cam)
                              G_CALLBACK(treeview_clicked_cb), cam);
     g_signal_connect_swapped(treeview, "popup-menu",
                              G_CALLBACK(treeview_popup_menu_cb), cam);
+#endif
 
     if (!cam->show_effects) {
         GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
