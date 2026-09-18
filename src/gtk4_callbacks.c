@@ -338,6 +338,52 @@ gint gtk4_window_run(GtkWindow *window, GtkWidget *response_widget)
     return data.response;
 }
 
+int gtk4_error_dialog(const gchar *message)
+{
+    GtkApplication *app;
+    GtkWindow *parent = NULL;
+    GtkWidget *window;
+    GtkWidget *box;
+    GtkWidget *label;
+    GtkWidget *button;
+    int response;
+
+    app = GTK_APPLICATION(g_application_get_default());
+    if (GTK_IS_APPLICATION(app))
+        parent = gtk_application_get_active_window(app);
+
+    if (!parent) {
+        g_printerr("Camorama: %s\n", message);
+        return 0;
+    }
+
+    window = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(window), _("Camorama"));
+    gtk_window_set_transient_for(GTK_WINDOW(window), parent);
+    gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
+
+    box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_margin_top(box, 12);
+    gtk_widget_set_margin_bottom(box, 12);
+    gtk_widget_set_margin_start(box, 12);
+    gtk_widget_set_margin_end(box, 12);
+    gtk_window_set_child(GTK_WINDOW(window), box);
+
+    label = gtk_label_new(message);
+    gtk_label_set_wrap(GTK_LABEL(label), TRUE);
+    gtk_label_set_selectable(GTK_LABEL(label), TRUE);
+    gtk_box_append(GTK_BOX(box), label);
+
+    button = gtk_button_new_with_mnemonic(_("_Close"));
+    gtk_widget_set_halign(button, GTK_ALIGN_END);
+    gtk_box_append(GTK_BOX(box), button);
+
+    response = gtk4_window_run(GTK_WINDOW(window), button);
+    gtk_window_destroy(GTK_WINDOW(window));
+
+    return response;
+}
+
 void gtk4_destroy_widget(GtkWidget *widget)
 {
     GtkWidget *parent;

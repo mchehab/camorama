@@ -15,6 +15,9 @@
 
 int error_dialog(char *message)
 {
+#if GTK_MAJOR_VERSION >= 4
+    return gtk4_error_dialog(message);
+#else
     GtkApplication *app;
     GtkWindow *parent = NULL;
     GtkWidget *dialog;
@@ -42,4 +45,5 @@ int error_dialog(char *message)
     test = gtk_common_dialog_run(GTK_DIALOG(dialog));
     gtk_common_destroy_widget(dialog);
     return test;
+#endif
 }
