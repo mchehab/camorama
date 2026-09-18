@@ -137,6 +137,61 @@ void gtk4_set_entry_text(GtkWidget *entry, const gchar *text)
 static const char file_chooser_folder_key[] =
     "camorama-file-chooser-folder";
 
+#if GTK_CHECK_VERSION(4, 10, 0)
+
+static void gtk4_file_dialog_response(GObject *source_object,
+                                      GAsyncResult *result,
+                                      gpointer user_data)
+{
+    GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
+    GtkButton *button = GTK_BUTTON(user_data);
+    GError *error = NULL;
+    GFile *file;
+    gchar *folder;
+
+    file = gtk_file_dialog_select_folder_finish(dialog, result, &error);
+    if (file) {
+        folder = g_file_get_path(file);
+        if (folder) {
+            gtk_button_set_label(button, folder);
+            g_object_set_data_full(G_OBJECT(button),
+                                   file_chooser_folder_key,
+                                   folder, g_free);
+        }
+        g_object_unref(file);
+    }
+    g_clear_error(&error);
+    g_object_unref(button);
+    g_object_unref(dialog);
+}
+
+static void gtk4_file_chooser_clicked(GtkButton *button, gpointer)
+{
+    GtkFileDialog *dialog;
+    GtkWindow *parent;
+    const gchar *folder;
+    GFile *file = NULL;
+
+    dialog = gtk_file_dialog_new();
+    gtk_file_dialog_set_title(dialog, _("Select a Directory"));
+    gtk_file_dialog_set_accept_label(dialog, _("_Select"));
+
+    folder = g_object_get_data(G_OBJECT(button), file_chooser_folder_key);
+    if (folder)
+        file = g_file_new_for_path(folder);
+    if (file) {
+        gtk_file_dialog_set_initial_folder(dialog, file);
+        g_object_unref(file);
+    }
+
+    parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+    g_object_ref(button);
+    gtk_file_dialog_select_folder(dialog, parent, NULL,
+                                  gtk4_file_dialog_response, button);
+}
+
+#else
+
 static void gtk4_file_chooser_response(GtkNativeDialog *dialog,
                                        gint response, GtkButton *button)
 {
@@ -181,6 +236,8 @@ static void gtk4_file_chooser_clicked(GtkButton *button, gpointer)
                      G_CALLBACK(gtk4_file_chooser_response), button);
     gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
 }
+
+#endif
 
 gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser)
 {
