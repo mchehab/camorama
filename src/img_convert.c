@@ -33,10 +33,315 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_RGB32,   32, -1, -1, 1},
     { V4L2_PIX_FMT_ARGB32,  32, -1, -1, 1},
     { V4L2_PIX_FMT_XRGB32,  32, -1, -1, 1},
+
+    { V4L2_PIX_FMT_SBGGR8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SGBRG8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SGRBG8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SRGGB8,   8, -1, -1, 1},
 };
 
 #define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
 
+/*
+ * Bayer conversion imported from libv4lconvert in v4l-utils.
+ *
+ * Copyright 2008 Hans de Goede <hdegoede@redhat.com>
+ *
+ * Thanks also to Damien Douxchamps and Frederic Devernay, who wrote the
+ * original libdc1394 implementation on which this code is based, and to
+ * the OpenCV authors whose Bayer decoder inspired it.
+ *
+ * The imported code was published under LGPL-2.1-or-later. It is
+ * distributed here under Camorama's GPL-2.0-or-later license.
+ */
+
+/**************************************************************
+ *     Color conversion functions for cameras that can        *
+ * output raw-Bayer pattern images, such as some Basler and   *
+ * Point Grey camera. Most of the algos presented here come   *
+ * from http://www-ise.stanford.edu/~tingchen/ and have been  *
+ * converted from Matlab to C and extended to all elementary  *
+ * patterns.                                                  *
+ **************************************************************/
+
+/* inspired by OpenCV's Bayer decoding */
+static void border_bayer_line_to_rgb24(
+		const unsigned char *bayer, const unsigned char *adjacent_bayer,
+		unsigned char *bgr, int width, const int start_with_green, const int blue_line)
+{
+	int t0, t1;
+
+	if (start_with_green) {
+		/* First pixel */
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+			*bgr++ = adjacent_bayer[0];
+		} else {
+			*bgr++ = adjacent_bayer[0];
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+		}
+		/* Second pixel */
+		t0 = (bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+		t1 = (adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+		} else {
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+		}
+		bayer++;
+		adjacent_bayer++;
+		width -= 2;
+	} else {
+		/* First pixel */
+		t0 = (bayer[1] + adjacent_bayer[0] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[0];
+		}
+		width--;
+	}
+
+	if (blue_line) {
+		for ( ; width > 2; width -= 2) {
+			t0 = (bayer[0] + bayer[2] + 1) >> 1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = (bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+			t1 = (adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+			bayer++;
+			adjacent_bayer++;
+		}
+	} else {
+		for ( ; width > 2; width -= 2) {
+			t0 = (bayer[0] + bayer[2] + 1) >> 1;
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = (bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+			t1 = (adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			bayer++;
+			adjacent_bayer++;
+		}
+	}
+
+	if (width == 2) {
+		/* Second to last pixel */
+		t0 = (bayer[0] + bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+		}
+		/* Last pixel */
+		t0 = (bayer[1] + adjacent_bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[2];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[2];
+		}
+	} else {
+		/* Last pixel */
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+		}
+	}
+}
+
+/* From libdc1394, which on turn was based on OpenCV's Bayer decoding */
+static void bayer_to_rgb24(const unsigned char *bayer,
+		unsigned char *bgr, int width, int height, const unsigned int stride, int start_with_green,
+		int blue_line)
+{
+	/* render the first line */
+	border_bayer_line_to_rgb24(bayer, bayer + stride, bgr, width,
+			start_with_green, blue_line);
+	bgr += width * 3;
+
+	/* reduce height by 2 because of the special case top/bottom line */
+	for (height -= 2; height; height--) {
+		int t0, t1;
+		/* (width - 2) because of the border */
+		const unsigned char *bayer_end = bayer + (width - 2);
+
+		if (start_with_green) {
+
+			t0 = (bayer[1] + bayer[stride * 2 + 1] + 1) >> 1;
+			/* Write first pixel */
+			t1 = (bayer[0] + bayer[stride * 2] + bayer[stride + 1] + 1) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[stride];
+			} else {
+				*bgr++ = bayer[stride];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+
+			/* Write second pixel */
+			t1 = (bayer[stride] + bayer[stride + 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = t1;
+			} else {
+				*bgr++ = t1;
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = t0;
+			}
+			bayer++;
+		} else {
+			/* Write first pixel */
+			t0 = (bayer[0] + bayer[stride * 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[stride];
+				*bgr++ = bayer[stride + 1];
+			} else {
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = bayer[stride];
+				*bgr++ = t0;
+			}
+		}
+
+		if (blue_line) {
+			for (; bayer <= bayer_end - 2; bayer += 2) {
+				t0 = (bayer[0] + bayer[2] + bayer[stride * 2] +
+					bayer[stride * 2 + 2] + 2) >> 2;
+				t1 = (bayer[1] + bayer[stride] + bayer[stride + 2] +
+					bayer[stride * 2 + 1] + 2) >> 2;
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[stride + 1];
+
+				t0 = (bayer[2] + bayer[stride * 2 + 2] + 1) >> 1;
+				t1 = (bayer[stride + 1] + bayer[stride + 3] + 1) >> 1;
+				*bgr++ = t0;
+				*bgr++ = bayer[stride + 2];
+				*bgr++ = t1;
+			}
+		} else {
+			for (; bayer <= bayer_end - 2; bayer += 2) {
+				t0 = (bayer[0] + bayer[2] + bayer[stride * 2] +
+					bayer[stride * 2 + 2] + 2) >> 2;
+				t1 = (bayer[1] + bayer[stride] + bayer[stride + 2] +
+					bayer[stride * 2 + 1] + 2) >> 2;
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+
+				t0 = (bayer[2] + bayer[stride * 2 + 2] + 1) >> 1;
+				t1 = (bayer[stride + 1] + bayer[stride + 3] + 1) >> 1;
+				*bgr++ = t1;
+				*bgr++ = bayer[stride + 2];
+				*bgr++ = t0;
+			}
+		}
+
+		if (bayer < bayer_end) {
+			/* write second to last pixel */
+			t0 = (bayer[0] + bayer[2] + bayer[stride * 2] +
+				bayer[stride * 2 + 2] + 2) >> 2;
+			t1 = (bayer[1] + bayer[stride] + bayer[stride + 2] +
+				bayer[stride * 2 + 1] + 2) >> 2;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[stride + 1];
+			} else {
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+			/* write last pixel */
+			t0 = (bayer[2] + bayer[stride * 2 + 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[stride + 2];
+				*bgr++ = bayer[stride + 1];
+			} else {
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = bayer[stride + 2];
+				*bgr++ = t0;
+			}
+
+			bayer++;
+
+		} else {
+			/* write last pixel */
+			t0 = (bayer[0] + bayer[stride * 2] + 1) >> 1;
+			t1 = (bayer[1] + bayer[stride * 2 + 1] + bayer[stride] + 1) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[stride + 1];
+			} else {
+				*bgr++ = bayer[stride + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+
+		}
+
+		/* skip 2 border pixels and padding */
+		bayer += (stride - width) + 2;
+
+		blue_line = !blue_line;
+		start_with_green = !start_with_green;
+	}
+
+	/* render the last line */
+	border_bayer_line_to_rgb24(bayer + stride, bayer, bgr, width,
+			!start_with_green, !blue_line);
+}
+
+static void convert_bayer_to_rgb24(const unsigned char *bayer,
+		unsigned char *bgr, int width, int height, const unsigned int stride, unsigned int pixfmt)
+{
+	bayer_to_rgb24(bayer, bgr, width, height, stride,
+			pixfmt == V4L2_PIX_FMT_SGBRG8		/* start with green */
+			|| pixfmt == V4L2_PIX_FMT_SGRBG8,
+			pixfmt != V4L2_PIX_FMT_SBGGR8		/* blue line */
+			&& pixfmt != V4L2_PIX_FMT_SGBRG8);
+}
 const struct img_format *img_format_get(unsigned int pixformat)
 {
     unsigned int i;
@@ -249,6 +554,20 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
     video_fmt = img_format_get(cam->pixformat);
     if (!video_fmt)
         return 0;
+
+    switch (cam->pixformat) {
+    case V4L2_PIX_FMT_SBGGR8:
+    case V4L2_PIX_FMT_SGBRG8:
+    case V4L2_PIX_FMT_SGRBG8:
+    case V4L2_PIX_FMT_SRGGB8:
+        if (width < 3 || height < 2 || bytesperline < width)
+            return 0;
+        convert_bayer_to_rgb24(inbuf, cam->pic_buf, width, height,
+                               bytesperline, cam->pixformat);
+        return width * height * 3;
+    default:
+        break;
+    }
 
     depth = video_fmt->depth;
 
