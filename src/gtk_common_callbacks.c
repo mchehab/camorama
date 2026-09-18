@@ -362,6 +362,24 @@ void gtk_common_update_image_scale(cam_t *cam, int width, int height)
     g_free(title);
 }
 
+gint gtk_common_widget_get_width(GtkWidget *widget)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk_widget_get_allocated_width(widget);
+#else
+    return gtk_widget_get_width(widget);
+#endif
+}
+
+gint gtk_common_widget_get_height(GtkWidget *widget)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk_widget_get_allocated_height(widget);
+#else
+    return gtk_widget_get_height(widget);
+#endif
+}
+
 gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
 {
     GtkWidget *da = cam->da ?
@@ -370,8 +388,8 @@ gboolean on_configure_event(GtkWidget *, GdkEvent *, cam_t *cam)
     if (!GTK_IS_WIDGET(da))
         return GDK_EVENT_PROPAGATE;
 
-    gtk_common_update_image_scale(cam, gtk_widget_get_allocated_width(da),
-                                  gtk_widget_get_allocated_height(da));
+    gtk_common_update_image_scale(cam, gtk_common_widget_get_width(da),
+                                  gtk_common_widget_get_height(da));
 
     return FALSE;
 }
@@ -447,10 +465,10 @@ void set_image_scale(cam_t *cam)
     if (cam->scale <= 0) {
         GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                                "main_window"));
-        gint window_width = gtk_widget_get_allocated_width(window);
-        gint window_height = gtk_widget_get_allocated_height(window);
-        gint preview_width = gtk_widget_get_allocated_width(da);
-        gint preview_height = gtk_widget_get_allocated_height(da);
+        gint window_width = gtk_common_widget_get_width(window);
+        gint window_height = gtk_common_widget_get_height(window);
+        gint preview_width = gtk_common_widget_get_width(da);
+        gint preview_height = gtk_common_widget_get_height(da);
 
         window_width += cam->width - preview_width;
         window_height += cam->height - preview_height;

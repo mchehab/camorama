@@ -112,8 +112,8 @@ static void remember_window_geometry(cam_t *cam)
     if (!gtk_widget_get_mapped(window))
         return;
 
-    cam->window_width = gtk_widget_get_allocated_width(window);
-    cam->window_height = gtk_widget_get_allocated_height(window);
+    cam->window_width = gtk_common_widget_get_width(window);
+    cam->window_height = gtk_common_widget_get_height(window);
 }
 
 static void save_window_geometry(cam_t *cam)
