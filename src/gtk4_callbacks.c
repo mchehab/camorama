@@ -124,8 +124,7 @@ void gtk4_set_entry_text(GtkWidget *entry, const gchar *text)
 static const char file_chooser_folder_key[] =
     "camorama-file-chooser-folder";
 
-#if GTK_CHECK_VERSION(4, 10, 0)
-
+#if GTK_CHECK_VERSION(4, 10, 0)  /* Is GTK version >= 4.10? */
 static void gtk4_file_dialog_response(GObject *source_object,
                                       GAsyncResult *result,
                                       gpointer user_data)
@@ -251,13 +250,6 @@ struct gtk4_dialog_run_data {
     gint response;
 };
 
-static void gtk4_dialog_response(GtkDialog *, gint response,
-                                 struct gtk4_dialog_run_data *data)
-{
-    data->response = response;
-    g_main_loop_quit(data->loop);
-}
-
 static gboolean gtk4_dialog_close_requested(
     GtkWindow *, struct gtk4_dialog_run_data *data)
 {
@@ -267,27 +259,34 @@ static gboolean gtk4_dialog_close_requested(
     return TRUE;
 }
 
-gint gtk4_dialog_run(GtkDialog *dialog)
+static void gtk4_window_response(GtkWidget *,
+                                 struct gtk4_dialog_run_data *data)
+{
+    data->response = GTK_RESPONSE_ACCEPT;
+    g_main_loop_quit(data->loop);
+}
+
+gint gtk4_window_run(GtkWindow *window, GtkWidget *response_widget)
 {
     struct gtk4_dialog_run_data data = {
         .loop = g_main_loop_new(NULL, FALSE),
         .response = GTK_RESPONSE_NONE,
     };
-    gboolean modal = gtk_window_get_modal(GTK_WINDOW(dialog));
+    gboolean modal = gtk_window_get_modal(window);
     gulong response_id;
     gulong close_id;
 
-    response_id = g_signal_connect(dialog, "response",
-                                   G_CALLBACK(gtk4_dialog_response), &data);
-    close_id = g_signal_connect(dialog, "close-request",
+    response_id = g_signal_connect(response_widget, "clicked",
+                                   G_CALLBACK(gtk4_window_response), &data);
+    close_id = g_signal_connect(window, "close-request",
                                 G_CALLBACK(gtk4_dialog_close_requested),
                                 &data);
-    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
-    gtk_window_present(GTK_WINDOW(dialog));
+    gtk_window_set_modal(window, TRUE);
+    gtk_window_present(window);
     g_main_loop_run(data.loop);
-    gtk_window_set_modal(GTK_WINDOW(dialog), modal);
-    g_signal_handler_disconnect(dialog, response_id);
-    g_signal_handler_disconnect(dialog, close_id);
+    gtk_window_set_modal(window, modal);
+    g_signal_handler_disconnect(response_widget, response_id);
+    g_signal_handler_disconnect(window, close_id);
     g_main_loop_unref(data.loop);
 
     return data.response;

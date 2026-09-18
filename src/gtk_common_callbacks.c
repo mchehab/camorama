@@ -663,27 +663,33 @@ gint fps(cam_t *cam)
 {
     GtkWidget *sb = cam ? cam->status : NULL;
 
-    if (!cam || !GTK_IS_STATUSBAR(sb)) {
+    if (!cam || !GTK_IS_WIDGET(sb)) {
         if (cam)
             cam->timeout_fps_id = 0;
         return 0;
     }
 
     gchar *stat;
+#if GTK_MAJOR_VERSION < 4
     guint cont = gtk_statusbar_get_context_id(GTK_STATUSBAR(sb), "context");
+#endif
 
     seconds++;
     stat = g_strdup_printf(_("%.2f fps - current     %.2f fps - average"),
                            frames / 2., frames2 / (seconds * 2.));
     frames = 0;
+#if GTK_MAJOR_VERSION < 4
     gtk_statusbar_push(GTK_STATUSBAR(sb), cont, stat);
+#else
+    gtk_label_set_text(GTK_LABEL(sb), stat);
+#endif
     g_free(stat);
     return TRUE;
 }
 
 void on_status_show(GtkWidget *sb, cam_t *cam)
 {
-    if (GTK_IS_STATUSBAR(sb))
+    if (GTK_IS_WIDGET(sb))
         cam->status = sb;
 }
 
@@ -771,15 +777,6 @@ void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
 /*
  * Helper functions to support dialogs
  */
-
-gint gtk_common_dialog_run(GtkDialog *dialog)
-{
-#if GTK_MAJOR_VERSION < 4
-    return gtk3_dialog_run(dialog);
-#else
-    return gtk4_dialog_run(dialog);
-#endif
-}
 
 void gtk_common_destroy_widget(GtkWidget *widget)
 {
@@ -1392,7 +1389,7 @@ static int sort_devices(const void *__a, const void *__b)
     return strcmp(a->fname, b->fname);
 }
 
-static void videodev_response(GtkDialog *,
+static void videodev_response(GtkButton *,
                               cam_t *cam)
 {
     GtkWidget *widget;
@@ -1444,6 +1441,9 @@ void retrieve_video_dev(cam_t *cam)
 int select_video_dev(cam_t *cam)
 {
     GtkWidget *window, *widget;
+#if GTK_MAJOR_VERSION >= 4
+    GtkWidget *okbutton;
+#endif
     int ret;
 
     /* Only ask if there are multiple cameras */
@@ -1456,12 +1456,20 @@ int select_video_dev(cam_t *cam)
 
     window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_window"));
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_combo"));
+#if GTK_MAJOR_VERSION >= 4
+    okbutton = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
+#endif
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(widget), 0);
 
     gtk_widget_set_visible(window, TRUE);;
 
-    ret = gtk_common_dialog_run(GTK_DIALOG(window));
+#if GTK_MAJOR_VERSION < 4
+    ret = gtk3_dialog_run(GTK_DIALOG(window));
+#else
+    okbutton = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
+    ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
+#endif
 
     cam->video_dev = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
 
