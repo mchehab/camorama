@@ -205,6 +205,30 @@ void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), folder);
 }
 
+void gtk3_choice_setup(GtkWidget *)
+{
+}
+
+void gtk3_choice_append(GtkWidget *choice, const gchar *text)
+{
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(choice), text);
+}
+
+void gtk3_choice_set_active(GtkWidget *choice, guint index)
+{
+    gtk_combo_box_set_active(GTK_COMBO_BOX(choice), index);
+}
+
+gint gtk3_choice_get_active(GtkWidget *choice)
+{
+    return gtk_combo_box_get_active(GTK_COMBO_BOX(choice));
+}
+
+gchar *gtk3_choice_get_active_text(GtkWidget *choice)
+{
+    return gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(choice));
+}
+
 /*
  * Helper functions to support dialogs
  */

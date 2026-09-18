@@ -218,7 +218,7 @@ static int apply_remote_pref(cam_t *cam)
     if (!strlen(gtk_common_get_entry_text(host_entry)))
         return 0;
 
-    index = gtk_combo_box_get_active(GTK_COMBO_BOX(protocol));
+    index = gtk_common_choice_get_active(protocol);
     if (index < 0 || index >= (int)G_N_ELEMENTS(protos))
         return 0;
 
@@ -1004,6 +1004,51 @@ void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
 #endif
 }
 
+void gtk_common_choice_setup(GtkWidget *choice)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_choice_setup(choice);
+#else
+    gtk4_choice_setup(choice);
+#endif
+}
+
+void gtk_common_choice_append(GtkWidget *choice, const gchar *text)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_choice_append(choice, text);
+#else
+    gtk4_choice_append(choice, text);
+#endif
+}
+
+void gtk_common_choice_set_active(GtkWidget *choice, guint index)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk3_choice_set_active(choice, index);
+#else
+    gtk4_choice_set_active(choice, index);
+#endif
+}
+
+gint gtk_common_choice_get_active(GtkWidget *choice)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_choice_get_active(choice);
+#else
+    return gtk4_choice_get_active(choice);
+#endif
+}
+
+gchar *gtk_common_choice_get_active_text(GtkWidget *choice)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk3_choice_get_active_text(choice);
+#else
+    return gtk4_choice_get_active_text(choice);
+#endif
+}
+
 /*
  * Helper functions to support dialogs
  */
@@ -1653,12 +1698,12 @@ void retrieve_video_dev(cam_t *cam)
 
     /* While we have Gtk 2 support, should be aligned with select_video_dev() */
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_combo"));
+    gtk_common_choice_setup(widget);
     for (i = 0; i < n_devices; i++) {
         if (devices[i].is_valid) {
             if (devices[i].minor == last_minor)
                 continue;
-            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget),
-                                           devices[i].fname);
+            gtk_common_choice_append(widget, devices[i].fname);
             last_minor = devices[i].minor;
         }
     }
@@ -1690,7 +1735,7 @@ int select_video_dev(cam_t *cam)
     okbutton = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
 #endif
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(widget), 0);
+    gtk_common_choice_set_active(widget, 0);
 
     gtk_widget_set_visible(window, TRUE);;
 
@@ -1700,7 +1745,7 @@ int select_video_dev(cam_t *cam)
     ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
 #endif
 
-    cam->video_dev = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget));
+    cam->video_dev = gtk_common_choice_get_active_text(widget);
 
     gtk_widget_set_visible(window, FALSE);;
     return ret;

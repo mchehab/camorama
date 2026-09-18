@@ -254,6 +254,157 @@ void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
                      G_CALLBACK(gtk4_file_chooser_clicked), NULL);
 }
 
+static const char choice_widget_key[] = "camorama-choice-widget";
+static const char choice_button_key[] = "camorama-choice-button";
+static const char choice_list_key[] = "camorama-choice-list";
+static const char choice_active_key[] = "camorama-choice-active";
+
+static GtkWidget *gtk4_choice_widget(GtkWidget *choice)
+{
+    return g_object_get_data(G_OBJECT(choice), choice_widget_key);
+}
+
+static void gtk4_choice_row_selected(GtkListBox *list, GtkWidget *choice)
+{
+    GtkListBoxRow *row;
+    GtkWidget *button;
+    GtkWidget *label;
+    gint index;
+
+    row = gtk_list_box_get_selected_row(list);
+    if (!row)
+        return;
+
+    index = gtk_list_box_row_get_index(row);
+    label = gtk_list_box_row_get_child(row);
+    button = g_object_get_data(G_OBJECT(choice), choice_button_key);
+    gtk_menu_button_set_label(GTK_MENU_BUTTON(button),
+                              gtk_label_get_text(GTK_LABEL(label)));
+    g_object_set_data(G_OBJECT(choice), choice_active_key,
+                      GUINT_TO_POINTER(index + 1));
+    gtk_popover_popdown(GTK_POPOVER(gtk_menu_button_get_popover(
+        GTK_MENU_BUTTON(button))));
+}
+
+void gtk4_choice_setup(GtkWidget *choice)
+{
+    GtkWidget *widget;
+
+    if (g_object_get_data(G_OBJECT(choice), choice_widget_key))
+        return;
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+    {
+        GtkStringList *model = gtk_string_list_new(NULL);
+
+        widget = gtk_drop_down_new(G_LIST_MODEL(model), NULL);
+        g_object_unref(model);
+    }
+    gtk_widget_set_hexpand(widget, TRUE);
+    gtk_box_append(GTK_BOX(choice), widget);
+#else
+    GtkWidget *button = gtk_menu_button_new();
+    GtkWidget *popover = gtk_popover_new();
+    GtkWidget *list = gtk_list_box_new();
+
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(list),
+                                    GTK_SELECTION_SINGLE);
+    gtk_popover_set_child(GTK_POPOVER(popover), list);
+    gtk_menu_button_set_popover(GTK_MENU_BUTTON(button), popover);
+    gtk_widget_set_hexpand(button, TRUE);
+    gtk_box_append(GTK_BOX(choice), button);
+    g_object_set_data(G_OBJECT(choice), choice_button_key, button);
+    g_object_set_data(G_OBJECT(choice), choice_list_key, list);
+    g_signal_connect(list, "selected-rows-changed",
+                     G_CALLBACK(gtk4_choice_row_selected), choice);
+    widget = button;
+#endif
+
+    g_object_set_data(G_OBJECT(choice), choice_widget_key, widget);
+}
+
+void gtk4_choice_append(GtkWidget *choice, const gchar *text)
+{
+    GtkWidget *widget = gtk4_choice_widget(choice);
+
+    if (!widget)
+        return;
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+    gtk_string_list_append(GTK_STRING_LIST(gtk_drop_down_get_model(
+        GTK_DROP_DOWN(widget))), text);
+#else
+    GtkWidget *list = g_object_get_data(G_OBJECT(choice), choice_list_key);
+    GtkWidget *row = gtk_label_new(text);
+
+    gtk_widget_set_halign(row, GTK_ALIGN_START);
+    gtk_list_box_append(GTK_LIST_BOX(list), row);
+#endif
+}
+
+void gtk4_choice_set_active(GtkWidget *choice, guint index)
+{
+    GtkWidget *widget = gtk4_choice_widget(choice);
+
+    if (!widget)
+        return;
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), index);
+#else
+    GtkWidget *list = g_object_get_data(G_OBJECT(choice), choice_list_key);
+
+    gtk_list_box_select_row(GTK_LIST_BOX(list),
+                            gtk_list_box_get_row_at_index(GTK_LIST_BOX(list),
+                                                          index));
+#endif
+}
+
+gint gtk4_choice_get_active(GtkWidget *choice)
+{
+    GtkWidget *widget = gtk4_choice_widget(choice);
+
+    if (!widget)
+        return -1;
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+    guint index = gtk_drop_down_get_selected(GTK_DROP_DOWN(widget));
+
+    return index == GTK_INVALID_LIST_POSITION ? -1 : index;
+#else
+    gpointer active = g_object_get_data(G_OBJECT(choice), choice_active_key);
+
+    if (!active)
+        return -1;
+
+    return (gint)GPOINTER_TO_UINT(active) - 1;
+#endif
+}
+
+gchar *gtk4_choice_get_active_text(GtkWidget *choice)
+{
+    GtkWidget *widget = gtk4_choice_widget(choice);
+    gint index = gtk4_choice_get_active(choice);
+
+    if (!widget || index < 0)
+        return NULL;
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+    return g_strdup(gtk_string_list_get_string(
+        GTK_STRING_LIST(gtk_drop_down_get_model(GTK_DROP_DOWN(widget))),
+        index));
+#else
+    {
+        GtkWidget *list = g_object_get_data(G_OBJECT(choice), choice_list_key);
+        GtkListBoxRow *row = gtk_list_box_get_row_at_index(
+            GTK_LIST_BOX(list), index);
+
+        return g_strdup(gtk_label_get_text(GTK_LABEL(
+            gtk_list_box_row_get_child(row))));
+    }
+#endif
+}
+
 /*
  * Helper functions to support dialogs
  */

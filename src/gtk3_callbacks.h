@@ -19,6 +19,11 @@ const gchar *gtk3_get_entry_text(GtkWidget *entry);
 void gtk3_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk3_get_file_chooser_folder(GtkWidget *chooser);
 void gtk3_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
+void gtk3_choice_setup(GtkWidget *choice);
+void gtk3_choice_append(GtkWidget *choice, const gchar *text);
+void gtk3_choice_set_active(GtkWidget *choice, guint index);
+gint gtk3_choice_get_active(GtkWidget *choice);
+gchar *gtk3_choice_get_active_text(GtkWidget *choice);
 gint gtk3_dialog_run(GtkDialog *dialog);
 void gtk3_destroy_widget(GtkWidget *widget);
 gboolean gtk3_close_prefs_window(GtkWidget *widget, GdkEvent *event,

@@ -1040,7 +1040,8 @@
                                               </object>
                                             </child>
                                             <child>
-                                              <object class="GtkComboBoxText" id="remote_protocol">
+                                              <object class="GtkBox" id="remote_protocol">
+                                                <property name="orientation">horizontal</property>
                                                 <property name="hexpand">True</property>
                                                 <layout>
                                                   <property name="column">1</property>
@@ -1322,7 +1323,9 @@
               </object>
             </child>
             <child>
-              <object class="GtkComboBoxText" id="videodev_combo"/>
+              <object class="GtkBox" id="videodev_combo">
+                <property name="orientation">horizontal</property>
+              </object>
             </child>
           </object>
         </child>
