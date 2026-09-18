@@ -1,6 +1,6 @@
-.TH "Camorama" "1" "29 August 2003" "" ""
+.TH "Camorama" "1" "18 September 2026" "" ""
 .SH "NAME"
-Camorama \- GNOME2 Video4Linux viewer
+Camorama \- GTK camera viewer
 .SH "SYNOPSIS"
 .B camorama
 .RI [ options ]
@@ -13,7 +13,9 @@ because the original program does not have a manual page.
 .PP 
 
 \fBCamorama\fP
-is an open\-source Video4Linux application with view, record and even effect capabilities.
+is an open\-source camera application with view, capture and effect capabilities.
+Video4Linux is used by default; libcamera can be selected when support was
+built in.
 .br 
 .SH "OPTIONS"
 Options:
@@ -27,8 +29,12 @@ version info
 .B \-D
 debugging info
 .TP 
-.B \-d <video_dev>
-use video_dev instead of /dev/video0
+.B \-d, \-\-device <device>
+use the specified Video4Linux device, or the specified libcamera camera ID
+when \-\-libcamera is used
+.TP
+.B \-\-libcamera
+use libcamera instead of Video4Linux
 .TP 
 .B \-M
 use maximum capture size (depends on camera)

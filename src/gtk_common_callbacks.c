@@ -1920,6 +1920,9 @@ void start_camera(cam_t *cam)
     else
         cam->dev = cam_open(cam, O_RDWR | O_NONBLOCK);
 
+    if (cam->dev < 0 && cam->use_libcamera)
+        exit(EXIT_FAILURE);
+
     if (camera_cap(cam))
         exit(-1);
 

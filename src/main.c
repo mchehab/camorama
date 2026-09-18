@@ -10,6 +10,7 @@
 #include "camorama-globals.h"
 #include "support.h"
 #include <config.h>
+#include "camorama-libcamera.h"
 
 #include <glib/gi18n.h>
 #include <locale.h>
@@ -24,6 +25,7 @@ GtkWidget *host_entry, *protocol, *rdir_entry, *filename_entry;
 static int ver = 0, max = 0, min;
 static int half = 0, use_read = 0, use_userptr = 0, debug = 0;
 static int dont_use_libv4l = 0;
+static int use_libcamera = 0;
 static int disable_scaler = 0;
 static gchar *video_dev = NULL;
 static int x = 0, y = 0;
@@ -146,7 +148,9 @@ static GOptionEntry options[] = {
     {"version", 'V', 0, G_OPTION_ARG_NONE, &ver,
      N_("show version and exit"), NULL},
     {"device", 'd', 0, G_OPTION_ARG_STRING, &video_dev,
-     N_("v4l device to use"), NULL},
+     N_("camera device or libcamera camera ID to use"), NULL},
+    {"libcamera", 0, 0, G_OPTION_ARG_NONE, &use_libcamera,
+     N_("use libcamera instead of Video4Linux"), NULL},
     {"debug", 'D', 0, G_OPTION_ARG_NONE, &debug,
      N_("enable debugging code"), NULL},
     {"width", 'x', 0, G_OPTION_ARG_INT, &x,
@@ -242,6 +246,7 @@ static void activate(GtkApplication *app)
     cam->dev = -1;
     cam->input = input;
     cam->app = app;
+    cam->use_libcamera = use_libcamera;
     g_mutex_init(&cam->remote_save_mutex);
     g_mutex_init(&cam->pixbuf_mutex);
     g_mutex_init(&cam->control_win_mutex);
@@ -255,6 +260,11 @@ static void activate(GtkApplication *app)
         fprintf(stderr, _("\n\nCamorama version %s\n\n"), PACKAGE_VERSION);
         exit(0);
     }
+
+    if (cam->use_libcamera && !libcamera_backend_available()) {
+        fprintf(stderr, _("This build has no libcamera support.\n"));
+        exit(EXIT_FAILURE);
+    }
     if (max)
         cam->size = PICMAX;
 
@@ -264,13 +274,13 @@ static void activate(GtkApplication *app)
     if (half)
         cam->size = PICHALF;
 
-    if (!dont_use_libv4l)
+    if (!dont_use_libv4l && !cam->use_libcamera)
         cam->use_libv4l = TRUE;
 
-    if (use_read) {
+    if (use_read && !cam->use_libcamera) {
         printf("Forcing read mode\n");
         cam->read = TRUE;
-    } else if (use_userptr) {
+    } else if (use_userptr && !cam->use_libcamera) {
         printf("Forcing userptr mode\n");
         cam->userptr = TRUE;
         cam->use_libv4l = FALSE;
@@ -300,7 +310,8 @@ static void activate(GtkApplication *app)
         exit(1);
     }
 
-    retrieve_video_dev(cam);
+    if (!cam->use_libcamera)
+        retrieve_video_dev(cam);
 
     cam->gc = g_settings_new(CAM_SETTINGS_SCHEMA);
 
@@ -312,7 +323,9 @@ static void activate(GtkApplication *app)
                                                                    CAM_SETTINGS_WINDOW_HEIGHT);
     g_settings_schema_unref(schema);
 
-    if (!video_dev) {
+    if (cam->use_libcamera) {
+        cam->video_dev = g_strdup(video_dev);
+    } else if (!video_dev) {
         gchar const *gconf_device = g_settings_get_string(cam->gc,
                                                           CAM_SETTINGS_DEVICE);
         if (gconf_device)
@@ -323,7 +336,7 @@ static void activate(GtkApplication *app)
         cam->video_dev = g_strdup(video_dev);
     }
 
-    if (cam->video_dev) {
+    if (!cam->use_libcamera && cam->video_dev) {
         for (i = 0; i < n_devices; i++)
             if (!strcmp(cam->video_dev, devices[i].fname) && devices[i].is_valid)
                 break;
@@ -344,7 +357,7 @@ static void activate(GtkApplication *app)
             /* Ask user or get the only one device, if it is the case */
             select_video_dev(cam);
         }
-    } else {
+    } else if (!cam->use_libcamera) {
         cam->video_dev = devices[0].fname;
     }
 

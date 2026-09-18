@@ -13,6 +13,7 @@ src/camorama-filter-reichardt.c
 src/camorama-window.c
 src/fileio.c
 src/filter.c
+src/libcamera.c
 src/main.c
 src/support.c
 src/v4l.c

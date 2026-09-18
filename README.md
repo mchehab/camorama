@@ -14,14 +14,14 @@ managed platform.
 
 The build dependencies vary along distributions.
 
-On Fedora:
+On Fedora (add `libcamera-devel` to build the optional libcamera backend):
 
 ```
 sudo dnf install gcc meson ninja-build gettext libv4l-devel gtk3-devel \
 	gdk-pixbuf2-devel pulseaudio-libs-devel alsa-lib-devel
 ```
 
-On Ubuntu/Debian:
+On Ubuntu/Debian (add `libcamera-dev` to build the optional libcamera backend):
 
 ```
 sudo apt-get install gcc meson ninja-build gettext libv4l-dev libgtk-3-dev \
@@ -40,6 +40,9 @@ sudo meson install -C build
 GTK 3 is the default. To build the GTK 4 interface, configure a separate
 build directory with `meson setup build-gtk4 -Dgtk4=true`.
 
+Libcamera support is detected automatically. It can be required with
+`-Dlibcamera=enabled` or omitted with `-Dlibcamera=disabled`.
+
 # Run
 
 ```
@@ -53,7 +56,8 @@ Help Options:
 
 Application Options:
   -V, --version              show version and exit
-  -d, --device               v4l device to use
+  -d, --device               camera device or libcamera camera ID to use
+  --libcamera                use libcamera instead of Video4Linux
   -D, --debug                enable debugging code
   -x, --width                capture width
   -y, --height               capture height

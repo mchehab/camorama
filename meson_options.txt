@@ -1,2 +1,4 @@
 option('gtk4', type: 'boolean', value: false,
        description: 'Build against GTK 4 instead of GTK 3')
+option('libcamera', type: 'feature', value: 'auto',
+       description: 'Build the optional libcamera capture backend')

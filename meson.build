@@ -1,5 +1,5 @@
 project('camorama', 'c', version: '0.21.2',
-        default_options: ['c_std=gnu11', 'warning_level=2'])
+        default_options: ['c_std=gnu11', 'cpp_std=c++17', 'warning_level=2'])
 
 cc = meson.get_compiler('c')
 gtk4 = get_option('gtk4')
@@ -19,8 +19,14 @@ dependencies = [
   cc.find_library('m'),
 ]
 
+libcamera_dep = dependency('libcamera', required: get_option('libcamera'))
+if libcamera_dep.found()
+  add_languages('cpp', required: true)
+endif
+
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
+conf.set('HAVE_LIBCAMERA', libcamera_dep.found())
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -46,6 +52,11 @@ sources = files(
   'src/support.c',
   'src/v4l.c',
 )
+
+if libcamera_dep.found()
+  sources += files('src/libcamera.c', 'src/libcamera-bridge.cpp')
+  dependencies += libcamera_dep
+endif
 
 if gtk4
   sources += files('src/gtk4_callbacks.c', 'src/gtk4-effects.c')

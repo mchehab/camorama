@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <sys/select.h>
 #include <time.h>
+#include <config.h>
 #include "v4l.h"
 #include "support.h"
+#include "camorama-libcamera.h"
 
 extern int frame_number;
 
@@ -383,6 +385,8 @@ static void get_colorspace_data(cam_t *cam,
 
 int cam_open(cam_t *cam, int oflag)
 {
+    if (cam->use_libcamera)
+        return libcamera_cam_open(cam);
     if (cam->use_libv4l)
         return v4l2_open(cam->video_dev, oflag);
     else
@@ -391,6 +395,8 @@ int cam_open(cam_t *cam, int oflag)
 
 int cam_close(cam_t *cam)
 {
+    if (cam->use_libcamera)
+        return libcamera_cam_close(cam);
     if (cam->use_libv4l)
         return v4l2_close(cam->dev);
     else
@@ -403,6 +409,13 @@ unsigned char *cam_read(cam_t *cam)
     int ret = 0;
 
     g_mutex_lock(&cam->pixbuf_mutex);
+    if (cam->use_libcamera) {
+        pic_buf = libcamera_cam_read(cam);
+        if (pic_buf)
+            cam->frame_number++;
+        g_mutex_unlock(&cam->pixbuf_mutex);
+        return pic_buf;
+    }
     if (cam->read) {
         if (cam->use_libv4l)
             ret = v4l2_read(cam->dev, cam->pic_buf,
@@ -428,6 +441,10 @@ unsigned char *cam_read(cam_t *cam)
 
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
 {
+    if (cam->use_libcamera) {
+        errno = ENOTTY;
+        return -1;
+    }
     if (cam->use_libv4l)
         return v4l2_ioctl(cam->dev, cmd, arg);
     else
@@ -721,6 +738,11 @@ int cam_query_controls(cam_t *cam)
     int ignore;
     const char *old_class = NULL;
 
+    if (cam->use_libcamera) {
+        cam_free_controls(cam);
+        return 0;
+    }
+
     // Free controls list if not NULL
     cam_free_controls(cam);
 
@@ -756,6 +778,9 @@ int cam_set_control(cam_t *cam, guint32 id, void *value)
     struct v4l2_ext_control c;
     video_controls_t *p;
     int ret;
+
+    if (cam->use_libcamera)
+        return -1;
 
     p = cam_find_control_per_id(cam, id);
     if (!p)
@@ -804,6 +829,9 @@ int cam_get_control(cam_t *cam, guint32 id, void *value)
     struct v4l2_ext_control c;
     video_controls_t *p;
     int ret;
+
+    if (cam->use_libcamera)
+        return -1;
 
     p = cam_find_control_per_id(cam, id);
     if (!p)
@@ -974,6 +1002,12 @@ void get_supported_resolutions(cam_t *cam, gboolean all_supported)
     gboolean has_framesizes = FALSE;
     unsigned int x, y, i;
 
+    if (cam->use_libcamera) {
+        (void)all_supported;
+        libcamera_get_supported_resolutions(cam);
+        return;
+    }
+
     if (cam->n_res) {
         /* Free it, as the resolutions will be re-inserted */
         free(cam->res);
@@ -1092,6 +1126,9 @@ int camera_cap(cam_t *cam)
 {
     char *msg;
     struct v4l2_capability vid_cap = { 0 };
+
+    if (cam->use_libcamera)
+        return libcamera_camera_cap(cam);
 
     /* Query device capabilities */
     if (cam_ioctl(cam, VIDIOC_QUERYCAP, &vid_cap) == -1) {
@@ -1227,6 +1264,11 @@ void get_pic_info(cam_t *cam)
 {
     int i, ret;
 
+    if (cam->use_libcamera) {
+        libcamera_get_pic_info(cam);
+        return;
+    }
+
     cam_query_controls(cam);
 
     if (cam->debug == TRUE)
@@ -1275,6 +1317,11 @@ void get_win_info(cam_t *cam)
 {
     gchar *msg;
     struct v4l2_format fmt = { 0 };
+
+    if (cam->use_libcamera) {
+        libcamera_get_win_info(cam);
+        return;
+    }
 
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -1325,6 +1372,12 @@ void try_set_win_info(cam_t *cam, unsigned int pixformat,
 {
     struct v4l2_format fmt;
 
+    if (cam->use_libcamera) {
+        (void)pixformat;
+        libcamera_try_set_win_info(cam, x, y);
+        return;
+    }
+
     memset(&fmt, 0, sizeof(fmt));
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.pixelformat = pixformat;
@@ -1340,6 +1393,11 @@ void set_win_info(cam_t *cam)
 {
     struct v4l2_format fmt;
     gchar *msg;
+
+    if (cam->use_libcamera) {
+        libcamera_set_win_info(cam);
+        return;
+    }
 
     memset(&fmt, 0, sizeof(fmt));
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1431,6 +1489,11 @@ void start_streaming(cam_t *cam)
     unsigned int i;
     enum v4l2_buf_type type;
     struct v4l2_buffer buf;
+
+    if (cam->use_libcamera) {
+        libcamera_start_streaming(cam);
+        return;
+    }
 
     memset(&cam->req, 0, sizeof(cam->req));
     cam->req.count = 2;
@@ -1695,6 +1758,11 @@ void stop_streaming(cam_t *cam)
     fd_set fds, fderrs;
     struct v4l2_buffer buf;
     struct timeval tv;
+
+    if (cam->use_libcamera) {
+        libcamera_stop_streaming(cam);
+        return;
+    }
 
     /* Dequeue all pending buffers */
     for (i = 0; i < cam->n_buffers; ++i) {

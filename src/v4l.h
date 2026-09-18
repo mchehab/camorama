@@ -118,7 +118,7 @@ typedef struct camera {
     int savetype, rsavetype;
     gchar *ts_string;
     gchar *date_format;
-    gboolean debug, read, userptr, use_libv4l, hidden;
+    gboolean debug, read, userptr, use_libv4l, use_libcamera, hidden;
     gboolean cap, rcap, acap, show_adjustments, show_effects;
     gboolean timestamp, rtimestamp, usedate, usestring;
     gboolean rtimefn, timefn;
@@ -149,6 +149,9 @@ typedef struct camera {
         void *start;
         size_t length;
     } *buffers;
+
+    /* Opaque state owned by src/libcamera.c. */
+    void *libcamera;
 } cam_t;
 
 int cam_open(cam_t *cam, int oflag);
