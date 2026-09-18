@@ -42,7 +42,7 @@ int error_dialog(char *message)
                                     GTK_MESSAGE_ERROR,
                                     GTK_BUTTONS_CLOSE, "%s", message);
 
-    test = gtk_common_dialog_run(GTK_DIALOG(dialog));
+    test = gtk3_dialog_run(GTK_DIALOG(dialog));
     gtk_common_destroy_widget(dialog);
     return test;
 #endif

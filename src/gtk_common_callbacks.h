@@ -91,7 +91,6 @@ void gtk_common_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk_common_get_file_chooser_folder(GtkWidget *chooser);
 void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
                                         const gchar *folder);
-gint gtk_common_dialog_run(GtkDialog *dialog);
 void gtk_common_destroy_widget(GtkWidget *widget);
 void gtk_common_box_append(GtkBox *box, GtkWidget *child);
 GList *gtk_common_get_children(GtkWidget *widget);

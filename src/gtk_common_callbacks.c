@@ -1008,15 +1008,6 @@ void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
  * Helper functions to support dialogs
  */
 
-gint gtk_common_dialog_run(GtkDialog *dialog)
-{
-#if GTK_MAJOR_VERSION < 4
-    return gtk3_dialog_run(dialog);
-#else
-    return gtk4_dialog_run(dialog);
-#endif
-}
-
 void gtk_common_destroy_widget(GtkWidget *widget)
 {
 #if GTK_MAJOR_VERSION < 4
@@ -1679,7 +1670,10 @@ void retrieve_video_dev(cam_t *cam)
 
 int select_video_dev(cam_t *cam)
 {
-    GtkWidget *window, *widget, *okbutton;
+    GtkWidget *window, *widget;
+#if GTK_MAJOR_VERSION >= 4
+    GtkWidget *okbutton;
+#endif
     int ret;
 
     /* Only ask if there are multiple cameras */
@@ -1692,14 +1686,16 @@ int select_video_dev(cam_t *cam)
 
     window = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_window"));
     widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_combo"));
+#if GTK_MAJOR_VERSION >= 4
     okbutton = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
+#endif
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(widget), 0);
 
     gtk_widget_set_visible(window, TRUE);;
 
 #if GTK_MAJOR_VERSION < 4
-    ret = gtk_common_dialog_run(GTK_DIALOG(window));
+    ret = gtk3_dialog_run(GTK_DIALOG(window));
 #else
     ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
 #endif
