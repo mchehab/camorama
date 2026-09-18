@@ -24,10 +24,13 @@ typedef struct {
     GtkWidget *row;
     GtkRevealer *revealer;
     GtkDropDown *choice;
+    GtkStringList *model;
     GArray *choices;
     GType selected_type;
     gulong changed_handler;
     gboolean removing;
+    gboolean remove_pending;
+    gboolean refresh_pending;
 } EffectRow;
 
 static void append_effect_row(EffectsPane *pane, gboolean animate);
@@ -46,89 +49,138 @@ static void effects_pane_free(EffectsPane *pane)
 
 static void effect_row_free(EffectRow *effect_row)
 {
+    g_object_unref(effect_row->model);
     g_array_unref(effect_row->choices);
     g_free(effect_row);
 }
 
-static void append_choice(EffectRow *effect_row, GtkStringList *model,
-                          GType type, const gchar *name)
+static void clear_choices(EffectRow *effect_row)
 {
-    gtk_string_list_append(model, name);
+    guint n_items = g_list_model_get_n_items(G_LIST_MODEL(effect_row->model));
+
+    gtk_string_list_splice(effect_row->model, 0, n_items, NULL);
+    g_array_set_size(effect_row->choices, 0);
+}
+
+static void append_choice(EffectRow *effect_row, GType type,
+                          const gchar *name)
+{
+    gtk_string_list_append(effect_row->model, name);
     g_array_append_val(effect_row->choices, type);
 }
 
 static void show_available_effects(EffectRow *effect_row)
 {
-    GtkStringList *model = gtk_string_list_new(NULL);
     GType no_effect = G_TYPE_INVALID;
     guint i;
 
-    append_choice(effect_row, model, no_effect, _("<No effect>"));
+    clear_choices(effect_row);
+    append_choice(effect_row, no_effect, _("<No effect>"));
     for (i = 0; i < effect_row->pane->effects->len; i++) {
         EffectInfo *effect = g_ptr_array_index(effect_row->pane->effects, i);
 
-        append_choice(effect_row, model, effect->type, effect->name);
+        append_choice(effect_row, effect->type, effect->name);
     }
 
-    gtk_drop_down_set_model(effect_row->choice, G_LIST_MODEL(model));
     gtk_drop_down_set_selected(effect_row->choice, 0);
-    g_object_unref(model);
 }
 
 static void show_active_effect(EffectRow *effect_row)
 {
-    GtkStringList *model = gtk_string_list_new(NULL);
     GType no_effect = G_TYPE_INVALID;
     guint i;
 
     g_signal_handler_block(effect_row->choice,
                            effect_row->changed_handler);
-    g_array_set_size(effect_row->choices, 0);
+    clear_choices(effect_row);
 
     for (i = 0; i < effect_row->pane->effects->len; i++) {
         EffectInfo *effect = g_ptr_array_index(effect_row->pane->effects, i);
 
         if (effect->type == effect_row->selected_type) {
-            append_choice(effect_row, model, effect->type, effect->name);
+            append_choice(effect_row, effect->type, effect->name);
             break;
         }
     }
 
-    append_choice(effect_row, model, no_effect, _("<Disable>"));
+    append_choice(effect_row, no_effect, _("<Disable>"));
     for (i = 0; i < effect_row->pane->effects->len; i++) {
         EffectInfo *effect = g_ptr_array_index(effect_row->pane->effects, i);
 
         if (effect->type != effect_row->selected_type)
-            append_choice(effect_row, model, effect->type, effect->name);
+            append_choice(effect_row, effect->type, effect->name);
     }
 
-    gtk_drop_down_set_model(effect_row->choice, G_LIST_MODEL(model));
     gtk_drop_down_set_selected(effect_row->choice, 0);
-    g_object_unref(model);
     g_signal_handler_unblock(effect_row->choice,
                              effect_row->changed_handler);
+}
+
+static gboolean remove_effect_row_idle(gpointer data)
+{
+    GtkWidget *row = data;
+    GtkWidget *parent = gtk_widget_get_parent(row);
+
+    if (GTK_IS_LIST_BOX(parent))
+        gtk_list_box_remove(GTK_LIST_BOX(parent), row);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void remove_effect_row(GtkRevealer *revealer, GParamSpec *,
                               EffectRow *effect_row)
 {
-    if (!effect_row->removing ||
+    if (!effect_row->removing || effect_row->remove_pending ||
         gtk_revealer_get_child_revealed(revealer))
         return;
 
-    gtk_list_box_remove(effect_row->pane->list, effect_row->row);
+    effect_row->remove_pending = TRUE;
+    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, remove_effect_row_idle,
+                    g_object_ref(effect_row->row), g_object_unref);
 }
 
 static gboolean reveal_effect_row(gpointer data)
 {
-    gtk_revealer_set_reveal_child(GTK_REVEALER(data), TRUE);
+    GtkWidget *row = data;
+    EffectRow *effect_row = g_object_get_data(G_OBJECT(row), "effect-row");
+
+    if (effect_row)
+        gtk_revealer_set_reveal_child(effect_row->revealer, TRUE);
+
     return G_SOURCE_REMOVE;
 }
 
 static gboolean conceal_effect_row(gpointer data)
 {
-    gtk_revealer_set_reveal_child(GTK_REVEALER(data), FALSE);
+    GtkWidget *row = data;
+    EffectRow *effect_row = g_object_get_data(G_OBJECT(row), "effect-row");
+
+    if (effect_row)
+        gtk_revealer_set_reveal_child(effect_row->revealer, FALSE);
+
     return G_SOURCE_REMOVE;
+}
+
+static gboolean refresh_effect_row(gpointer data)
+{
+    GtkWidget *row = data;
+    EffectRow *effect_row = g_object_get_data(G_OBJECT(row), "effect-row");
+
+    if (effect_row && gtk_widget_get_parent(row)) {
+        effect_row->refresh_pending = FALSE;
+        show_active_effect(effect_row);
+        gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), TRUE);
+    }
+
+    return G_SOURCE_REMOVE;
+}
+
+static void queue_effect_row_refresh(EffectRow *effect_row)
+{
+    effect_row->refresh_pending = TRUE;
+    gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), FALSE);
+    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, refresh_effect_row,
+                    g_object_ref(effect_row->row), g_object_unref);
 }
 
 static guint effect_row_get_position(EffectRow *effect_row)
@@ -156,6 +208,9 @@ static void effect_changed(GtkDropDown *choice, GParamSpec *,
     guint position;
     GType selected_type;
 
+    if (effect_row->refresh_pending)
+        return;
+
     if (selected >= effect_row->choices->len)
         return;
 
@@ -173,7 +228,7 @@ static void effect_changed(GtkDropDown *choice, GParamSpec *,
         gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), FALSE);
         g_timeout_add_full(G_PRIORITY_DEFAULT, EFFECT_REMOVE_DELAY,
                            conceal_effect_row,
-                           g_object_ref(effect_row->revealer),
+                           g_object_ref(effect_row->row),
                            g_object_unref);
         return;
     }
@@ -182,7 +237,7 @@ static void effect_changed(GtkDropDown *choice, GParamSpec *,
         camorama_filter_chain_insert(effect_row->pane->cam->filter_chain,
                                      position, selected_type);
         effect_row->selected_type = selected_type;
-        show_active_effect(effect_row);
+        queue_effect_row_refresh(effect_row);
         append_effect_row(effect_row->pane, TRUE);
         return;
     }
@@ -190,7 +245,7 @@ static void effect_changed(GtkDropDown *choice, GParamSpec *,
     camorama_filter_chain_replace(effect_row->pane->cam->filter_chain,
                                   position, selected_type);
     effect_row->selected_type = selected_type;
-    show_active_effect(effect_row);
+    queue_effect_row_refresh(effect_row);
 }
 
 static void append_effect_row(EffectsPane *pane, gboolean animate)
@@ -201,7 +256,9 @@ static void append_effect_row(EffectsPane *pane, gboolean animate)
     effect_row->pane = pane;
     effect_row->row = gtk_list_box_row_new();
     effect_row->revealer = GTK_REVEALER(gtk_revealer_new());
-    effect_row->choice = GTK_DROP_DOWN(gtk_drop_down_new(NULL, NULL));
+    effect_row->model = gtk_string_list_new(NULL);
+    effect_row->choice = GTK_DROP_DOWN(gtk_drop_down_new(
+        G_LIST_MODEL(g_object_ref(effect_row->model)), NULL));
     effect_row->choices = g_array_new(FALSE, FALSE, sizeof(GType));
 
     gtk_widget_set_margin_top(content, 6);
@@ -234,7 +291,7 @@ static void append_effect_row(EffectsPane *pane, gboolean animate)
 
     if (animate)
         g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, reveal_effect_row,
-                        g_object_ref(effect_row->revealer), g_object_unref);
+                        g_object_ref(effect_row->row), g_object_unref);
 }
 
 void gtk4_effects_setup(cam_t *cam)
