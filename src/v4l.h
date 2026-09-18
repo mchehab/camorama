@@ -155,6 +155,9 @@ typedef struct camera {
 
     /* Selected capture backend. */
     const struct camera_backend *backend;
+
+    /* Stateful decoder used by compressed image formats. */
+    struct img_converter *converter;
 } cam_t;
 
 int cam_open(cam_t *cam, int oflag);
@@ -175,10 +178,8 @@ void get_pic_info(cam_t *);
 void get_win_info(cam_t *);
 void get_supported_resolutions(cam_t *cam, gboolean all_supported);
 void start_streaming(cam_t *cam);
-void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len);
 void stop_streaming(cam_t *cam);
 void start_streaming_userptr(cam_t *cam);
-void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf);
 void stop_streaming_userptr(cam_t *cam);
 
 #endif                          /* !CAMORAMA_V4L_H */

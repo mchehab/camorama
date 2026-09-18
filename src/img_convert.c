@@ -61,6 +61,10 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_SGBRG8,   8, -1, -1, 1},
     { V4L2_PIX_FMT_SGRBG8,   8, -1, -1, 1},
     { V4L2_PIX_FMT_SRGGB8,   8, -1, -1, 1},
+#ifdef HAVE_FFMPEG
+    { V4L2_PIX_FMT_MJPEG,     0, -1, -1, 1},
+    { V4L2_PIX_FMT_H264,      0, -1, -1, 1},
+#endif
 };
 
 #define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
@@ -554,7 +558,8 @@ static void copy_two_pixels(cam_t *cam,
     }
 }
 
-unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
+int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
+                         size_t input_size)
 {
     unsigned char *plane0 = inbuf;
     unsigned char *p_out = cam->pic_buf;
@@ -576,9 +581,19 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
 
     video_fmt = img_format_get(cam->pixformat);
     if (!video_fmt)
-        return 0;
+        return -ENOTSUP;
+
+    if (img_codec_supported(cam->pixformat))
+        return img_decode_to_rgb24(&cam->converter, cam->pixformat,
+                                   inbuf, input_size, cam->pic_buf,
+                                   width, height);
 
     switch (cam->pixformat) {
+    case V4L2_PIX_FMT_RGB24:
+        for (y = 0; y < height; y++)
+            memcpy(cam->pic_buf + y * width * 3,
+                   inbuf + y * bytesperline, width * 3);
+        return width * height * 3;
     case V4L2_PIX_FMT_SBGGR8:
     case V4L2_PIX_FMT_SGBRG8:
     case V4L2_PIX_FMT_SGRBG8:

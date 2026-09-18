@@ -7,6 +7,10 @@
 #include <glib.h>
 #include <linux/videodev2.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct camera;
 typedef struct img_converter img_converter_t;
 
@@ -20,8 +24,8 @@ struct img_format {
 
 const struct img_format *img_format_get(unsigned int pixformat);
 unsigned int img_format_order(unsigned int pixformat);
-unsigned int img_convert_to_rgb24(struct camera *cam,
-                                  unsigned char *inbuf);
+int img_convert_to_rgb24(struct camera *cam, unsigned char *inbuf,
+                         size_t input_size);
 void img_get_colorspace_data(struct camera *cam,
                              struct v4l2_format *fmt);
 gboolean img_codec_supported(unsigned int pixformat);
@@ -31,5 +35,9 @@ int img_decode_to_rgb24(img_converter_t **converter,
                         unsigned char *output,
                         unsigned int width, unsigned int height);
 void img_converter_free(img_converter_t *converter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

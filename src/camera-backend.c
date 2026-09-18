@@ -2,6 +2,7 @@
 #include <config.h>
 
 #include "camera-backend.h"
+#include "img_convert.h"
 
 #ifdef HAVE_LIBCAMERA
 extern const camera_backend_t libcamera_camera_backend;
@@ -44,7 +45,11 @@ int cam_open(cam_t *cam, int oflag)
 
 int cam_close(cam_t *cam)
 {
-    return cam->backend->close(cam);
+    int ret = cam->backend->close(cam);
+
+    img_converter_free(cam->converter);
+    cam->converter = NULL;
+    return ret;
 }
 
 unsigned char *cam_read(cam_t *cam)

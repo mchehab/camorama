@@ -11,6 +11,9 @@
 
 extern int frame_number;
 
+static int capture_buffers(cam_t *cam, unsigned char *outbuf);
+static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf);
+
 static gboolean is_format_supported(cam_t *cam, unsigned int pixformat)
 {
     /*
@@ -50,19 +53,19 @@ static unsigned char *v4l_cam_read(cam_t *cam)
             ret = v4l2_read(cam->dev, cam->pic_buf,
                             (cam->width * cam->height * cam->bpp / 8));
         else {
-            ret = read(cam->dev, cam->tmp,
-                       (cam->width * cam->height * cam->bpp / 8));
-	    if (!ret)
-		img_convert_to_rgb24(cam, cam->tmp);
-	}
+            ret = read(cam->dev, cam->tmp, cam->sizeimage);
+            if (ret > 0)
+                ret = img_convert_to_rgb24(cam, cam->tmp, ret);
+        }
     } else if (cam->userptr) {
-            capture_buffers_userptr(cam, cam->pic_buf);
+        ret = capture_buffers_userptr(cam, cam->pic_buf);
     } else {
-            capture_buffers(cam, cam->pic_buf, cam->bytesperline);
+        ret = capture_buffers(cam, cam->pic_buf);
     }
-    if (ret)
-        return NULL;
-    cam->frame_number++;
+    if (ret > 0)
+        cam->frame_number++;
+    else
+        pic_buf = NULL;
     g_mutex_unlock(&cam->pixbuf_mutex);
 
     return pic_buf;
@@ -1230,7 +1233,7 @@ void start_streaming_userptr(cam_t *cam)
     }
 }
 
-void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
+static int capture_buffers(cam_t *cam, unsigned char *outbuf)
 {
     char *msg;
     unsigned char *inbuf;
@@ -1264,9 +1267,6 @@ void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
     buf.memory = V4L2_MEMORY_MMAP;
     cam_ioctl(cam, VIDIOC_DQBUF, &buf);
 
-    if (len > buf.bytesused)
-        len = buf.bytesused;
-
     inbuf = cam->buffers[buf.index].start;
     if (cam->use_libv4l) {
 	    for (y = 0; y < cam->height; y++) {
@@ -1274,14 +1274,16 @@ void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
 		outbuf += cam->width * cam->bpp / 8;
 		inbuf += cam->bytesperline;
 	    }
+        r = cam->width * cam->height * 3;
     } else {
-	    img_convert_to_rgb24(cam, inbuf);
+	    r = img_convert_to_rgb24(cam, inbuf, buf.bytesused);
     }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return r;
 }
 
-void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
+static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
 {
     char *msg;
     unsigned char *inbuf;
@@ -1322,11 +1324,13 @@ void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
 		outbuf += cam->width * cam->bpp / 8;
 		inbuf += cam->bytesperline;
 	    }
+        r = cam->width * cam->height * 3;
     } else {
-	    img_convert_to_rgb24(cam, inbuf);
+	    r = img_convert_to_rgb24(cam, inbuf, buf.bytesused);
     }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return r;
 }
 
 static void v4l_stop_streaming(cam_t *cam)
