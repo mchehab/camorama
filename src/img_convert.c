@@ -740,6 +740,24 @@ static enum AVCodecID codec_id_from_pixformat(unsigned int pixformat)
     }
 }
 
+static enum AVPixelFormat normalize_pixel_format(enum AVPixelFormat format,
+                                                 gboolean *full_range)
+{
+    switch (format) {
+    case AV_PIX_FMT_YUVJ420P:
+        *full_range = TRUE;
+        return AV_PIX_FMT_YUV420P;
+    case AV_PIX_FMT_YUVJ422P:
+        *full_range = TRUE;
+        return AV_PIX_FMT_YUV422P;
+    case AV_PIX_FMT_YUVJ444P:
+        *full_range = TRUE;
+        return AV_PIX_FMT_YUV444P;
+    default:
+        return format;
+    }
+}
+
 static int prepare_converter(img_converter_t **converter,
                              unsigned int pixformat)
 {
@@ -791,6 +809,9 @@ int img_decode_to_rgb24(img_converter_t **converter,
     uint8_t *destination[] = { output, NULL, NULL, NULL };
     int destination_stride[] = { width * 3, 0, 0, 0 };
     img_converter_t *state;
+    gboolean full_range = FALSE;
+    enum AVPixelFormat source_format;
+    int source_range;
     int ret;
 
     if (!converter || !input || !output || input_size > INT_MAX)
@@ -815,14 +836,24 @@ int img_decode_to_rgb24(img_converter_t **converter,
     if (ret < 0)
         return ret;
 
+    source_format = normalize_pixel_format(state->frame->format,
+                                           &full_range);
+    source_range = full_range ||
+                   state->frame->color_range == AVCOL_RANGE_JPEG;
     state->sws = sws_getCachedContext(state->sws,
                                       state->frame->width,
                                       state->frame->height,
-                                      state->frame->format,
+                                      source_format,
                                       width, height, AV_PIX_FMT_RGB24,
                                       SWS_BILINEAR, NULL, NULL, NULL);
     if (!state->sws)
         return AVERROR(ENOMEM);
+
+    sws_setColorspaceDetails(state->sws,
+                             sws_getCoefficients(SWS_CS_DEFAULT),
+                             source_range,
+                             sws_getCoefficients(SWS_CS_DEFAULT), 1,
+                             0, 1 << 16, 1 << 16);
 
     ret = sws_scale(state->sws,
                     (const uint8_t *const *)state->frame->data,
