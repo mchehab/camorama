@@ -48,7 +48,7 @@ sources = files(
 )
 
 if gtk4
-  sources += files('src/gtk4_callbacks.c')
+  sources += files('src/gtk4_callbacks.c', 'src/gtk4-effects.c')
 else
   sources += files('src/gtk3_callbacks.c', 'src/gtk3-effects.c')
 endif

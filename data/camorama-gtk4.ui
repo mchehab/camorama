@@ -211,15 +211,14 @@
             </child>
             <child>
               <object class="GtkScrolledWindow" id="scrolledwindow_effects">
-                <property name="hexpand">True</property>
+                <property name="hexpand">False</property>
                 <property name="focusable">True</property>
                 <property name="hscrollbar-policy">never</property>
                 <property name="child">
-                  <object class="GtkTreeView" id="treeview_effects">
+                  <object class="GtkListBox" id="effects_list">
                     <property name="focusable">True</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
-                    </child>
+                    <property name="selection-mode">none</property>
+                    <property name="show-separators">True</property>
                   </object>
                 </property>
               </object>

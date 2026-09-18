@@ -649,7 +649,7 @@ void on_about_activate(GtkWidget *, cam_t *cam)
 static void apply_filters(cam_t *cam, unsigned char *pic_buf)
 {
     /* cam_read() always returns RGB24 data in pic_buf. */
-    if (!GTK_IS_LIST_STORE(cam->filter_chain))
+    if (!CAMORAMA_IS_FILTER_CHAIN(cam->filter_chain))
         return;
 
     camorama_filter_chain_apply(cam->filter_chain, pic_buf,
@@ -771,6 +771,7 @@ gint timeout_capture_func(cam_t *cam)
  * Helper functions to support the effects context popup
  */
 
+#if GTK_MAJOR_VERSION < 4
 static const char effects_popup_model_key[] = "camorama-effects-popup-model";
 static const char effects_popup_entries_key[] =
     "camorama-effects-popup-entries";
@@ -889,11 +890,7 @@ void gtk_common_show_effects_popup(GtkTreeView *treeview, double x, double y)
     model = g_object_get_data(G_OBJECT(treeview), effects_popup_model_key);
     entries = g_object_get_data(G_OBJECT(treeview), effects_popup_entries_key);
     actions = g_object_get_data(G_OBJECT(treeview), effects_action_group_key);
-#if GTK_MAJOR_VERSION < 4
     gtk3_show_effects_popup(treeview, model, actions, entries, x, y);
-#else
-    gtk4_show_effects_popup(treeview, model, actions, entries, x, y);
-#endif
 }
 
 void gtk_common_setup_effects_popup(GtkTreeView *treeview)
@@ -974,12 +971,9 @@ void gtk_common_setup_effects_popup(GtkTreeView *treeview)
     g_object_set_data_full(G_OBJECT(treeview), effects_popup_model_key, menu,
                            g_object_unref);
 
-#if GTK_MAJOR_VERSION < 4
     gtk3_setup_effects_popup(treeview);
-#else
-    gtk4_setup_effects_popup(treeview);
-#endif
 }
+#endif
 
 /*
  * Helper functions to support preference widgets

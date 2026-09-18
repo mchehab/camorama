@@ -50,12 +50,15 @@ void camorama_filter_chain_remove(CamoramaFilterChain *self,
 void camorama_filter_chain_apply(CamoramaFilterChain *self,
                                  guchar *image,
                                  gint width, gint height, gint depth);
+#if GTK_MAJOR_VERSION < 4
 void camorama_filter_chain_hide(GtkTreeModel *model,
-                                    GtkTreePath *path,
-                                    GtkTreeIter *iter);
+                                GtkTreePath *path,
+                                GtkTreeIter *iter);
+#endif
 void camorama_filter_chain_set_data(CamoramaFilterChain *self,
                                     gpointer user_data);
 
+#if GTK_MAJOR_VERSION < 4
 struct _CamoramaFilterChain {
     GtkListStore base_instance;
 };
@@ -70,6 +73,17 @@ enum {
     CAMORAMA_FILTER_CHAIN_COL_FILTER,
     CAMORAMA_FILTER_CHAIN_N_COLUMNS
 };
+#else
+struct _CamoramaFilterChain {
+    GObject base_instance;
+    GPtrArray *filters;
+    gpointer data;
+};
+
+struct _CamoramaFilterChainClass {
+    GObjectClass base_class;
+};
+#endif
 
 G_END_DECLS
 #endif                          /* !CAMORAMA_FILTER_CHAIN_H */

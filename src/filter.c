@@ -26,28 +26,25 @@ camorama_filter_apply(CamoramaFilter *self, guchar *image, gint width,
 
 void camorama_filter_show(CamoramaFilter *self, gpointer user_data)
 {
-    g_return_if_fail(CAMORAMA_FILTER_GET_CLASS(self)->show);
+    CamoramaFilterClass *filter_class = CAMORAMA_FILTER_GET_CLASS(self);
 
-    if (CAMORAMA_FILTER_GET_CLASS(self)->showed)
+    if (!filter_class->show)
         return;
 
-    CAMORAMA_FILTER_GET_CLASS(self)->showed--;
-
-    CAMORAMA_FILTER_GET_CLASS(self)->show(self, user_data);
+    filter_class->showed++;
+    filter_class->show(self, user_data);
 }
 
 void
 camorama_filter_hide(CamoramaFilter *self)
 {
-    if (!CAMORAMA_FILTER_GET_CLASS(self)->hide)
+    CamoramaFilterClass *filter_class = CAMORAMA_FILTER_GET_CLASS(self);
+
+    if (!filter_class->hide || filter_class->showed <= 0)
         return;
 
-    if (!(CAMORAMA_FILTER_GET_CLASS(self)->showed))
-        return;
-
-    CAMORAMA_FILTER_GET_CLASS(self)->showed--;
-
-    CAMORAMA_FILTER_GET_CLASS(self)->hide(self);
+    filter_class->showed--;
+    filter_class->hide(self);
 }
 
 /* GType stuff ifor CamoramaFilter */
@@ -100,6 +97,7 @@ camorama_filter_invert_class_init(CamoramaFilterClass *self_class)
 typedef struct _CamoramaFilterThreshold {
     CamoramaFilter base_instance;
     gint threshold;
+    gulong changed_handler;
 } CamoramaFilterThreshold;
 typedef struct _CamoramaFilterClass CamoramaFilterThresholdClass;
 
@@ -122,6 +120,7 @@ static void camorama_filter_threshold_show(void *filter,
 {
     CamoramaFilterThreshold *self = filter;
     cam_t *cam = data;
+    GObject *slider;
 
     CAMORAMA_FILTER_GET_CLASS(self)->data = data;
 
@@ -135,15 +134,26 @@ static void camorama_filter_threshold_show(void *filter,
     gtk_range_set_value((GtkRange *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "threshold_slider")),
                         self->threshold);
 
-    g_signal_connect(gtk_builder_get_object(cam->xml, "threshold_slider"),
-                         "value-changed", G_CALLBACK(threshold_change), self);
+    slider = gtk_builder_get_object(cam->xml, "threshold_slider");
+    self->changed_handler =
+        g_signal_connect(slider, "value-changed",
+                         G_CALLBACK(threshold_change), self);
 }
 
 static void camorama_filter_threshold_hide(void *filter)
 {
     CamoramaFilterThreshold *self = filter;
-
     cam_t *cam = CAMORAMA_FILTER_GET_CLASS(self)->data;
+    GObject *slider = gtk_builder_get_object(cam->xml, "threshold_slider");
+
+    if (self->changed_handler) {
+        g_signal_handler_disconnect(slider, self->changed_handler);
+        self->changed_handler = 0;
+    }
+
+    if (CAMORAMA_FILTER_GET_CLASS(self)->showed > 0)
+        return;
+
     gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                      "threshold_icon")), FALSE);;
     gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
@@ -209,6 +219,7 @@ static void camorama_filter_threshold_channel_show(void *filter,
 {
     CamoramaFilterThreshold *self = filter;
     cam_t *cam = data;
+    GObject *slider;
 
     CAMORAMA_FILTER_GET_CLASS(self)->data = data;
 
@@ -222,15 +233,27 @@ static void camorama_filter_threshold_channel_show(void *filter,
     gtk_range_set_value((GtkRange *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "ch_threshold_slider")),
                         self->threshold);
 
-    g_signal_connect(gtk_builder_get_object(cam->xml, "ch_threshold_slider"),
-                         "value-changed", G_CALLBACK(ch_threshold_change), self);
+    slider = gtk_builder_get_object(cam->xml, "ch_threshold_slider");
+    self->changed_handler =
+        g_signal_connect(slider, "value-changed",
+                         G_CALLBACK(ch_threshold_change), self);
 }
 
 static void camorama_filter_threshold_channel_hide(void *filter)
 {
     CamoramaFilterThreshold *self = filter;
-
     cam_t *cam = CAMORAMA_FILTER_GET_CLASS(self)->data;
+    GObject *slider = gtk_builder_get_object(cam->xml,
+                                              "ch_threshold_slider");
+
+    if (self->changed_handler) {
+        g_signal_handler_disconnect(slider, self->changed_handler);
+        self->changed_handler = 0;
+    }
+
+    if (CAMORAMA_FILTER_GET_CLASS(self)->showed > 0)
+        return;
+
     gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                      "ch_threshold_icon")), FALSE);;
     gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,

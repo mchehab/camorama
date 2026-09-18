@@ -35,6 +35,8 @@
 #include "support.h"
 #if GTK_MAJOR_VERSION < 4
 #include "gtk3-effects.h"
+#else
+#include "gtk4-effects.h"
 #endif
 
 /* Supported URI protocol schemas */
@@ -43,15 +45,9 @@ const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 void load_interface(cam_t *cam)
 {
     unsigned int i;
-#if GTK_MAJOR_VERSION >= 4
-    GtkCellRenderer *cell;
-#endif
     GtkWidget *video_dev;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
-#if GTK_MAJOR_VERSION >= 4
-    GtkTreeView *treeview;
-#endif
 
     gtk_application_add_window(cam->app, GTK_WINDOW(window));
 
@@ -62,22 +58,7 @@ void load_interface(cam_t *cam)
 #if GTK_MAJOR_VERSION < 4
     gtk3_effects_setup(cam);
 #else
-    /* set up the tree view */
-    treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
-                                                    "treeview_effects"));
-    cell = gtk_cell_renderer_text_new();
-    g_object_set(cell, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
-    gtk_cell_renderer_text_set_fixed_height_from_font
-        (GTK_CELL_RENDERER_TEXT(cell), 1);
-    gtk_tree_view_insert_column_with_attributes(treeview, -1, _("Effects"),
-                                                cell, "text",
-                                                CAMORAMA_FILTER_CHAIN_COL_NAME,
-                                                NULL);
-    cam->filter_chain = camorama_filter_chain_new();
-    camorama_filter_chain_set_data(cam->filter_chain, cam);
-
-    gtk_tree_view_set_model(treeview, GTK_TREE_MODEL(cam->filter_chain));
-    gtk_common_setup_effects_popup(treeview);
+    gtk4_effects_setup(cam);
 #endif
 
     if (!cam->show_effects) {

@@ -10,10 +10,6 @@ void on_window_fullscreen_changed(GtkWindow *window, GParamSpec *pspec,
                                   cam_t *cam);
 void gtk4_set_window_icons(GtkWindow *window, GtkWindow *prefswindow);
 void gtk4_draw_frame(GtkDrawingArea *, cairo_t *, int, int, gpointer);
-void gtk4_setup_effects_popup(GtkTreeView *treeview);
-void gtk4_show_effects_popup(GtkTreeView *treeview, GMenuModel *model,
-                             GActionGroup *actions, GPtrArray *entries,
-                             double x, double y);
 const gchar *gtk4_get_entry_text(GtkWidget *entry);
 void gtk4_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
