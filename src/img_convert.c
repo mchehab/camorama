@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "img_bayer.h"
 #include "img_convert.h"
 #include "v4l.h"
 
@@ -33,6 +34,11 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_RGB32,   32, -1, -1, 1},
     { V4L2_PIX_FMT_ARGB32,  32, -1, -1, 1},
     { V4L2_PIX_FMT_XRGB32,  32, -1, -1, 1},
+
+    { V4L2_PIX_FMT_SBGGR8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SGBRG8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SGRBG8,   8, -1, -1, 1},
+    { V4L2_PIX_FMT_SRGGB8,   8, -1, -1, 1},
 };
 
 #define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
@@ -249,6 +255,20 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
     video_fmt = img_format_get(cam->pixformat);
     if (!video_fmt)
         return 0;
+
+    switch (cam->pixformat) {
+    case V4L2_PIX_FMT_SBGGR8:
+    case V4L2_PIX_FMT_SGBRG8:
+    case V4L2_PIX_FMT_SGRBG8:
+    case V4L2_PIX_FMT_SRGGB8:
+        if (width < 3 || height < 2 || bytesperline < width)
+            return 0;
+        img_bayer_to_rgb24(inbuf, cam->pic_buf, width, height,
+                           bytesperline, cam->pixformat);
+        return width * height * 3;
+    default:
+        break;
+    }
 
     depth = video_fmt->depth;
 

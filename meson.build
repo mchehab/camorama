@@ -11,6 +11,7 @@ sources = [
   'src/camorama-filter-mirror.c',
   'src/camorama-filter-reichardt.c',
   'src/camorama-window.c',
+  'src/img_bayer.c',
   'src/fileio.c',
   'src/filter.c',
   'src/main.c',
