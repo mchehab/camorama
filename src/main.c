@@ -448,11 +448,11 @@ static void activate(GtkApplication *app)
 
         gtk_widget_set_visible(widget, TRUE);;
 
-        if (GTK_IS_STATUSBAR(cam->status))
+        if (GTK_IS_WIDGET(cam->status))
             cam->timeout_fps_id = g_timeout_add(2000, (GSourceFunc) fps,
                                                 cam);
         else if (cam->debug)
-            printf("Unable to start FPS timeout, status widget is not a statusbar\n");
+            printf("Unable to start FPS timeout, status widget is unavailable\n");
     }
 }
 

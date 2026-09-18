@@ -287,11 +287,11 @@ void load_interface(cam_t *cam)
     GtkWidget *status = GTK_WIDGET(gtk_builder_get_object(cam->xml, "status"));
 
     cam->status = NULL;
-    if (GTK_IS_STATUSBAR(status))
+    if (GTK_IS_WIDGET(status))
         cam->status = g_object_ref(status);
 
     if (!cam->status) {
-        g_warning("Unable to locate GtkStatusbar status widget in UI");
+        g_warning("Unable to locate status widget in UI");
     }
 
     set_sensitive(cam);

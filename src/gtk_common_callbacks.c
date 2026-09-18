@@ -679,27 +679,33 @@ gint fps(cam_t *cam)
 {
     GtkWidget *sb = cam ? cam->status : NULL;
 
-    if (!cam || !GTK_IS_STATUSBAR(sb)) {
+    if (!cam || !GTK_IS_WIDGET(sb)) {
         if (cam)
             cam->timeout_fps_id = 0;
         return 0;
     }
 
     gchar *stat;
+#if GTK_MAJOR_VERSION < 4
     guint cont = gtk_statusbar_get_context_id(GTK_STATUSBAR(sb), "context");
+#endif
 
     seconds++;
     stat = g_strdup_printf(_("%.2f fps - current     %.2f fps - average"),
                            frames / 2., frames2 / (seconds * 2.));
     frames = 0;
+#if GTK_MAJOR_VERSION < 4
     gtk_statusbar_push(GTK_STATUSBAR(sb), cont, stat);
+#else
+    gtk_label_set_text(GTK_LABEL(sb), stat);
+#endif
     g_free(stat);
     return TRUE;
 }
 
 void on_status_show(GtkWidget *sb, cam_t *cam)
 {
-    if (GTK_IS_STATUSBAR(sb))
+    if (GTK_IS_WIDGET(sb))
         cam->status = sb;
 }
 

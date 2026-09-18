@@ -592,7 +592,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkStatusbar" id="status"/>
+          <object class="GtkLabel" id="status"/>
         </child>
       </object>
     </property>
