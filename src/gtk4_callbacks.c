@@ -303,14 +303,21 @@ void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder)
 }
 
 static const char choice_widget_key[] = "camorama-choice-widget";
+
+#if !GTK_CHECK_VERSION(4, 12, 0)
+
 static const char choice_button_key[] = "camorama-choice-button";
 static const char choice_list_key[] = "camorama-choice-list";
 static const char choice_active_key[] = "camorama-choice-active";
+
+#endif
 
 static GtkWidget *gtk4_choice_widget(GtkWidget *choice)
 {
     return g_object_get_data(G_OBJECT(choice), choice_widget_key);
 }
+
+#if !GTK_CHECK_VERSION(4, 12, 0)
 
 static void gtk4_choice_row_selected(GtkListBox *list, GtkWidget *choice)
 {
@@ -333,6 +340,8 @@ static void gtk4_choice_row_selected(GtkListBox *list, GtkWidget *choice)
     gtk_popover_popdown(GTK_POPOVER(gtk_menu_button_get_popover(
         GTK_MENU_BUTTON(button))));
 }
+
+#endif
 
 void gtk4_choice_setup(GtkWidget *choice)
 {
@@ -418,7 +427,7 @@ gint gtk4_choice_get_active(GtkWidget *choice)
 #if GTK_CHECK_VERSION(4, 12, 0)
     guint index = gtk_drop_down_get_selected(GTK_DROP_DOWN(widget));
 
-    return index == GTK_INVALID_LIST_POSITION ? -1 : index;
+    return index == GTK_INVALID_LIST_POSITION ? -1 : (gint)index;
 #else
     gpointer active = g_object_get_data(G_OBJECT(choice), choice_active_key);
 
