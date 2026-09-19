@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <libcamera/libcamera.h>
+#include <libcamera/property_ids.h>
 #include <libcamera/version.h>
 
 #include "img_convert.h"
@@ -54,6 +55,26 @@ uint32_t camorama_pixel_format(const PixelFormat &format)
         return V4L2_PIX_FMT_BGR24;
 
     return format.fourcc();
+}
+
+std::string camera_model(const std::shared_ptr<Camera> &camera,
+			 const std::string &fallback)
+{
+#ifdef CAMORAMA_LIBCAMERA_MODERN_API
+	const auto model = camera->properties().get(properties::Model);
+
+	if (model && !model->empty())
+		return std::string(*model);
+#else
+	const ControlValue model = camera->properties().get(properties::Model);
+	const std::string name = model.isNone() ? std::string() :
+		model.toString();
+
+	if (!name.empty())
+		return name;
+#endif
+
+	return fallback;
 }
 
 enum class FormatRank {
@@ -141,7 +162,9 @@ extern "C" int libcamera_bridge_list_cameras(
 #endif
 
 		list[i].id = strdup(id.c_str());
-		list[i].name = strdup(id.c_str());
+		const std::string name = camera_model(available[i], id);
+
+		list[i].name = strdup(name.c_str());
 		if (!list[i].id || !list[i].name) {
 			libcamera_bridge_free_cameras(list, available.size());
 			manager.stop();
