@@ -10,6 +10,16 @@ extern "C" {
 
 typedef struct libcamera_bridge libcamera_bridge_t;
 
+struct libcamera_camera_info {
+	char *id;
+	char *name;
+};
+
+int libcamera_bridge_list_cameras(struct libcamera_camera_info **cameras,
+					  unsigned int *count, char **error);
+void libcamera_bridge_free_cameras(struct libcamera_camera_info *cameras,
+					   unsigned int count);
+
 libcamera_bridge_t *libcamera_bridge_create(const char *camera_id, int debug,
                                              char **error);
 void libcamera_bridge_destroy(libcamera_bridge_t *bridge);

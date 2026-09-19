@@ -309,8 +309,7 @@ static void activate(GtkApplication *app)
         exit(1);
     }
 
-    if (!camera_backend_is_libcamera(cam))
-        retrieve_video_dev(cam);
+    retrieve_video_dev(cam);
 
     cam->gc = g_settings_new(CAM_SETTINGS_SCHEMA);
 
@@ -323,7 +322,10 @@ static void activate(GtkApplication *app)
     g_settings_schema_unref(schema);
 
     if (camera_backend_is_libcamera(cam)) {
-        cam->video_dev = g_strdup(video_dev);
+        if (video_dev) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(video_dev);
+        }
     } else if (!video_dev) {
         gchar const *gconf_device = g_settings_get_string(cam->gc,
                                                           CAM_SETTINGS_DEVICE);

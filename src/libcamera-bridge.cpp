@@ -99,6 +99,76 @@ struct Mapping {
 
 } /* namespace */
 
+extern "C" int libcamera_bridge_list_cameras(
+	struct libcamera_camera_info **output, unsigned int *count, char **error)
+{
+	CameraManager manager;
+	struct libcamera_camera_info *list;
+	int ret;
+
+	if (!output || !count)
+		return -EINVAL;
+
+	*output = nullptr;
+	*count = 0;
+
+	ret = manager.start();
+	if (ret) {
+		set_error(error, error_code("failed to start camera manager", ret));
+		return ret;
+	}
+
+	const auto available = manager.cameras();
+	if (available.empty()) {
+		manager.stop();
+		set_error(error, "no cameras were found");
+		return -ENODEV;
+	}
+
+	list = static_cast<struct libcamera_camera_info *>(
+		calloc(available.size(), sizeof(*list)));
+	if (!list) {
+		manager.stop();
+		set_error(error, "failed to allocate camera list");
+		return -ENOMEM;
+	}
+
+	for (size_t i = 0; i < available.size(); i++) {
+#ifdef CAMORAMA_LIBCAMERA_MODERN_API
+		const std::string id = available[i]->id();
+#else
+		const std::string id = available[i]->name();
+#endif
+
+		list[i].id = strdup(id.c_str());
+		list[i].name = strdup(id.c_str());
+		if (!list[i].id || !list[i].name) {
+			libcamera_bridge_free_cameras(list, available.size());
+			manager.stop();
+			set_error(error, "failed to allocate camera information");
+			return -ENOMEM;
+		}
+	}
+
+	*output = list;
+	*count = available.size();
+	manager.stop();
+	return 0;
+}
+
+extern "C" void libcamera_bridge_free_cameras(
+	struct libcamera_camera_info *cameras, unsigned int count)
+{
+	if (!cameras)
+		return;
+
+	for (unsigned int i = 0; i < count; i++) {
+		free(cameras[i].id);
+		free(cameras[i].name);
+	}
+	free(cameras);
+}
+
 struct libcamera_bridge {
     explicit libcamera_bridge(bool debug_mode)
         : debug(debug_mode)

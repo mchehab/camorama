@@ -1,5 +1,6 @@
 #include "gtk_common_callbacks.h"
 #include "camera-backend.h"
+#include <config.h>
 #if GTK_MAJOR_VERSION < 4
 #include "gtk3_callbacks.h"
 #else
@@ -9,11 +10,13 @@
 #include "support.h"
 #include "filter.h"
 #include "camorama-filter-chain.h"
+#ifdef HAVE_LIBCAMERA
+#include "libcamera-bridge.h"
+#endif
 
 #include <assert.h>
 #include <ftw.h>
 #include <glib/gi18n.h>
-#include <config.h>
 #include <pthread.h>
 #include <libv4l2.h>
 #include <sys/sysmacros.h>
@@ -1557,6 +1560,10 @@ void wb_change(GtkScale *sc1, cam_t *cam)
 
 unsigned int n_devices = 0, n_valid_devices = 0;
 struct devnodes *devices = NULL;
+#ifdef HAVE_LIBCAMERA
+static struct libcamera_camera_info *libcamera_devices;
+static unsigned int n_libcamera_devices;
+#endif
 
 static int handle_video_devs(const char *file,
                              const struct stat *st,
@@ -1695,6 +1702,32 @@ void retrieve_video_dev(cam_t *cam)
     /* This function is not meant to be called more than once */
     assert (n_devices == 0);
 
+#ifdef HAVE_LIBCAMERA
+    if (camera_backend_is_libcamera(cam)) {
+        char *error = NULL;
+
+        if (libcamera_bridge_list_cameras(&libcamera_devices,
+                                          &n_libcamera_devices, &error)) {
+            error_dialog(error ? error : _("Didn't find any camera"));
+            libcamera_bridge_free_string(error);
+            exit(0);
+        }
+
+        n_valid_devices = n_libcamera_devices;
+        cam->video_dev = g_strdup(libcamera_devices[0].id);
+        widget = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                   "videodev_combo"));
+        gtk_common_choice_setup(widget);
+        for (i = 0; i < n_libcamera_devices; i++)
+            gtk_common_choice_append(widget, libcamera_devices[i].name);
+
+        widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
+        g_signal_connect(G_OBJECT(widget), "clicked",
+                         G_CALLBACK(videodev_response), cam);
+        return;
+    }
+#endif
+
     /* Get all video devices */
     if (ftw("/dev", handle_video_devs, 4) || !n_devices) {
         char *msg = g_strdup_printf(_("Didn't find any camera"));
@@ -1733,9 +1766,19 @@ int select_video_dev(cam_t *cam)
     GtkWidget *okbutton;
 #endif
     int ret;
+#ifdef HAVE_LIBCAMERA
+    int active;
+#endif
 
     /* Only ask if there are multiple cameras */
     if (n_valid_devices == 1) {
+#ifdef HAVE_LIBCAMERA
+        if (camera_backend_is_libcamera(cam)) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(libcamera_devices[0].id);
+            return 0;
+        }
+#endif
         cam->video_dev = devices[0].fname;
         return 0;
     }
@@ -1758,7 +1801,16 @@ int select_video_dev(cam_t *cam)
     ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
 #endif
 
-    cam->video_dev = gtk_common_choice_get_active_text(widget);
+#ifdef HAVE_LIBCAMERA
+    active = gtk_common_choice_get_active(widget);
+    if (camera_backend_is_libcamera(cam)) {
+        if (active >= 0 && (unsigned int)active < n_libcamera_devices) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(libcamera_devices[active].id);
+        }
+    } else
+#endif
+        cam->video_dev = gtk_common_choice_get_active_text(widget);
 
     gtk_widget_set_visible(window, FALSE);;
     return ret;
