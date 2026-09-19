@@ -89,3 +89,6 @@ foreach size : ['16', '24', '32', '48', '64', '128', '256', '512']
                                        'hicolor', size + 'x' + size,
                                        'devices'))
 endforeach
+
+summary('GTK interface', gtk4 ? 'GTK 4' : 'GTK 3',
+        section: 'Configuration')
