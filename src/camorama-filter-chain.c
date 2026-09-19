@@ -38,10 +38,10 @@ CamoramaFilterChain *camorama_filter_chain_new(void)
     return g_object_new(CAMORAMA_TYPE_FILTER_CHAIN, NULL);
 }
 
-void camorama_filter_chain_append(CamoramaFilterChain *self,
-                                  GType filter_type)
+void camorama_filter_chain_set_filter(CamoramaFilterChain *self,
+                                      GtkTreeIter *iter,
+                                      GType filter_type)
 {
-    GtkTreeIter iter;
     GtkListStore *store;
     CamoramaFilter *filter;
     gpointer data;
@@ -49,13 +49,11 @@ void camorama_filter_chain_append(CamoramaFilterChain *self,
     g_return_if_fail(g_type_is_a(filter_type, CAMORAMA_TYPE_FILTER));
 
     store = GTK_LIST_STORE(self);
-    gtk_list_store_append(store, &iter);
     filter = g_object_new(filter_type, NULL);
-
     data = CAMORAMA_FILTER_CHAIN_GET_CLASS(self)->data;
     camorama_filter_show(filter, data);
 
-    gtk_list_store_set(store, &iter,
+    gtk_list_store_set(store, iter,
                        CAMORAMA_FILTER_CHAIN_COL_FILTER, filter,
                        CAMORAMA_FILTER_CHAIN_COL_NAME,
                        camorama_filter_get_name(filter), -1);

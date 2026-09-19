@@ -37,8 +37,10 @@ typedef struct _CamoramaFilterChainClass CamoramaFilterChainClass;
 GType camorama_filter_chain_get_type(void);
 
 CamoramaFilterChain *camorama_filter_chain_new(void);
-void camorama_filter_chain_append(CamoramaFilterChain *self,
-                                  GType filter_type);
+void camorama_filter_chain_set_filter(CamoramaFilterChain *self,
+                                      GtkTreeIter *iter,
+                                      GType filter_type);
+
 void camorama_filter_chain_apply(CamoramaFilterChain *self,
                                  guchar *image,
                                  gint width, gint height, gint depth);

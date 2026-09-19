@@ -26,7 +26,8 @@ camorama_filter_apply(CamoramaFilter *self, guchar *image, gint width,
 
 void camorama_filter_show(CamoramaFilter *self, gpointer user_data)
 {
-    g_return_if_fail(CAMORAMA_FILTER_GET_CLASS(self)->show);
+    if (!CAMORAMA_FILTER_GET_CLASS(self)->show)
+        return;
 
     if (CAMORAMA_FILTER_GET_CLASS(self)->showed)
         return;

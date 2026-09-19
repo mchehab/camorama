@@ -36,154 +36,275 @@
 #include "filter.h"
 #include "support.h"
 
-static GQuark menu_item_filter_type = 0;
 
 /* Supported URI protocol schemas */
 const gchar *const protos[3] = { "ftp", "sftp", "smb" };
 
-static void add_filter_clicked(GtkMenuItem *menuitem,
-                               CamoramaFilterChain *chain)
-{
-    GType filter_type = GPOINTER_TO_SIZE(g_object_get_qdata(G_OBJECT(menuitem),
-                                                            menu_item_filter_type));
-    camorama_filter_chain_append(chain, filter_type);
-}
+/* Animation delays for filter removal */
+#define EFFECT_REMOVE_DELAY 100
+#define EFFECT_TRANSITION_DURATION 400
 
-struct weak_target {
-    GtkTreeModel *model;
-    GList *list;
+struct effect_info {
+    GType type;
+    gchar *name;
 };
 
-static void reference_path(GtkTreePath *path, struct weak_target *target)
+struct effects_pane {
+    cam_t *cam;
+    GtkListBox *list;
+    GPtrArray *effects;
+};
+
+struct effect_row {
+    struct effects_pane *pane;
+
+    GtkWidget *row;
+    GtkRevealer *revealer;
+    GtkComboBoxText *choice;
+
+    GArray *choices;
+    GType selected_type;
+
+    int changed_handler;
+    gboolean removing;
+};
+
+static void append_choice(struct effect_row *effect_row, GType type,
+                          const gchar *name)
 {
-    target->list = g_list_prepend(target->list,
-                                  gtk_tree_row_reference_new(target->model,
-                                                             path));
+    gtk_combo_box_text_append_text(effect_row->choice, name);
+    g_array_append_val(effect_row->choices, type);
 }
 
-static void delete_filter(GtkTreeRowReference *ref, GtkTreeModel *model)
+static void fill_effect_choices(struct effect_row *effect_row,
+                                gboolean is_active)
 {
-    GtkTreeIter iter;
-    GtkTreePath *path = gtk_tree_row_reference_get_path(ref);
-    CamoramaFilter *filter = NULL;
+    const char *no_effect = _("<No effect>");
+    const char *disable = _("<Disable>");
+    struct effect_info *effect;
+    guint i;
 
-    gtk_tree_model_get_iter(model, &iter, path);
+    /* No effects ative - show them in order starting from no_effect */
+    if (!is_active) {
+        append_choice(effect_row, G_TYPE_INVALID, no_effect);
 
-    gtk_tree_model_get(model, &iter,
-                       CAMORAMA_FILTER_CHAIN_COL_FILTER, &filter, -1);
+        for (i = 0; i < effect_row->pane->effects->len; i++) {
+            effect = g_ptr_array_index(effect_row->pane->effects, i);
 
-    camorama_filter_chain_hide(model, path, &iter);
+            append_choice(effect_row, effect->type, effect->name);
+        }
+        return;
+    }
 
-    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+    /*
+     * The effect in this row is active. It could simply use the code above,
+     * but doing a button reorder makes easier to show the current affect and
+     * to have the disable choice just after it.
+     */
+
+    /* First element: the current effect */
+    for (i = 0; i < effect_row->pane->effects->len; i++) {
+        effect = g_ptr_array_index(effect_row->pane->effects, i);
+
+        if (effect->type == effect_row->selected_type) {
+            append_choice(effect_row, effect->type, effect->name);
+            break;
+        }
+    }
+
+    /* Second element: disable effects */
+    append_choice(effect_row, G_TYPE_INVALID, disable);
+
+    /* Add the remaining filters */
+    for (i = 0; i < effect_row->pane->effects->len; i++) {
+        effect = g_ptr_array_index(effect_row->pane->effects, i);
+
+        if (effect->type != effect_row->selected_type)
+            append_choice(effect_row, effect->type, effect->name);
+    }
+
 }
 
-static void delete_filter_clicked(GtkTreeSelection *sel,
-                                  GtkMenuItem *)
+static void show_active_effect(struct effect_row *effect_row)
 {
+    g_signal_handler_block(effect_row->choice,
+                           effect_row->changed_handler);
+
+    gtk_combo_box_text_remove_all(effect_row->choice);
+    fill_effect_choices(effect_row, TRUE);
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), 0);
+    g_signal_handler_unblock(effect_row->choice,
+                             effect_row->changed_handler);
+}
+
+static void remove_effect_row(GtkRevealer *revealer, GParamSpec *,
+                              struct effect_row *effect_row)
+{
+    if (!effect_row->removing || gtk_revealer_get_child_revealed(revealer))
+        return;
+
+    gtk_container_remove(GTK_CONTAINER(effect_row->pane->list),
+                         effect_row->row);
+}
+
+static gboolean reveal_effect_row(gpointer data)
+{
+    gtk_revealer_set_reveal_child(GTK_REVEALER(data), TRUE);
+
+    return G_SOURCE_REMOVE;
+}
+
+static gboolean conceal_effect_row(gpointer data)
+{
+    gtk_revealer_set_reveal_child(GTK_REVEALER(data), FALSE);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void append_effect_row(struct effects_pane *pane, gboolean animate);
+
+static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
+{
+    gint selected = gtk_combo_box_get_active(choice);
+    CamoramaFilterChain *chain;
+    unsigned int position;
+    GType selected_type;
+    GtkListStore *store;
     GtkTreeModel *model;
-    GList *paths = gtk_tree_selection_get_selected_rows(sel, &model);
-    struct weak_target target = { model, NULL };
+    GtkTreeIter iter;
 
-    g_list_foreach(paths, (GFunc)(reference_path), &target);
-    g_list_foreach(target.list, (GFunc)(delete_filter), model);
-    g_list_free_full(target.list,
-                     (GDestroyNotify) gtk_tree_row_reference_free);
-    g_list_free_full(paths, (GDestroyNotify) gtk_tree_path_free);
-}
+    if (selected < 0 || selected >= (gint)effect_row->choices->len)
+        return;
 
-static void show_popup(cam_t *, GtkTreeView *treeview,
-                       GdkEventButton *)
-{
-    GtkMenu *menu = GTK_MENU(gtk_menu_new());
-    GtkWidget *item;
-    GtkWidget *add_filters = gtk_menu_new();
-    GType *filters;
-    guint n_filters, i;
-    GtkTreeModel *model = gtk_tree_view_get_model(treeview);
-    GtkTreeSelection *sel = gtk_tree_view_get_selection(treeview);
+    selected_type = g_array_index(effect_row->choices, GType, selected);
+    if (selected_type == effect_row->selected_type)
+        return;
 
-    gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
+    chain = effect_row->pane->cam->filter_chain;
+    store = GTK_LIST_STORE(chain);
+    model = GTK_TREE_MODEL(chain);
 
-    item = gtk_menu_item_new_with_mnemonic("_Delete");
-    g_signal_connect_swapped(item, "activate",
-                             G_CALLBACK(delete_filter_clicked), sel);
-    gtk_container_add(GTK_CONTAINER(menu), item);
-    gtk_container_add(GTK_CONTAINER(menu), gtk_separator_menu_item_new());
+    position = gtk_list_box_row_get_index(
+        GTK_LIST_BOX_ROW(effect_row->row));
 
-    if (!gtk_tree_selection_count_selected_rows(sel))
-        gtk_widget_set_sensitive(item, FALSE);
+    if (selected_type == G_TYPE_INVALID) {
+        /* Remove effect */
+        if (gtk_tree_model_iter_nth_child(model, &iter, NULL, position)) {
+            camorama_filter_chain_hide(model, NULL, &iter);
+            gtk_list_store_remove(store, &iter);
+        }
 
-    item = gtk_menu_item_new_with_mnemonic(_("_Add Filter"));
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), add_filters);
-    gtk_container_add(GTK_CONTAINER(menu), item);
+        effect_row->selected_type = G_TYPE_INVALID;
+        effect_row->removing = TRUE;
+        gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), FALSE);
+        g_timeout_add_full(G_PRIORITY_DEFAULT, EFFECT_REMOVE_DELAY,
+                           conceal_effect_row,
+                           g_object_ref(effect_row->revealer),
+                           g_object_unref);
 
-    filters = g_type_children(CAMORAMA_TYPE_FILTER, &n_filters);
-    for (i = 0; i < n_filters; i++) {
-        CamoramaFilterClass *filter_class = g_type_class_ref(filters[i]);
-        gchar const *filter_name = filter_class->name;
-
-        if (!filter_name)
-            filter_name = g_type_name(filters[i]);
-
-        item = gtk_menu_item_new_with_label(filter_name);
-        g_object_set_qdata(G_OBJECT(item), menu_item_filter_type,
-                           GSIZE_TO_POINTER(filters[i]));
-        g_signal_connect(item, "activate", G_CALLBACK(add_filter_clicked),
-                         model);
-        gtk_container_add(GTK_CONTAINER(add_filters), item);
-        g_type_class_unref(filter_class);
-    }
-    g_free(filters);
-
-#if GTK_MAJOR_VERSION > 3
-    gtk_widget_show(GTK_WIDGET(menu));
-#else
-    gtk_widget_show_all(GTK_WIDGET(menu));
-#endif
-    gtk_menu_popup_at_pointer(menu, NULL);
-}
-
-static void treeview_popup_menu_cb(cam_t *cam, GtkTreeView *treeview)
-{
-    show_popup(cam, treeview, NULL);
-}
-
-#if GTK_MAJOR_VERSION > 3
-static gboolean treeview_clicked_cb(cam_t *cam, GtkButton *button)
-{
-    GtkTreeView *treeview;
-
-    treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
-                                                    "treeview_effects"));
-
-    // FIXME: how to check if pressed button was button 3?
-    show_popup(cam, treeview, NULL);
-    return TRUE;
-}
-#else
-static gboolean treeview_clicked_cb(cam_t *cam, GdkEventButton *ev,
-                                    GtkTreeView *treeview)
-{
-    gboolean retval = GTK_WIDGET_GET_CLASS(treeview)->button_press_event(GTK_WIDGET(treeview), ev);
-
-    if (ev->button == 3) {
-        show_popup(cam, treeview, NULL);
-        retval = TRUE;
+        return;
     }
 
-    return retval;
+    if (effect_row->selected_type == G_TYPE_INVALID) {
+        /* Insert effect */
+        gtk_list_store_insert(store, &iter, position);
+        camorama_filter_chain_set_filter(chain, &iter, selected_type);
+
+        effect_row->selected_type = selected_type;
+        show_active_effect(effect_row);
+        append_effect_row(effect_row->pane, TRUE);
+
+        return;
+    }
+
+    /* Replace effect */
+    if (!gtk_tree_model_iter_nth_child(model, &iter, NULL,
+                                       position)) {
+        camorama_filter_chain_hide(model, NULL, &iter);
+        camorama_filter_chain_set_filter(chain, &iter, selected_type);
+    }
+    effect_row->selected_type = selected_type;
+    show_active_effect(effect_row);
 }
-#endif
+
+static void effect_row_free(struct effect_row *effect_row)
+{
+    g_array_unref(effect_row->choices);
+    g_free(effect_row);
+}
+
+static void append_effect_row(struct effects_pane *pane, gboolean animate)
+{
+    struct effect_row *effect_row = g_new0(struct effect_row, 1);
+    GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+    effect_row->pane = pane;
+    effect_row->row = gtk_list_box_row_new();
+    effect_row->revealer = GTK_REVEALER(gtk_revealer_new());
+    effect_row->choice = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
+    effect_row->choices = g_array_new(FALSE, FALSE, sizeof(GType));
+
+    gtk_widget_set_margin_top(content, 6);
+    gtk_widget_set_margin_bottom(content, 6);
+    gtk_widget_set_margin_start(content, 6);
+    gtk_widget_set_margin_end(content, 6);
+    gtk_widget_set_hexpand(GTK_WIDGET(effect_row->choice), TRUE);
+
+    g_array_set_size(effect_row->choices, 0);
+    fill_effect_choices(effect_row, FALSE);
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), 0);
+
+    effect_row->changed_handler =
+        g_signal_connect(effect_row->choice, "changed",
+                         G_CALLBACK(effect_changed), effect_row);
+
+    gtk_revealer_set_transition_type(
+        effect_row->revealer, GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
+    gtk_revealer_set_transition_duration(effect_row->revealer,
+                                         EFFECT_TRANSITION_DURATION);
+    gtk_revealer_set_reveal_child(effect_row->revealer, !animate);
+
+    gtk_container_add(GTK_CONTAINER(content),
+                      GTK_WIDGET(effect_row->choice));
+    gtk_container_add(GTK_CONTAINER(effect_row->revealer), content);
+    gtk_container_add(GTK_CONTAINER(effect_row->row),
+                      GTK_WIDGET(effect_row->revealer));
+    gtk_list_box_insert(pane->list, effect_row->row, -1);
+    gtk_widget_show_all(effect_row->row);
+
+    g_object_set_data_full(G_OBJECT(effect_row->row), "effect-row",
+                           effect_row, (GDestroyNotify)effect_row_free);
+    g_signal_connect(effect_row->revealer, "notify::child-revealed",
+                     G_CALLBACK(remove_effect_row), effect_row);
+
+    if (animate)
+        g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, reveal_effect_row,
+                        g_object_ref(effect_row->revealer), g_object_unref);
+}
+
+static void effects_pane_free(struct effects_pane *pane)
+{
+    g_ptr_array_unref(pane->effects);
+    g_free(pane);
+}
+
+static void effect_info_free(struct effect_info *effect)
+{
+    g_free(effect->name);
+    g_free(effect);
+}
 
 void load_interface(cam_t *cam)
 {
-    unsigned int i;
+    unsigned int i, n_filters;
     GdkPixbuf *logo = NULL;
-    GtkCellRenderer *cell;
     GtkWidget *video_dev;
     GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
-    GtkTreeView *treeview;
+    struct effects_pane *pane = g_new0(struct effects_pane, 1);
+    GType *filter_types;
 
     gtk_application_add_window(cam->app, GTK_WINDOW(window));
 
@@ -191,28 +312,34 @@ void load_interface(cam_t *cam)
 
     prefswindow = GTK_WIDGET(gtk_builder_get_object(cam->xml, "prefswindow"));
 
-    menu_item_filter_type = g_quark_from_static_string("camorama-menu-item-filter-type");
+    pane->cam = cam;
+    pane->list = GTK_LIST_BOX(gtk_builder_get_object(cam->xml,
+                                                      "effects_list"));
+    pane->effects = g_ptr_array_new_with_free_func(
+        (GDestroyNotify)effect_info_free);
 
-    /* set up the tree view */
-    treeview = GTK_TREE_VIEW(gtk_builder_get_object(cam->xml,
-                                                    "treeview_effects"));
-    cell = gtk_cell_renderer_text_new();
-    g_object_set(cell, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
-    gtk_cell_renderer_text_set_fixed_height_from_font
-        (GTK_CELL_RENDERER_TEXT(cell), 1);
-    gtk_tree_view_insert_column_with_attributes(treeview, -1, _("Effects"),
-                                                cell, "text",
-                                                CAMORAMA_FILTER_CHAIN_COL_NAME,
-                                                NULL);
+    filter_types = g_type_children(CAMORAMA_TYPE_FILTER, &n_filters);
+    for (i = 0; i < n_filters; i++) {
+        CamoramaFilterClass *filter_class = g_type_class_ref(filter_types[i]);
+        struct effect_info *effect = g_new0(struct effect_info, 1);
+
+        effect->type = filter_types[i];
+        effect->name = g_strdup(filter_class->name ? filter_class->name :
+                                g_type_name(filter_types[i]));
+        g_ptr_array_add(pane->effects, effect);
+        g_type_class_unref(filter_class);
+    }
+    g_free(filter_types);
+
     cam->filter_chain = camorama_filter_chain_new();
     camorama_filter_chain_set_data(cam->filter_chain, cam);
+    g_object_set_data_full(G_OBJECT(pane->list), "effects-pane", pane,
+                           (GDestroyNotify)effects_pane_free);
+    g_object_set_data_full(G_OBJECT(pane->list), "filter-chain",
+                           g_object_ref(cam->filter_chain), g_object_unref);
 
-    gtk_tree_view_set_model(treeview, GTK_TREE_MODEL(cam->filter_chain));
-    g_object_unref(cam->filter_chain);
-    g_signal_connect_swapped(treeview, "button-press-event",
-                             G_CALLBACK(treeview_clicked_cb), cam);
-    g_signal_connect_swapped(treeview, "popup-menu",
-                             G_CALLBACK(treeview_popup_menu_cb), cam);
+    append_effect_row(pane, FALSE);
+
 
     if (!cam->show_effects) {
         GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
