@@ -15,7 +15,6 @@
 
 #include <glib/gi18n.h>
 #include <locale.h>
-#include <libv4l2.h>
 #include <stdlib.h>
 
 GtkWidget *prefswindow;

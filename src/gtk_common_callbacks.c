@@ -16,7 +16,6 @@
 #include <glib/gi18n.h>
 #include <config.h>
 #include <pthread.h>
-#include <libv4l2.h>
 #include <sys/sysmacros.h>
 
 #define GPL_LICENSE \

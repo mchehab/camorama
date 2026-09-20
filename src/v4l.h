@@ -1,6 +1,10 @@
 #ifndef CAMORAMA_V4L_H
 #define CAMORAMA_V4L_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +18,19 @@
 #include <fcntl.h>
 #include <linux/types.h>
 #include <linux/videodev2.h>
-#include <libv4l2.h>
 #include <signal.h>
 #include <png.h>
+
+#ifdef HAVE_LIBV4L2
+#  include <libv4l2.h>
+#else
+#  define v4l2_open open
+#  define v4l2_close close
+#  define v4l2_read read
+#  define v4l2_ioctl ioctl
+#  define v4l2_mmap mmap
+#  define v4l2_munmap munmap
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-prototypes"

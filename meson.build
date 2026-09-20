@@ -22,7 +22,6 @@ sources = [
 ]
 
 gtk4 = get_option('gtk4')
-
 if gtk4
   gtk_dep = dependency('gtk4', version: '>=4.0')
   camorama_ui = 'camorama-gtk4.ui'
@@ -31,10 +30,12 @@ else
   camorama_ui = 'camorama-gtk3.ui'
 endif
 
+libv4l2_dep = dependency('libv4l2', required: get_option('libv4l2'))
+
 dependencies = [
   dependency('gdk-pixbuf-2.0'),
-  dependency('libv4l2'),
   gtk_dep,
+  libv4l2_dep,
   cc.find_library('m'),
 ]
 
@@ -71,6 +72,7 @@ endif
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
 conf.set('HAVE_AUDIO', enable_audio)
+conf.set('HAVE_LIBV4L2', libv4l2_dep.found())
 conf.set('HAVE_FFMPEG', enable_ffmpeg)
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
@@ -141,6 +143,7 @@ summary(
     {
         'GTK interface': gtk4 ? 'GTK 4' : 'GTK 3',
         'Audio routing': enable_audio,
+        'libv4l2': libv4l2_dep.found(),
         'FFmpeg': enable_ffmpeg,
     },
     bool_yn: true,
