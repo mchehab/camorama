@@ -398,6 +398,10 @@ void toggle_fullscreen(GtkWidget *, cam_t *cam)
 {
     GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(cam->xml,
                                                           "main_window"));
+    GtkPopover *popover = GTK_POPOVER(gtk_builder_get_object(cam->xml,
+                                                             "menuitem1_menu"));
+
+    gtk_popover_popdown(popover);
 
     if (gtk_window_is_fullscreen(window)) {
         gtk_window_unfullscreen(window);
