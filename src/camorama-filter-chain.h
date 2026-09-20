@@ -30,39 +30,23 @@ typedef struct _CamoramaFilterChain CamoramaFilterChain;
 typedef struct _CamoramaFilterChainClass CamoramaFilterChainClass;
 
 #define CAMORAMA_TYPE_FILTER_CHAIN         (camorama_filter_chain_get_type())
-#define CAMORAMA_FILTER_CHAIN_GET_CLASS(i) (G_TYPE_INSTANCE_GET_CLASS((i),   \
-                                            CAMORAMA_TYPE_FILTER_CHAIN,      \
-                                            CamoramaFilterChainClass))
-
 GType camorama_filter_chain_get_type(void);
 
 CamoramaFilterChain *camorama_filter_chain_new(void);
-void camorama_filter_chain_set_filter(CamoramaFilterChain *self,
-                                      GtkTreeIter *iter,
-                                      GType filter_type);
-
 void camorama_filter_chain_apply(CamoramaFilterChain *self,
                                  guchar *image,
                                  gint width, gint height, gint depth);
-void camorama_filter_chain_hide(GtkTreeModel *model,
-                                    GtkTreePath *path,
-                                    GtkTreeIter *iter);
 void camorama_filter_chain_set_data(CamoramaFilterChain *self,
                                     gpointer user_data);
 
 struct _CamoramaFilterChain {
-    GtkListStore base_instance;
-};
-
-struct _CamoramaFilterChainClass {
-    GtkListStoreClass base_class;
+    GObject base_instance;
+    GPtrArray *filters;
     gpointer data;
 };
 
-enum {
-    CAMORAMA_FILTER_CHAIN_COL_NAME,
-    CAMORAMA_FILTER_CHAIN_COL_FILTER,
-    CAMORAMA_FILTER_CHAIN_N_COLUMNS
+struct _CamoramaFilterChainClass {
+    GObjectClass base_class;
 };
 
 G_END_DECLS

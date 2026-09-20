@@ -131,6 +131,7 @@ static void show_active_effect(struct effect_row *effect_row)
                            effect_row->changed_handler);
 
     gtk_combo_box_text_remove_all(effect_row->choice);
+    g_array_set_size(effect_row->choices, 0);
     fill_effect_choices(effect_row, TRUE);
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), 0);
@@ -164,15 +165,33 @@ static gboolean conceal_effect_row(gpointer data)
 
 static void append_effect_row(struct effects_pane *pane, gboolean animate);
 
+static guint effect_row_position(struct effect_row *effect_row)
+{
+    GList *children;
+    GList *item;
+    guint position = 0;
+
+    children = gtk_container_get_children(GTK_CONTAINER(effect_row->pane->list));
+    for (item = children; item; item = item->next) {
+        struct effect_row *other = g_object_get_data(G_OBJECT(item->data),
+                                                      "effect-row");
+
+        if (other == effect_row)
+            break;
+        if (other && other->selected_type != G_TYPE_INVALID)
+            position++;
+    }
+    g_list_free(children);
+
+    return position;
+}
+
 static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
 {
     gint selected = gtk_combo_box_get_active(choice);
     CamoramaFilterChain *chain;
     unsigned int position;
     GType selected_type;
-    GtkListStore *store;
-    GtkTreeModel *model;
-    GtkTreeIter iter;
 
     if (selected < 0 || selected >= (gint)effect_row->choices->len)
         return;
@@ -182,17 +201,16 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
         return;
 
     chain = effect_row->pane->cam->filter_chain;
-    store = GTK_LIST_STORE(chain);
-    model = GTK_TREE_MODEL(chain);
-
-    position = gtk_list_box_row_get_index(
-        GTK_LIST_BOX_ROW(effect_row->row));
+    position = effect_row_position(effect_row);
 
     if (selected_type == G_TYPE_INVALID) {
         /* Remove effect */
-        if (gtk_tree_model_iter_nth_child(model, &iter, NULL, position)) {
-            camorama_filter_chain_hide(model, NULL, &iter);
-            gtk_list_store_remove(store, &iter);
+        if (position < chain->filters->len) {
+            CamoramaFilter *filter = g_ptr_array_index(chain->filters,
+                                                        position);
+
+            camorama_filter_hide(filter);
+            g_ptr_array_remove_index(chain->filters, position);
         }
 
         effect_row->selected_type = G_TYPE_INVALID;
@@ -208,8 +226,10 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
 
     if (effect_row->selected_type == G_TYPE_INVALID) {
         /* Insert effect */
-        gtk_list_store_insert(store, &iter, position);
-        camorama_filter_chain_set_filter(chain, &iter, selected_type);
+        CamoramaFilter *filter = g_object_new(selected_type, NULL);
+
+        camorama_filter_show(filter, effect_row->pane->cam);
+        g_ptr_array_insert(chain->filters, position, filter);
 
         effect_row->selected_type = selected_type;
         show_active_effect(effect_row);
@@ -219,10 +239,15 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
     }
 
     /* Replace effect */
-    if (!gtk_tree_model_iter_nth_child(model, &iter, NULL,
-                                       position)) {
-        camorama_filter_chain_hide(model, NULL, &iter);
-        camorama_filter_chain_set_filter(chain, &iter, selected_type);
+    if (position < chain->filters->len) {
+        CamoramaFilter *old_filter = g_ptr_array_index(chain->filters,
+                                                        position);
+        CamoramaFilter *filter = g_object_new(selected_type, NULL);
+
+        camorama_filter_show(filter, effect_row->pane->cam);
+        camorama_filter_hide(old_filter);
+        g_ptr_array_index(chain->filters, position) = filter;
+        g_object_unref(old_filter);
     }
     effect_row->selected_type = selected_type;
     show_active_effect(effect_row);
@@ -314,7 +339,7 @@ void load_interface(cam_t *cam)
 
     pane->cam = cam;
     pane->list = GTK_LIST_BOX(gtk_builder_get_object(cam->xml,
-                                                      "effects_list"));
+                                                     "effects_list"));
     pane->effects = g_ptr_array_new_with_free_func(
         (GDestroyNotify)effect_info_free);
 
@@ -342,8 +367,8 @@ void load_interface(cam_t *cam)
 
 
     if (!cam->show_effects) {
-        GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object
-                                        (cam->xml, "scrolledwindow_effects"));
+        GtkWidget *effects = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                               "scrolledwindow_effects"));
         if (effects)
             gtk_widget_hide(effects);
     }
@@ -362,7 +387,8 @@ void load_interface(cam_t *cam)
     g_signal_connect(G_OBJECT(prefswindow), "delete-event",
                      G_CALLBACK(delete_event_prefs_window), cam);
 
-    gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(gtk_builder_get_object(cam->xml, "togglebutton1")),
+    gtk_toggle_button_set_active((GtkToggleButton *)GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                                                      "togglebutton1")),
                                  cam->show_adjustments);
     g_signal_connect(gtk_builder_get_object(cam->xml, "togglebutton1"),
                      "toggled", G_CALLBACK(on_show_adjustments_activate),
