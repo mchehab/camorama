@@ -60,20 +60,76 @@ struct effect_row {
 
     GtkWidget *row;
     GtkRevealer *revealer;
-    GtkComboBoxText *choice;
-
     GArray *choices;
     GType selected_type;
 
-    int changed_handler;
+    gulong changed_handler;
     gboolean removing;
+    guint animation_source;
+
+#if GTK_MAJOR_VERSION < 4
+    GtkComboBoxText *choice;
+#else
+    GtkDropDown *choice;
+    GtkStringList *model;
+
+    gulong revealer_handler;
+    gboolean remove_pending;
+    gboolean refresh_pending;
+    guint refresh_source;
+    guint remove_source;
+#endif
 };
 
 static void append_choice(struct effect_row *effect_row, GType type,
                           const gchar *name)
 {
+#if GTK_MAJOR_VERSION < 4
     gtk_combo_box_text_append_text(effect_row->choice, name);
+#else
+    gtk_string_list_append(effect_row->model, name);
+#endif
     g_array_append_val(effect_row->choices, type);
+}
+
+static void clear_choices(struct effect_row *effect_row)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk_combo_box_text_remove_all(effect_row->choice);
+#else
+    guint n_items = g_list_model_get_n_items(G_LIST_MODEL(effect_row->model));
+
+    gtk_string_list_splice(effect_row->model, 0, n_items, NULL);
+#endif
+    g_array_set_size(effect_row->choices, 0);
+}
+
+static void set_choice_active(struct effect_row *effect_row, guint index)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), index);
+#else
+    gtk_drop_down_set_selected(effect_row->choice, index);
+#endif
+}
+
+static gint get_choice_active(struct effect_row *effect_row)
+{
+#if GTK_MAJOR_VERSION < 4
+    return gtk_combo_box_get_active(GTK_COMBO_BOX(effect_row->choice));
+#else
+    guint index = gtk_drop_down_get_selected(effect_row->choice);
+
+    return index == GTK_INVALID_LIST_POSITION ? -1 : (gint)index;
+#endif
+}
+
+static void clear_source(guint *source)
+{
+    if (*source)
+        g_source_remove(*source);
+
+    *source = 0;
 }
 
 static void fill_effect_choices(struct effect_row *effect_row,
@@ -130,14 +186,86 @@ static void show_active_effect(struct effect_row *effect_row)
     g_signal_handler_block(effect_row->choice,
                            effect_row->changed_handler);
 
-    gtk_combo_box_text_remove_all(effect_row->choice);
-    g_array_set_size(effect_row->choices, 0);
+    clear_choices(effect_row);
     fill_effect_choices(effect_row, TRUE);
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), 0);
+    set_choice_active(effect_row, 0);
     g_signal_handler_unblock(effect_row->choice,
                              effect_row->changed_handler);
 }
+
+#if GTK_MAJOR_VERSION >= 4
+static void prepare_effect_row_destroy(struct effect_row *effect_row,
+                                       gboolean cancel_remove)
+{
+    clear_source(&effect_row->animation_source);
+    clear_source(&effect_row->refresh_source);
+
+    if (cancel_remove)
+        clear_source(&effect_row->remove_source);
+
+    if (effect_row->changed_handler) {
+        g_signal_handler_disconnect(effect_row->choice,
+                                    effect_row->changed_handler);
+        effect_row->changed_handler = 0;
+    }
+
+    if (effect_row->revealer_handler) {
+        g_signal_handler_disconnect(effect_row->revealer,
+                                    effect_row->revealer_handler);
+        effect_row->revealer_handler = 0;
+    }
+
+    gtk_drop_down_set_model(effect_row->choice, NULL);
+    effect_row->model = NULL;
+}
+
+static gboolean remove_effect_row_idle(gpointer data)
+{
+    GtkWidget *row = data;
+    GtkWidget *parent = gtk_widget_get_parent(row);
+    struct effect_row *effect_row = g_object_get_data(
+        G_OBJECT(row), "effect-row");
+
+    if (effect_row)
+        effect_row->remove_source = 0;
+
+    if (effect_row)
+        prepare_effect_row_destroy(effect_row, FALSE);
+    if (GTK_IS_LIST_BOX(parent))
+        gtk_list_box_remove(GTK_LIST_BOX(parent), row);
+
+    return G_SOURCE_REMOVE;
+}
+
+static gboolean refresh_effect_row(gpointer data)
+{
+    GtkWidget *row = data;
+    struct effect_row *effect_row = g_object_get_data(
+        G_OBJECT(row), "effect-row");
+
+    if (effect_row)
+        effect_row->refresh_source = 0;
+
+    if (effect_row && gtk_widget_get_parent(row)) {
+        effect_row->refresh_pending = FALSE;
+        show_active_effect(effect_row);
+        gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), TRUE);
+    }
+
+    return G_SOURCE_REMOVE;
+}
+
+static void queue_effect_row_refresh(struct effect_row *effect_row)
+{
+    effect_row->refresh_pending = TRUE;
+    gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), FALSE);
+
+    effect_row->refresh_source = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, refresh_effect_row,
+                                                 g_object_ref(effect_row->row),
+                                                 g_object_unref);
+}
+#endif
 
 static void remove_effect_row(GtkRevealer *revealer, GParamSpec *,
                               struct effect_row *effect_row)
@@ -145,55 +273,109 @@ static void remove_effect_row(GtkRevealer *revealer, GParamSpec *,
     if (!effect_row->removing || gtk_revealer_get_child_revealed(revealer))
         return;
 
+#if GTK_MAJOR_VERSION < 4
     gtk_container_remove(GTK_CONTAINER(effect_row->pane->list),
                          effect_row->row);
+#else
+    if (effect_row->remove_pending)
+        return;
+
+    effect_row->remove_pending = TRUE;
+    effect_row->remove_source = g_idle_add_full(
+        G_PRIORITY_DEFAULT_IDLE, remove_effect_row_idle,
+        g_object_ref(effect_row->row), g_object_unref);
+#endif
 }
 
 static gboolean reveal_effect_row(gpointer data)
 {
-    gtk_revealer_set_reveal_child(GTK_REVEALER(data), TRUE);
+    GtkWidget *row = data;
+    struct effect_row *effect_row = g_object_get_data(
+        G_OBJECT(row), "effect-row");
+
+    if (effect_row) {
+        effect_row->animation_source = 0;
+        gtk_revealer_set_reveal_child(effect_row->revealer, TRUE);
+    }
 
     return G_SOURCE_REMOVE;
 }
 
 static gboolean conceal_effect_row(gpointer data)
 {
-    gtk_revealer_set_reveal_child(GTK_REVEALER(data), FALSE);
+    GtkWidget *row = data;
+    struct effect_row *effect_row = g_object_get_data(
+        G_OBJECT(row), "effect-row");
+
+    if (effect_row) {
+        effect_row->animation_source = 0;
+        gtk_revealer_set_reveal_child(effect_row->revealer, FALSE);
+    }
 
     return G_SOURCE_REMOVE;
 }
 
 static void append_effect_row(struct effects_pane *pane, gboolean animate);
 
+static void update_effect_row(struct effect_row *effect_row)
+{
+#if GTK_MAJOR_VERSION < 4
+    show_active_effect(effect_row);
+#else
+    queue_effect_row_refresh(effect_row);
+#endif
+}
+
 static guint effect_row_position(struct effect_row *effect_row)
 {
+#if GTK_MAJOR_VERSION < 4
     GList *children;
     GList *item;
+#else
+    GtkWidget *child;
+#endif
     guint position = 0;
 
+#if GTK_MAJOR_VERSION < 4
     children = gtk_container_get_children(GTK_CONTAINER(effect_row->pane->list));
+
     for (item = children; item; item = item->next) {
         struct effect_row *other = g_object_get_data(G_OBJECT(item->data),
                                                       "effect-row");
 
         if (other == effect_row)
             break;
+
         if (other && other->selected_type != G_TYPE_INVALID)
             position++;
     }
     g_list_free(children);
+#else
+    child = gtk_widget_get_first_child(GTK_WIDGET(effect_row->pane->list));
+
+    for (; child; child = gtk_widget_get_next_sibling(child)) {
+        struct effect_row *other = g_object_get_data(G_OBJECT(child),
+                                                      "effect-row");
+
+        if (other == effect_row)
+            break;
+
+        if (other && other->selected_type != G_TYPE_INVALID)
+            position++;
+    }
+#endif
 
     return position;
 }
 
-static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
+static void effect_changed(struct effect_row *effect_row)
 {
-    gint selected = gtk_combo_box_get_active(choice);
+    gint selected = get_choice_active(effect_row);
     CamoramaFilterChain *chain;
     unsigned int position;
     GType selected_type;
 
-    if (selected < 0 || selected >= (gint)effect_row->choices->len)
+    if (selected < 0 || (guint)selected >= effect_row->choices->len)
         return;
 
     selected_type = g_array_index(effect_row->choices, GType, selected);
@@ -216,10 +398,10 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
         effect_row->selected_type = G_TYPE_INVALID;
         effect_row->removing = TRUE;
         gtk_widget_set_sensitive(GTK_WIDGET(effect_row->choice), FALSE);
-        g_timeout_add_full(G_PRIORITY_DEFAULT, EFFECT_REMOVE_DELAY,
-                           conceal_effect_row,
-                           g_object_ref(effect_row->revealer),
-                           g_object_unref);
+        effect_row->animation_source = g_timeout_add_full(
+            G_PRIORITY_DEFAULT, EFFECT_REMOVE_DELAY,
+            conceal_effect_row, g_object_ref(effect_row->row),
+            g_object_unref);
 
         return;
     }
@@ -232,7 +414,7 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
         g_ptr_array_insert(chain->filters, position, filter);
 
         effect_row->selected_type = selected_type;
-        show_active_effect(effect_row);
+        update_effect_row(effect_row);
         append_effect_row(effect_row->pane, TRUE);
 
         return;
@@ -250,11 +432,30 @@ static void effect_changed(GtkComboBox *choice, struct effect_row *effect_row)
         g_object_unref(old_filter);
     }
     effect_row->selected_type = selected_type;
-    show_active_effect(effect_row);
+    update_effect_row(effect_row);
 }
+
+#if GTK_MAJOR_VERSION < 4
+static void effect_choice_changed(GtkComboBox *, struct effect_row *effect_row)
+{
+    effect_changed(effect_row);
+}
+#else
+static void effect_choice_changed(GtkDropDown *, GParamSpec *,
+                                  struct effect_row *effect_row)
+{
+    if (!effect_row->refresh_pending)
+        effect_changed(effect_row);
+}
+#endif
 
 static void effect_row_free(struct effect_row *effect_row)
 {
+    clear_source(&effect_row->animation_source);
+#if GTK_MAJOR_VERSION >= 4
+    clear_source(&effect_row->refresh_source);
+    clear_source(&effect_row->remove_source);
+#endif
     g_array_unref(effect_row->choices);
     g_free(effect_row);
 }
@@ -267,7 +468,13 @@ static void append_effect_row(struct effects_pane *pane, gboolean animate)
     effect_row->pane = pane;
     effect_row->row = gtk_list_box_row_new();
     effect_row->revealer = GTK_REVEALER(gtk_revealer_new());
+#if GTK_MAJOR_VERSION < 4
     effect_row->choice = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
+#else
+    effect_row->model = gtk_string_list_new(NULL);
+    effect_row->choice = GTK_DROP_DOWN(gtk_drop_down_new(
+        G_LIST_MODEL(effect_row->model), NULL));
+#endif
     effect_row->choices = g_array_new(FALSE, FALSE, sizeof(GType));
 
     gtk_widget_set_margin_top(content, 6);
@@ -279,11 +486,19 @@ static void append_effect_row(struct effects_pane *pane, gboolean animate)
     g_array_set_size(effect_row->choices, 0);
     fill_effect_choices(effect_row, FALSE);
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(effect_row->choice), 0);
+    set_choice_active(effect_row, 0);
 
-    effect_row->changed_handler =
-        g_signal_connect(effect_row->choice, "changed",
-                         G_CALLBACK(effect_changed), effect_row);
+#if GTK_MAJOR_VERSION < 4
+    effect_row->changed_handler = g_signal_connect(effect_row->choice,
+                                                   "changed",
+                                                   G_CALLBACK(effect_choice_changed),
+                                                   effect_row);
+#else
+    effect_row->changed_handler = g_signal_connect(effect_row->choice,
+                                                   "notify::selected",
+                                                   G_CALLBACK(effect_choice_changed),
+                                                   effect_row);
+#endif
 
     gtk_revealer_set_transition_type(
         effect_row->revealer, GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
@@ -291,6 +506,7 @@ static void append_effect_row(struct effects_pane *pane, gboolean animate)
                                          EFFECT_TRANSITION_DURATION);
     gtk_revealer_set_reveal_child(effect_row->revealer, !animate);
 
+#if GTK_MAJOR_VERSION < 4
     gtk_container_add(GTK_CONTAINER(content),
                       GTK_WIDGET(effect_row->choice));
     gtk_container_add(GTK_CONTAINER(effect_row->revealer), content);
@@ -298,15 +514,31 @@ static void append_effect_row(struct effects_pane *pane, gboolean animate)
                       GTK_WIDGET(effect_row->revealer));
     gtk_list_box_insert(pane->list, effect_row->row, -1);
     gtk_widget_show_all(effect_row->row);
+#else
+    gtk_box_append(GTK_BOX(content), GTK_WIDGET(effect_row->choice));
+    gtk_revealer_set_child(effect_row->revealer, content);
+    gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(effect_row->row),
+                               GTK_WIDGET(effect_row->revealer));
+    gtk_list_box_append(pane->list, effect_row->row);
+#endif
 
     g_object_set_data_full(G_OBJECT(effect_row->row), "effect-row",
                            effect_row, (GDestroyNotify)effect_row_free);
+
+#if GTK_MAJOR_VERSION < 4
     g_signal_connect(effect_row->revealer, "notify::child-revealed",
                      G_CALLBACK(remove_effect_row), effect_row);
+#else
+    effect_row->revealer_handler =
+        g_signal_connect(effect_row->revealer, "notify::child-revealed",
+                         G_CALLBACK(remove_effect_row), effect_row);
+#endif
 
-    if (animate)
-        g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, reveal_effect_row,
-                        g_object_ref(effect_row->revealer), g_object_unref);
+    if (animate) {
+        effect_row->animation_source = g_idle_add_full(
+            G_PRIORITY_DEFAULT_IDLE, reveal_effect_row,
+            g_object_ref(effect_row->row), g_object_unref);
+    }
 }
 
 static void effects_pane_free(struct effects_pane *pane)
@@ -340,8 +572,7 @@ void load_interface(cam_t *cam)
     pane->cam = cam;
     pane->list = GTK_LIST_BOX(gtk_builder_get_object(cam->xml,
                                                      "effects_list"));
-    pane->effects = g_ptr_array_new_with_free_func(
-        (GDestroyNotify)effect_info_free);
+    pane->effects = g_ptr_array_new_with_free_func((GDestroyNotify)effect_info_free);
 
     filter_types = g_type_children(CAMORAMA_TYPE_FILTER, &n_filters);
     for (i = 0; i < n_filters; i++) {
@@ -349,8 +580,9 @@ void load_interface(cam_t *cam)
         struct effect_info *effect = g_new0(struct effect_info, 1);
 
         effect->type = filter_types[i];
-        effect->name = g_strdup(filter_class->name ? filter_class->name :
-                                g_type_name(filter_types[i]));
+        effect->name = g_strdup(filter_class->name ?
+                                filter_class->name : g_type_name(filter_types[i]));
+
         g_ptr_array_add(pane->effects, effect);
         g_type_class_unref(filter_class);
     }
