@@ -160,6 +160,7 @@ void acap_func(GtkWidget *rb, cam_t *cam)
                    cam->timeout_id, cam->timeout_interval);
         }
         g_source_remove(cam->timeout_id);
+        cam->timeout_id = 0;
     }
     set_sensitive(cam);
 }
