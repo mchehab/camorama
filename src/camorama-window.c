@@ -464,6 +464,27 @@ static void effect_row_free(struct effect_row *effect_row)
     g_free(effect_row);
 }
 
+void camorama_effects_shutdown(cam_t *cam)
+{
+    GtkListBox *list = GTK_LIST_BOX(gtk_builder_get_object(cam->xml,
+                                                           "effects_list"));
+#if GTK_MAJOR_VERSION >= 4
+    GtkWidget *row;
+
+    while ((row = gtk_widget_get_first_child(GTK_WIDGET(list)))) {
+        struct effect_row *effect_row = g_object_get_data(G_OBJECT(row),
+                                                          "effect-row");
+
+        if (effect_row)
+            prepare_effect_row_destroy(effect_row, TRUE);
+
+        gtk_list_box_remove(list, row);
+    }
+#endif
+
+    g_object_set_data(G_OBJECT(list), "filter-chain", NULL);
+}
+
 static void append_effect_row(struct effects_pane *pane, gboolean animate)
 {
     struct effect_row *effect_row = g_new0(struct effect_row, 1);

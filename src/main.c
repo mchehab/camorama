@@ -209,6 +209,7 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
         g_source_remove(cam->timeout_fps_id);
     cam->timeout_fps_id = 0;
 
+    camorama_effects_shutdown(cam);
     g_clear_object(&cam->filter_chain);
     g_clear_object(&cam->status);
     g_clear_object(&cam->da);
