@@ -621,12 +621,6 @@ void on_about_activate(GtkWidget *, cam_t *cam)
     gtk_widget_show(about);
 }
 
-static void apply_filters(cam_t *cam, unsigned char *pic_buf)
-{
-    camorama_filter_chain_apply(cam->filter_chain, pic_buf,
-                                cam->width, cam->height, 3);
-}
-
 #define MULT(d, c, a, t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
 
 static inline void show_buffer(cam_t *cam)
@@ -651,7 +645,8 @@ gint timeout_func(cam_t *cam)
         return TRUE;
 
     g_mutex_lock(&cam->pixbuf_mutex);
-    apply_filters(cam, pic_buf);
+    camorama_filter_chain_apply(cam->filter_chain, pic_buf,
+                                cam->width, cam->height, 3);
 
     cam->pb = gdk_pixbuf_new_from_data(pic_buf, GDK_COLORSPACE_RGB, FALSE, 8,
                                        cam->width, cam->height,
