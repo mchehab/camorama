@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/gnome/camorama/icons">
+    <file alias="16x16/devices/camorama-window.png">pixmaps/camorama-16.png</file>
+    <file alias="24x24/devices/camorama-window.png">pixmaps/camorama-24.png</file>
+    <file alias="32x32/devices/camorama-window.png">pixmaps/camorama-32.png</file>
+    <file alias="48x48/devices/camorama-window.png">pixmaps/camorama-48.png</file>
+    <file alias="64x64/devices/camorama-window.png">pixmaps/camorama-64.png</file>
+    <file alias="128x128/devices/camorama-window.png">pixmaps/camorama-128.png</file>
+    <file alias="256x256/devices/camorama-window.png">pixmaps/camorama-256.png</file>
+    <file alias="512x512/devices/camorama-window.png">pixmaps/camorama-512.png</file>
+  </gresource>
+  <gresource prefix="/org/gnome/camorama">
+    <file alias="ui/camorama-gtk4.ui">data/camorama-gtk4.ui</file>
+    <file alias="images/contrast.png">data/pixmaps/contrast.png</file>
+    <file alias="images/brightness.png">data/pixmaps/brightness.png</file>
+    <file alias="images/colourness.png">data/pixmaps/colourness.png</file>
+    <file alias="images/stock-tool-hue-saturation-16.png">data/pixmaps/stock-tool-hue-saturation-16.png</file>
+    <file alias="images/whiteness.png">data/pixmaps/whiteness.png</file>
+  </gresource>
+</gresources>

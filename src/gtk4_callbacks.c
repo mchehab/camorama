@@ -27,9 +27,16 @@ void gtk4_fullscreen_changed(GtkWindow *window, GParamSpec *, cam_t *cam)
 
 void gtk4_set_window_icons(GtkWindow *window, GtkWindow *prefswindow)
 {
-    gtk_window_set_default_icon_name("camorama");
-    gtk_window_set_icon_name(window, "camorama");
-    gtk_window_set_icon_name(prefswindow, "camorama");
+    const gchar *icon_name = "camorama-window";
+    GtkIconTheme *icon_theme;
+
+    icon_theme = gtk_icon_theme_get_for_display(gdk_display_get_default());
+    gtk_icon_theme_add_resource_path(icon_theme,
+                                     "/org/gnome/camorama/icons");
+
+    gtk_window_set_default_icon_name(icon_name);
+    gtk_window_set_icon_name(window, icon_name);
+    gtk_window_set_icon_name(prefswindow, icon_name);
 }
 
 /*

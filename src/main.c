@@ -232,12 +232,14 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
 
 static void activate(GtkApplication *app)
 {
+#if GTK_MAJOR_VERSION < 4
     g_autofree gchar *ui_builder_file = NULL;
+    const gchar *data_dir;
+#endif
     GSettingsSchema *schema = NULL;
     GError *error = NULL;
     cam_t *cam = g_new0(cam_t, 1);
     GtkWidget *widget, *window;
-    const gchar *data_dir;
     unsigned int i;
 
     /* set non-zero default values */
@@ -287,14 +289,22 @@ static void activate(GtkApplication *app)
 
     cam->xml = gtk_builder_new();
 
+#if GTK_MAJOR_VERSION < 4
     data_dir = g_getenv("CAMORAMA_DATA_DIR");
     if (data_dir)
         ui_builder_file = g_build_filename(data_dir, CAMORAMA_UI, NULL);
     else
         ui_builder_file = g_build_filename(PACKAGE_DATA_DIR, "camorama",
                                            CAMORAMA_UI, NULL);
+#endif
 
+#if GTK_MAJOR_VERSION >= 4
+    if (!gtk_builder_add_from_resource(cam->xml,
+                                      "/org/gnome/camorama/ui/camorama-gtk4.ui",
+                                      &error) ||
+#else
     if (!gtk_builder_add_from_file(cam->xml, ui_builder_file, &error) ||
+#endif
         error) {
         char *message = g_strdup_printf(_("Couldn't load builder file: %s"),
                                         error ? error->message : _("unknown error"));

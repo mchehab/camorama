@@ -298,7 +298,7 @@
                     <child>
                       <object class="GtkImage" id="image20">
                         <property name="halign">center</property>
-                        <property name="file">snap-icon-small.xpm</property>
+                        <property name="icon-name">camera-photo-symbolic</property>
                       </object>
                     </child>
                     <child>
@@ -425,7 +425,7 @@
             </child>
             <child>
               <object class="GtkImage" id="contrast_icon">
-                <property name="file">contrast.png</property>
+                <property name="resource">/org/gnome/camorama/images/contrast.png</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">0</property>
@@ -434,7 +434,7 @@
             </child>
             <child>
               <object class="GtkImage" id="brightness_icon">
-                <property name="file">brightness.png</property>
+                <property name="resource">/org/gnome/camorama/images/brightness.png</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">1</property>
@@ -443,7 +443,7 @@
             </child>
             <child>
               <object class="GtkImage" id="color_icon">
-                <property name="file">colourness.png</property>
+                <property name="resource">/org/gnome/camorama/images/colourness.png</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">3</property>
@@ -452,7 +452,7 @@
             </child>
             <child>
               <object class="GtkImage" id="hue_icon">
-                <property name="file">stock-tool-hue-saturation-16.png</property>
+                <property name="resource">/org/gnome/camorama/images/stock-tool-hue-saturation-16.png</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">4</property>
@@ -461,7 +461,7 @@
             </child>
             <child>
               <object class="GtkImage" id="balance_icon">
-                <property name="file">whiteness.png</property>
+                <property name="resource">/org/gnome/camorama/images/whiteness.png</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">5</property>
@@ -495,7 +495,7 @@
             </child>
             <child>
               <object class="GtkImage" id="zoom_icon">
-                <property name="file">zoom.png</property>
+                <property name="icon-name">zoom-in-symbolic</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">2</property>

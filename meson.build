@@ -59,6 +59,13 @@ sources = files(
 )
 
 if gtk4
+  gnome = import('gnome')
+  sources += gnome.compile_resources(
+    'camorama-icons',
+    'data/camorama-icons.gresource.xml',
+    source_dir: meson.current_source_dir(),
+    c_name: 'camorama_icons',
+  )
   sources += files('src/gtk4_callbacks.c')
 else
   sources += files('src/gtk3_callbacks.c')
