@@ -121,6 +121,16 @@
       <summary>Toggles the video effects buttons</summary>
       <description>Toggles the use of the buttons to adjust the video filters</description>
     </key>
+    <key name="audio" type="b">
+      <default>false</default>
+      <summary>Play webcam audio</summary>
+      <description>Captures audio from the camera and plays it through the current PulseAudio output.</description>
+    </key>
+    <key name="audio-volume" type="d">
+      <default>1.0</default>
+      <summary>Webcam audio volume</summary>
+      <description>Sets the playback volume for webcam audio.</description>
+    </key>
     <key name="width" type="i">
       <default>0</default>
       <summary>Image width</summary>

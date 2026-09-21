@@ -8,6 +8,7 @@
 #endif
 #include "filter.h"
 #include "camorama-globals.h"
+#include "audio.h"
 #include "support.h"
 #include <config.h>
 
@@ -194,6 +195,8 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
         else if (cam->read == FALSE)
             stop_streaming(cam);
     }
+
+    cam_audio_stop(cam);
 
     if (cam->screensaver_inhibit_cookie)
         gtk_application_uninhibit(cam->app,
@@ -404,6 +407,16 @@ static void activate(GtkApplication *app)
                                                    CAM_SETTINGS_SHOW_ADJUSTMENTS);
     cam->show_effects = g_settings_get_boolean(cam->gc,
                                                CAM_SETTINGS_SHOW_EFFECTS);
+    cam->audio_enabled = g_settings_get_boolean(cam->gc, CAM_SETTINGS_AUDIO);
+    cam->audio_volume = 1.;
+    g_object_get(cam->gc, "settings-schema", &schema, NULL);
+    cam->audio_volume_available =
+        g_settings_schema_has_key(schema, CAM_SETTINGS_AUDIO_VOLUME);
+    if (cam->audio_volume_available)
+        cam->audio_volume = CLAMP(g_settings_get_double(cam->gc,
+                                                         CAM_SETTINGS_AUDIO_VOLUME),
+                                  0., 1.);
+    g_settings_schema_unref(schema);
     if (x)
         cam->width = x;
     else
@@ -416,6 +429,14 @@ static void activate(GtkApplication *app)
 
     set_initial_window_size(cam);
     start_camera(cam);
+
+    cam->audio_available = cam_audio_available(cam);
+    if (cam->audio_enabled && cam->audio_available && !cam_audio_start(cam)) {
+        cam->audio_enabled = FALSE;
+        g_settings_set_boolean(cam->gc, CAM_SETTINGS_AUDIO, FALSE);
+    } else if (!cam->audio_available) {
+        cam->audio_enabled = FALSE;
+    }
 
     cam->screensaver_inhibit_cookie =
         gtk_application_inhibit(cam->app, NULL,

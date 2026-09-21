@@ -35,6 +35,8 @@
 #else
 #include "gtk4_callbacks.h"
 #endif
+#include "gtk_common_callbacks.h"
+#include "audio.h"
 #include "camorama-filter-chain.h"
 #include "camorama-globals.h"
 #include "filter.h"
@@ -485,6 +487,36 @@ void camorama_effects_shutdown(cam_t *cam)
     g_object_set_data(G_OBJECT(list), "filter-chain", NULL);
 }
 
+static void setup_audio_controls(cam_t *cam)
+{
+    GtkWidget *box;
+    GtkWidget *button;
+    GtkWidget *label;
+    GtkWidget *scale;
+
+    box = GTK_WIDGET(gtk_builder_get_object(cam->xml, "hbox31"));
+    if (!GTK_IS_BOX(box))
+        return;
+
+    button = gtk_check_button_new_with_mnemonic(_("_Audio"));
+    gtk_common_set_toggle_active(button, cam->audio_enabled);
+    gtk_widget_set_sensitive(button, cam->audio_available);
+    g_signal_connect(button, "toggled", G_CALLBACK(cam_audio_enable), cam);
+    gtk_common_box_append(GTK_BOX(box), button);
+
+    label = gtk_label_new(_("Volume"));
+    gtk_common_box_append(GTK_BOX(box), label);
+
+    scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0., 100., 1.);
+    gtk_range_set_value(GTK_RANGE(scale), cam->audio_volume * 100.);
+    gtk_scale_set_draw_value(GTK_SCALE(scale), FALSE);
+    gtk_widget_set_size_request(scale, 100, -1);
+    gtk_widget_set_sensitive(scale, cam->audio_enabled && cam->audio_available);
+    g_signal_connect(scale, "value-changed", G_CALLBACK(cam_audio_volume), cam);
+    gtk_common_box_append(GTK_BOX(box), scale);
+    cam->audio_volume_widget = scale;
+}
+
 static void append_effect_row(struct effects_pane *pane, gboolean animate)
 {
     struct effect_row *effect_row = g_new0(struct effect_row, 1);
@@ -620,6 +652,8 @@ void load_interface(cam_t *cam)
                            g_object_ref(cam->filter_chain), g_object_unref);
 
     append_effect_row(pane, FALSE);
+
+    setup_audio_controls(cam);
 
 
     if (!cam->show_effects) {

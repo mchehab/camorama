@@ -63,6 +63,7 @@ typedef struct  {
 } video_control_menu_t;
 
 struct camera;
+struct cam_audio;
 
 typedef struct {
     char *name;
@@ -119,10 +120,13 @@ typedef struct camera {
     gchar *ts_string;
     gchar *date_format;
     gboolean debug, read, userptr, use_libv4l, hidden;
-    gboolean cap, rcap, acap, show_adjustments, show_effects;
+    gboolean cap, rcap, acap, show_adjustments, show_effects, audio_enabled;
+    gboolean audio_available;
+    gboolean audio_volume_available;
+    gdouble audio_volume;
     gboolean timestamp, rtimestamp, usedate, usestring;
     gboolean rtimefn, timefn;
-    GtkWidget *da, *status;
+    GtkWidget *da, *status, *audio_volume_widget;
     unsigned char *pic_buf, *tmp;
     guint timeout_id, timeout_fps_id, idle_id;
     guint32 timeout_interval;
@@ -135,6 +139,7 @@ typedef struct camera {
     GtkApplication *app;
     GtkWidget *controls_window;
     guint screensaver_inhibit_cookie;
+    struct cam_audio *audio;
 
     CamoramaFilterChain *filter_chain;
 

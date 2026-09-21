@@ -2,6 +2,22 @@ project('camorama', 'c', version: '0.21.2',
         default_options: ['c_std=gnu11', 'warning_level=2'])
 
 cc = meson.get_compiler('c')
+
+sources = files(
+  'src/gtk_common_callbacks.c',
+  'src/camorama-filter-chain.c',
+  'src/camorama-filter-laplace.c',
+  'src/camorama-filter-mirror.c',
+  'src/camorama-filter-reichardt.c',
+  'src/camorama-window.c',
+  'src/fileio.c',
+  'src/filter.c',
+  'src/main.c',
+  'src/media-devices.c',
+  'src/support.c',
+  'src/v4l.c',
+)
+
 gtk4 = get_option('gtk4')
 
 if gtk4
@@ -19,8 +35,23 @@ dependencies = [
   cc.find_library('m'),
 ]
 
+libpulse_dep = dependency('libpulse', required: get_option('audio'))
+libpulse_simple_dep = dependency('libpulse-simple', required: get_option('audio'))
+
+if libpulse_dep.found() and libpulse_simple_dep.found()
+    dependencies += libpulse_dep
+    dependencies += libpulse_simple_dep
+
+    sources += 'src/audio.c'
+
+    enable_audio = true
+else
+    enable_audio = false
+endif
+
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
+conf.set('HAVE_AUDIO', enable_audio)
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -43,20 +74,6 @@ devenv.set('CAMORAMA_ICON_FILE', join_paths(meson.current_source_dir(),
 meson.add_devenv(devenv)
 
 inc = include_directories('.', 'src')
-
-sources = files(
-  'src/gtk_common_callbacks.c',
-  'src/camorama-filter-chain.c',
-  'src/camorama-filter-laplace.c',
-  'src/camorama-filter-mirror.c',
-  'src/camorama-filter-reichardt.c',
-  'src/camorama-window.c',
-  'src/fileio.c',
-  'src/filter.c',
-  'src/main.c',
-  'src/support.c',
-  'src/v4l.c',
-)
 
 if gtk4
   gnome = import('gnome')
@@ -113,5 +130,11 @@ foreach size : ['16', '24', '32', '48', '64', '128', '256', '512']
                                        'devices'))
 endforeach
 
-summary('GTK interface', gtk4 ? 'GTK 4' : 'GTK 3',
-        section: 'Configuration')
+summary(
+    {
+        'GTK interface': gtk4 ? 'GTK 4' : 'GTK 3',
+        'Audio routing': enable_audio,
+    },
+    bool_yn: true,
+    section: 'Configuration'
+)

@@ -26,3 +26,5 @@
 #define CAM_SETTINGS_AUTO_CAPTURE_INTERVAL "auto-capture-interval"
 #define CAM_SETTINGS_SHOW_ADJUSTMENTS      "show-adjustments"
 #define CAM_SETTINGS_SHOW_EFFECTS          "show-effects"
+#define CAM_SETTINGS_AUDIO                 "audio"
+#define CAM_SETTINGS_AUDIO_VOLUME          "audio-volume"
