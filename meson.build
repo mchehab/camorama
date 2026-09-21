@@ -3,7 +3,7 @@ project('camorama', 'c', version: '0.21.2',
 
 cc = meson.get_compiler('c')
 
-sources = files(
+sources = [
   'src/gtk_common_callbacks.c',
   'src/camorama-filter-chain.c',
   'src/camorama-filter-laplace.c',
@@ -16,7 +16,7 @@ sources = files(
   'src/media-devices.c',
   'src/support.c',
   'src/v4l.c',
-)
+]
 
 gtk4 = get_option('gtk4')
 
@@ -83,9 +83,9 @@ if gtk4
     source_dir: meson.current_source_dir(),
     c_name: 'camorama_icons',
   )
-  sources += files('src/gtk4_callbacks.c')
+  sources += 'src/gtk4_callbacks.c'
 else
-  sources += files('src/gtk3_callbacks.c')
+  sources += 'src/gtk3_callbacks.c'
 endif
 
 executable('camorama', sources,
@@ -98,6 +98,7 @@ executable('camorama', sources,
 i18n = import('i18n')
 subdir('po')
 subdir('data')
+subdir('pixmaps')
 
 desktop = i18n.merge_file(input: 'camorama.desktop.in',
                           output: 'camorama.desktop',
@@ -115,20 +116,6 @@ appdata = i18n.merge_file(input: 'camorama.appdata.xml.in',
                                                   'metainfo'))
 
 install_man('camorama.1')
-
-install_data(files('pixmaps/camorama-16.png', 'pixmaps/camorama-24.png',
-                   'pixmaps/camorama-32.png', 'pixmaps/camorama-48.png',
-                   'pixmaps/camorama-64.png', 'pixmaps/camorama-128.png',
-                   'pixmaps/camorama-256.png', 'pixmaps/camorama-512.png'),
-             install_dir: join_paths(get_option('datadir'), 'pixmaps'))
-
-foreach size : ['16', '24', '32', '48', '64', '128', '256', '512']
-  install_data('pixmaps/camorama-' + size + '.png',
-               rename: 'camorama.png',
-               install_dir: join_paths(get_option('datadir'), 'icons',
-                                       'hicolor', size + 'x' + size,
-                                       'devices'))
-endforeach
 
 summary(
     {
