@@ -14,7 +14,6 @@ sources = [
   'src/img_bayer.c',
   'src/fileio.c',
   'src/filter.c',
-  'src/main.c',
   'src/media-devices.c',
   'src/support.c',
   'src/streaming.c',
@@ -61,12 +60,16 @@ ffmpeg_deps = [
 
 enable_ffmpeg = true
 foreach dep : ffmpeg_deps
-  enable_ffmpeg = enable_ffmpeg and dep.found()
+    enable_ffmpeg = enable_ffmpeg and dep.found()
 endforeach
 
 if enable_ffmpeg
-  dependencies += ffmpeg_deps
-  sources += 'src/img_ffmpeg.c'
+    dependencies += ffmpeg_deps
+    sources += 'src/img_ffmpeg.c'
+
+    # ffmeg binary is needed for img_convert unittests
+    ffmpeg = find_program('ffmpeg')
+    png_file = 'smpte_color_bars.png'
 endif
 
 conf = configuration_data()
@@ -74,6 +77,8 @@ conf.set('HAVE_CONFIG_H', 1)
 conf.set('HAVE_AUDIO', enable_audio)
 conf.set('HAVE_LIBV4L2', libv4l2_dep.found())
 conf.set('HAVE_FFMPEG', enable_ffmpeg)
+conf.set_quoted('FFMPEG_BIN', ffmpeg.full_path())
+conf.set_quoted('PNG_FILE', png_file)
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
@@ -110,17 +115,34 @@ else
   sources += 'src/gtk3_callbacks.c'
 endif
 
-executable('camorama', sources,
+#
+# Static library
+#
+
+c_flags = [
+    '-DHAVE_CONFIG_H',
+    '-DCAMORAMA_UI="@0@"'.format(camorama_ui),
+]
+
+libcamorama = static_library(
+    'camorama',
+    sources,
+    dependencies: dependencies,
+    c_args: c_flags,
+)
+
+executable('camorama', 'src/main.c',
            dependencies: dependencies,
+           link_whole: [libcamorama],
            include_directories: inc,
-           c_args: ['-DHAVE_CONFIG_H',
-                    '-DCAMORAMA_UI="@0@"'.format(camorama_ui)],
+           c_args: c_flags,
            install: true)
 
 i18n = import('i18n')
 subdir('po')
 subdir('data')
 subdir('pixmaps')
+subdir('tests')
 
 desktop = i18n.merge_file(input: 'camorama.desktop.in',
                           output: 'camorama.desktop',
