@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <sys/queue.h>
 
-
 struct module_test_runtime {
     int (*run)(void);
     unsigned int priority;
@@ -53,12 +52,10 @@ int module_test_register(int (*run)(void), unsigned int priority)
     return 0;
 }
 
-
 /*
 * Instead of creating a header file for each test, let's just add them
 * all here, in alphabetic order.
 */
-int test_img_convert(void);
 
 int main(void)
 {

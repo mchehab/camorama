@@ -31,3 +31,6 @@ devenv: all
 
 distclean:
 	rm -rf build/
+
+tests: all
+	build/tests/unittest

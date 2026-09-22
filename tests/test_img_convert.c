@@ -3,62 +3,191 @@
 * Copyright (C) 2026 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
 */
 
+#define _GNU_SOURCE
+
+#include <errno.h>
 #include <libgen.h>
+#include <math.h>
+#include <png.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "unittest.h"
 
 #include "src/v4l.h"
 #include "src/img_convert.h"
 
-struct raw_imgs{
-    char *fname;
-    uint32_t fourcc;
-};
-
 #define COLOR_BAR_WIDTH  330
 #define COLOR_BAR_HEIGHT 186
 
-static struct raw_imgs rgb_imgs[] = {
-    { .fname = "color_bars_RGB24.raw",   .fourcc = V4L2_PIX_FMT_RGB24},
-    { .fname = "color_bars_BGR24.raw",   .fourcc = V4L2_PIX_FMT_BGR24},
+/* TODO: Peak S/N ratio limits should likely be placed at raw_imgs table */
+#define PSNR_GOAL 27.0 /* dB */
+
+struct raw_imgs {
+    char *name;
+    uint32_t fourcc;
+    int bits; /* per pixel */
+    const char *av_fmt;
+    char *av_extra;
+
+    char *fname;
+    double psnr;
+};
+
+static struct raw_imgs exact_imgs[] = {
+    { .name = "RGB24",   .fourcc = V4L2_PIX_FMT_RGB24,   .bits = 24, .av_fmt = "rgb24"},
+
+    { .name = "BGR24",   .fourcc = V4L2_PIX_FMT_BGR24,   .bits = 24, .av_fmt = "bgr24"},
+
+    { .name = "BGR32",   .fourcc = V4L2_PIX_FMT_BGR32,   .bits = 32, .av_fmt = "bgr0"},
+    { .name = "ABGR32",  .fourcc = V4L2_PIX_FMT_ABGR32,  .bits = 32, .av_fmt = "abgr"},
+    { .name = "XBGR32",  .fourcc = V4L2_PIX_FMT_XBGR32,  .bits = 32, .av_fmt = "0bgr"},
+
+    { .name = "RGB32",   .fourcc = V4L2_PIX_FMT_RGB32,   .bits = 32, .av_fmt = "rgb0"},
+    { .name = "ARGB32",  .fourcc = V4L2_PIX_FMT_ARGB32,  .bits = 32, .av_fmt = "argb"},
+    { .name = "XRGB32",  .fourcc = V4L2_PIX_FMT_XRGB32,  .bits = 32, .av_fmt = "0rgb"},
+};
+
+static struct raw_imgs aprox_imgs[] = {
+    { .name = "UYVY",    .fourcc = V4L2_PIX_FMT_UYVY,    .bits = 16, .av_fmt = "uyvy422"},
+    { .name = "VYUY",    .fourcc = V4L2_PIX_FMT_VYUY,    .bits = 16, .av_fmt = "uyvy422",  .av_extra = "-vf format=yuv422p,swapuv" },
+    { .name = "YUYV",    .fourcc = V4L2_PIX_FMT_YUYV,    .bits = 16, .av_fmt = "yuyv422"},
+    { .name = "YVYU",    .fourcc = V4L2_PIX_FMT_YVYU,    .bits = 16, .av_fmt = "yvyu422"},
+
+    /* For semi-planar objects, bits is for the Y plane */
+    { .name = "YUV422P", .fourcc = V4L2_PIX_FMT_YUV422P, .bits = 8,  .av_fmt = "yuv422p"},
+    { .name = "NV12",    .fourcc = V4L2_PIX_FMT_NV12,    .bits = 8,  .av_fmt = "nv12"},
+    { .name = "NV21",    .fourcc = V4L2_PIX_FMT_NV21,    .bits = 8,  .av_fmt = "nv21"},
+    { .name = "NV16",    .fourcc = V4L2_PIX_FMT_NV16,    .bits = 8,  .av_fmt = "nv16"},
+    { .name = "NV61",    .fourcc = V4L2_PIX_FMT_NV61,    .bits = 8,  .av_fmt = "nv16",     .av_extra = "-vf format=nv16,swapuv" },
+    { .name = "YUV420",  .fourcc = V4L2_PIX_FMT_YUV420,  .bits = 8,  .av_fmt = "yuv420p"},
+    { .name = "YVU420",  .fourcc = V4L2_PIX_FMT_YVU420,  .bits = 8,  .av_fmt = "yuv420p",  .av_extra = "-vf format=yuv420p,swapuv" },
+
+    { .name = "RGB565",  .fourcc = V4L2_PIX_FMT_RGB565,  .bits = 16, .av_fmt = "rgb565be"},
+    { .name = "RGB565X", .fourcc = V4L2_PIX_FMT_RGB565X, .bits = 16, .av_fmt = "rgb565le"},
+
+    { .name = "MJPEG",   .fourcc = V4L2_PIX_FMT_MJPEG,               .av_fmt = "yuvj422p", .av_extra = "-c:v mjpeg" },
+    { .name = "H264",    .fourcc = V4L2_PIX_FMT_H264,                .av_fmt = "yuv420p",  .av_extra = "-c:v libx264 -bf 0" },
 };
 
 static cam_t cam_rgb24 = { 0 };
 static struct colorspace_parms colspace = { 0 };
 static unsigned char *rgb24_buffer = NULL;
 static const unsigned int rgb24_size = COLOR_BAR_HEIGHT * COLOR_BAR_WIDTH * 3;
+static bool nv16_supported = true;
 
-unsigned char *load_raw_file(struct raw_imgs img_files[],
-                             unsigned img_size, uint32_t fourcc,
-                             cam_t *cam, uint32_t bitsperpixel)
+static char *get_dir()
 {
-    char *dir, *full_name;
-    size_t size, read_size;
-    unsigned char *buffer;
     char exe[PATH_MAX];
-    unsigned int rc, i;
-    FILE *fp;
-
-    for (i = 0; i < img_size; i++)
-        if (img_files[i].fourcc == fourcc)
-            break;
-
-    assert_int_not_equal(i, img_size);
+    size_t size;
 
     size = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
     assert_true(size > 0);
 
     exe[size] = '\0';
-    dir = dirname(strdup(exe));
 
-    rc = asprintf(&full_name, "%s/%s", dir, img_files[i].fname);
+    return dirname(strdup(exe));
+}
+
+static int color_bars_generate(struct raw_imgs *img)
+{
+    char *dir, *png_file, *fname;
+    const char *codec;
+    int argc, status;
+    char *argv[32];
+    struct stat st;
+    int rc;
+
+    dir = get_dir();
+    rc = asprintf(&png_file, "%s/%s", dir, PNG_FILE);
     assert_true(rc > 0);
+    rc = asprintf(&fname, "%s/color_bars_%s.raw", dir, img->name);
+    assert_true(rc > 0);
+    free(dir);
 
-    fp = fopen(full_name, "rb");
-    assert_non_null_msg(fp, full_name);
+    pid_t pid = fork();
+    assert_true(pid >= 0);
+
+    if (pid == 0) {
+        argc = 0;
+        argv[argc++] = (char *)FFMPEG_BIN;
+        argv[argc++] = "-loglevel";
+        argv[argc++] = (!strcmp(img->name, "NV16") ||
+                        !strcmp(img->name, "NV61")) ? "quiet" : "error";
+        argv[argc++] = "-y";
+        argv[argc++] = "-i";
+        argv[argc++] = png_file;
+        argv[argc++] = "-pix_fmt";
+        argv[argc++] = (char *)img->av_fmt;
+
+        if (img->av_extra) {
+            char *extra = strdup(img->av_extra);
+            if (!extra)
+                _exit(127);
+
+            char *saveptr = NULL;
+            char *tok = strtok_r(extra, " ", &saveptr);
+
+            while (tok && argc < (int)(ARRAY_SIZE(argv) - 4)) {
+                argv[argc++] = tok;
+                tok = strtok_r(NULL, " ", &saveptr);
+            }
+            if (tok)
+                _exit(127);
+        }
+
+        if (!strcmp(img->name, "H264"))
+            codec = "h264";
+        else if (!strcmp(img->name, "MJPEG"))
+            codec = "mjpeg";
+        else
+            codec = "rawvideo";
+
+        argv[argc++] = "-f";
+        argv[argc++] = (char *)codec;
+        argv[argc++] = fname;
+        argv[argc] = NULL;
+
+        execvp(FFMPEG_BIN, argv);
+        perror("execvp ffmpeg");
+        _exit(127);
+    }
+
+    free(png_file);
+    assert_true(waitpid(pid, &status, 0) >= 0);
+    assert_int_equal(!WIFEXITED(status) || WEXITSTATUS(status), 0);
+    assert_false(stat(fname, &st));
+    assert_true(S_ISREG(st.st_mode));
+    assert_int_not_equal(st.st_size, 0);
+
+    img->fname = fname;
+    return 0;
+}
+
+static unsigned char *load_raw_file(struct raw_imgs *img, cam_t *cam)
+{
+    size_t size, read_size;
+    unsigned char *buffer;
+    struct stat st;
+    char *fname;
+    FILE *fp;
+    int rc;
+
+    fname = img->fname;
+
+    rc = stat(fname, &st);
+    assert_true(rc == 0);
+
+    if (!S_ISREG(st.st_mode)) {
+        skip();
+    }
+
+    fp = fopen(fname, "rb");
+    assert_non_null_msg(fp, fname);
 
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);
@@ -76,12 +205,13 @@ unsigned char *load_raw_file(struct raw_imgs img_files[],
     fclose(fp);
 
 
-    cam->pixformat = img_files[i].fourcc;
+    cam->pixformat = img->fourcc;
     cam->colorspc = colspace;
     cam->width = COLOR_BAR_WIDTH;
     cam->height = COLOR_BAR_HEIGHT;
-
-    cam->bytesperline = bitsperpixel * cam->width / 8;
+    cam->converter = NULL;
+    cam->bytesperline = img->bits * cam->width / 8;
+    cam->sizeimage = size;
 
     /* Allocate space to store the converted RGB24 image */
     cam->pic_buf = calloc(COLOR_BAR_HEIGHT, COLOR_BAR_WIDTH * 3);
@@ -89,48 +219,160 @@ unsigned char *load_raw_file(struct raw_imgs img_files[],
     return buffer;
 }
 
+static double estimate_psnr(const unsigned char *orig,
+                            const unsigned char *reconstruct,
+                            unsigned int size)
+{
+    if (size == 0)
+        return 0.0; /* or some sentinel */
+
+    double mse = 0.0;
+
+    for (unsigned int i = 0; i < size; ++i) {
+        double d = (double)orig[i] - (double)reconstruct[i];
+        mse += d * d;
+    }
+
+    mse /= (double)size;
+
+    if (mse == 0.0)
+        return 999.0; /* infinite PSNR sentinel */
+
+    return 10.0 * log10((255.0 * 255.0) / mse);
+}
+/* Helpful for visual inspection */
+void save_png(const char *name, const unsigned char *buffer,
+              unsigned width, unsigned height, int original)
+{
+    png_structp png = NULL;
+    png_infop info = NULL;
+    png_bytep *rows = NULL;
+    FILE *fp = NULL;
+    int rc, ok = 0;
+    char *fname;
+
+    if (original)
+        rc = asprintf(&fname, "/tmp/%s-original.png", name);
+    else
+        rc = asprintf(&fname, "/tmp/%s-reconstructed.png", name);
+
+    assert_true(rc > 0);
+
+    fp = fopen(fname, "wb");
+    assert_non_null(fp);
+
+    png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    assert_non_null(png);
+
+    info = png_create_info_struct(png);
+    assert_non_null(info);
+
+    if (setjmp(png_jmpbuf(png)))
+        goto done;
+
+    png_init_io(png, fp);
+
+    png_set_IHDR(png, info, width, height,
+                 8,                    /* bit depth */
+                 PNG_COLOR_TYPE_RGB,   /* 3 bytes per pixel */
+                 PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
+    png_write_info(png, info);
+
+    /* Build the row pointer table. libpng writes from this. */
+    rows = (png_bytep *)malloc(sizeof(png_bytep) * height);
+    assert_non_null(rows);
+
+    for (unsigned y = 0; y < height; ++y) {
+        rows[y] = (png_bytep)(buffer + (size_t)y * width * 3);
+    }
+
+    png_write_image(png, rows);
+    png_write_end(png, NULL);
+    ok = 1;
+
+done:
+    free(rows);
+    png_destroy_write_struct(png ? &png : NULL, info ? &info : NULL);
+    fclose(fp);
+
+    assert_int_equal(ok, 1);
+}
+
 /*
  * Test set
  */
 
-void test_bgr24(void **)
+/* Test exact match between two images */
+void test_lossless(void **state)
 {
+    struct raw_imgs *img = *state;
     unsigned int i, errors = 0;
     unsigned char *buffer;
     int rc;
 
-    /* There are just two rgb formats, so we don't need a loop */
-    cam_t cam_bgr24;
+    cam_t cam;
 
-    buffer = load_raw_file(&rgb_imgs[1], 1, V4L2_PIX_FMT_BGR24,
-                           &cam_bgr24, 24);
+    buffer = load_raw_file(img, &cam);
     assert_non_null(buffer);
 
-    rc = img_convert_to_rgb24(&cam_bgr24, buffer);
+    rc = img_convert_to_rgb24(&cam, buffer);
     assert_int_not_equal(rc, 0);
 
-    /* As RGB24 <=> BGR24 conversion is lossless, a simple comparision is OK */
     for  (i = 0; i < rgb24_size; i++)
-        if (rgb24_buffer[i] != cam_bgr24.pic_buf[i])
+        if (rgb24_buffer[i] != cam.pic_buf[i])
             errors++;
+
+    // FIXME: add a command line arg to enable it
+    save_png(img->name, cam.pic_buf, cam.width, cam.height, 0);
 
     assert_int_equal(errors, 0);
 
+    free(cam.pic_buf);
     free(buffer);
 }
+
+/* Test for exact match between two images */
+void test_psnr(void **state)
+{
+    struct raw_imgs *img = *state;
+    unsigned char *buffer;
+    int rc;
+
+    cam_t cam;
+
+    buffer = load_raw_file(img, &cam);
+    assert_non_null(buffer);
+
+    rc = img_convert_to_rgb24(&cam, buffer);
+    assert_int_not_equal(rc, 0);
+
+    img->psnr = estimate_psnr(rgb24_buffer, cam.pic_buf, rgb24_size);
+
+    // FIXME: add a command line arg to enable it
+    save_png(img->name, cam.pic_buf, cam.width, cam.height, 0);
+
+    /* Should be OK for 12 bits YUV */
+    assert_true(img->psnr >= PSNR_GOAL);
+
+    free(cam.pic_buf);
+    free(buffer);
+}
+
 
 /*
 * Unit test runner
 */
 
-static const struct CMUnitTest tests[] = {
-    cmocka_unit_test(test_bgr24),
-};
-
 static int group_setup(void **)
 {
-    rgb24_buffer = load_raw_file(&rgb_imgs[0], 1, V4L2_PIX_FMT_RGB24,
-                                 &cam_rgb24, 24);
+     rgb24_buffer = load_raw_file(&exact_imgs[0], &cam_rgb24);
+
+    // FIXME: add a command line arg to enable it
+    save_png(exact_imgs[0].name, rgb24_buffer,
+             cam_rgb24.width, cam_rgb24.height, 1);
+
     return 0;
 }
 
@@ -141,14 +383,114 @@ static int group_teardown(void **)
     return 0;
 }
 
-int test_img_convert(void)
+static void add_tests(struct CMUnitTest **tests, unsigned *num_tests,
+                      struct raw_imgs *imgs, unsigned num_imgs,
+                      void test_func(void **), const char *name_fmt,
+                      bool ignore_missing)
 {
-    printf("Running img_convert tests.\n");
-    return _cmocka_run_group_tests("img_convert",
-                    tests,
-                    ARRAY_SIZE(tests),
-                    group_setup,
-                    group_teardown);
+    struct CMUnitTest *el;
+    char *test_name;
+    unsigned i, added = 0, slot = *num_tests;
+    int rc;
+
+    for (i = 0; i < num_imgs; i++)
+        added += !ignore_missing || imgs[i].fname != NULL;
+
+    *tests = reallocarray(*tests, *num_tests + added, sizeof(*el));
+    assert_non_null(*tests);
+
+    for (i = 0; i < num_imgs; i++) {
+        if (ignore_missing && !imgs[i].fname)
+            continue;
+
+        rc = asprintf(&test_name, name_fmt, imgs[i].name);
+        assert_true(rc > 0);
+
+        el = &((*tests)[slot++]);
+
+        memset(el, 0, sizeof(*el));
+        el->test_func = test_func;
+        el->initial_state = &imgs[i];
+        el->name = test_name;
+        imgs[i].psnr = -1000.0;
+
+    }
+
+    *num_tests += added;
 }
 
-REGISTER_TEST(test_img_convert , 0);
+static void test_generate_fixture_case(void **state)
+{
+    struct raw_imgs *img = *state;
+    int rc;
+
+    if (!strcmp(img->name, "NV61") && !nv16_supported) {
+        img->fname = NULL;
+        skip();
+    }
+
+    rc = color_bars_generate(img);
+    if (rc && (!strcmp(img->name, "NV16") ||
+               !strcmp(img->name, "NV61"))) {
+        if (!strcmp(img->name, "NV16"))
+            nv16_supported = false;
+        free(img->fname);
+        img->fname = NULL;
+        fprintf(stderr, "Skipping %s fixture: FFmpeg lacks required format support\n",
+                img->name);
+        skip();
+    }
+
+    assert_int_equal(rc, 0);
+}
+
+int test_img_convert(void)
+{
+    static struct CMUnitTest *img_tests = NULL;
+    static struct CMUnitTest *img_gen;
+    unsigned num_img_tests = 0;
+    unsigned num_img_gen = 0;
+    unsigned i;
+    int rc;
+
+   /* Dynamically create the ffmeg generation tests */
+    add_tests(&img_gen, &num_img_gen, exact_imgs, ARRAY_SIZE(exact_imgs),
+              test_generate_fixture_case, "generate %s fixture", false);
+    add_tests(&img_gen, &num_img_gen, aprox_imgs, ARRAY_SIZE(aprox_imgs),
+              test_generate_fixture_case, "generate %s fixture", false);
+
+    rc = _cmocka_run_group_tests("ffmpeg_generate", img_gen, num_img_gen,
+                                 NULL, NULL);
+
+   /* Dynamically create the img_tests */
+    add_tests(&img_tests, &num_img_tests, &exact_imgs[1],
+              ARRAY_SIZE(exact_imgs) - 1, test_lossless,
+              "test %s to RGB", true);
+
+    add_tests(&img_tests, &num_img_tests, aprox_imgs,
+              ARRAY_SIZE(aprox_imgs), test_psnr,
+              "test %s to RGB", true);
+
+    rc = _cmocka_run_group_tests("img_convert", img_tests, num_img_tests,
+                                 group_setup, group_teardown);
+
+    printf("\nPeak S/N Ratio for lossy image reconstruct:\n");
+    printf("+----------+-----------+\n");
+    printf("| %-8s | %9s |\n", "Format", "PSNR (dB)");
+    printf("+----------+-----------+\n");
+    for (i = 0; i < ARRAY_SIZE(aprox_imgs); i++) {
+        struct raw_imgs *img = &aprox_imgs[i];
+
+        if (!img->fname)
+            continue;
+        if (img->psnr > -1000.0)
+            printf("| %-8s | %9.2f |\n", img->name, img->psnr);
+        else
+            printf("| %-8s | %9s |\n", img->name, "--");
+    }
+    printf("+----------+-----------+\n");
+
+    return rc;
+}
+
+REGISTER_TEST(test_img_convert, 0);
