@@ -226,12 +226,24 @@ static void copy_two_pixels(cam_t *cam,
             plane0 += 4;
         }
         break;
-    default:
     case V4L2_PIX_FMT_BGR24:
         for (i = 0; i < 2; i++) {
             *(*dst)++ = plane0[2];
             *(*dst)++ = plane0[1];
             *(*dst)++ = plane0[0];
+
+            plane0 += 3;
+        }
+        break;
+    /*
+     * We need to handle RGB24 due to padding issues on some cameras
+     */
+    default:
+    case V4L2_PIX_FMT_RGB24:
+        for (i = 0; i < 2; i++) {
+            *(*dst)++ = plane0[0];
+            *(*dst)++ = plane0[1];
+            *(*dst)++ = plane0[2];
 
             plane0 += 3;
         }
@@ -263,6 +275,11 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
     if (!video_fmt)
         return 0;
 
+    /*
+     * It is tempting to add a fast logic for RGB and BGR, but this won't
+     * work, as some cameras may have bigger bytesperline than expected,
+     * as they could be adding per-line padding filling at the end.
+     */
     switch (cam->pixformat) {
     case V4L2_PIX_FMT_SBGGR8:
     case V4L2_PIX_FMT_SGBRG8:
