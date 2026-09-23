@@ -489,7 +489,7 @@ void set_image_scale(cam_t *cam)
 void on_change_size_activate(GtkWidget *widget, cam_t *cam)
 {
     gchar const *name;
-    unsigned int width = 0, height = 0;
+    unsigned int width = 0, height = 0, pixformat = cam->pixformat, i;
 
     name = gtk_widget_get_name(widget);
     gtk_popover_popdown(GTK_POPOVER(gtk_builder_get_object(cam->xml,
@@ -506,9 +506,15 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
         height = cam->max_height;
     } else {
         sscanf(name, "%dx%d", &width, &height);
+        for (i = 0; i < cam->n_res; i++) {
+            if (cam->res[i].x == width && cam->res[i].y == height) {
+                pixformat = cam->res[i].pixformat;
+                break;
+            }
+        }
     }
 
-    try_set_win_info(cam, cam->pixformat, &width, &height);
+    try_set_win_info(cam, pixformat, &width, &height);
 
     /* Nothing to do, so just return */
     if (width == cam->width && height == cam->height)
@@ -1546,8 +1552,8 @@ static void add_gtk_view_resolutions(cam_t *cam)
     if (!small_res || !menu)
         return;
 
-    /* Get all supported resolutions by cam->pixformat */
-    get_supported_resolutions(cam, FALSE);
+    /* Show every size, using its best supported pixel format. */
+    get_supported_resolutions(cam, TRUE);
 
     if (cam->n_res > 0) {
         for (i = 0; i < cam->n_res; i++) {

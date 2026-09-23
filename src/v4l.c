@@ -556,33 +556,24 @@ static void insert_resolution(cam_t *cam, unsigned int pixformat,
         cam->res[cam->n_res].order = 99999;
     }
 
-    if (cam->debug == TRUE)
-        printf("  Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
-               cam->n_res,
-                pixformat & 0xff,
-                (pixformat >> 8) & 0xff,
-                (pixformat >> 16) & 0xff,
-                pixformat >> 24,
-                x, y, (double)max_fps);
-
     cam->n_res++;
 }
 
-static int sort_func(const void *__b, const void *__a)
+static int sort_func(const void *__a, const void *__b)
 {
     const struct resolutions *a = __a;
     const struct resolutions *b = __b;
-    int r;
 
-    r = (int)b->x - a->x;
-    if (!r)
-         r = (int)b->y - a->y;
-    if (!r)
-         r = (int)b->max_fps - a->max_fps;
-    if (!r)
-         r = (int)b->order - a->order;
+    if (a->x != b->x)
+        return a->x < b->x ? 1 : -1;
+    if (a->y != b->y)
+        return a->y < b->y ? 1 : -1;
+    if (a->max_fps != b->max_fps)
+        return a->max_fps < b->max_fps ? 1 : -1;
+    if (a->order != b->order)
+        return a->order > b->order ? 1 : -1;
 
-    return r;
+    return 0;
 }
 
 static float get_max_fps_discrete(cam_t *cam,
@@ -608,11 +599,12 @@ static float get_max_fps_discrete(cam_t *cam,
 
 void get_supported_resolutions(cam_t *cam, gboolean all_supported)
 {
-    struct v4l2_fmtdesc fmtdesc = { 0 };
-    struct v4l2_format fmt;
     struct v4l2_frmsizeenum frmsize = { 0 };
+    struct v4l2_fmtdesc fmtdesc = { 0 };
+    struct resolutions *tmp = cam->res;
     gboolean has_framesizes = FALSE;
-    unsigned int x, y, i;
+    unsigned int x, y, i, n;
+    struct v4l2_format fmt;
 
     if (cam->n_res) {
         /* Free it, as the resolutions will be re-inserted */
@@ -708,23 +700,34 @@ void get_supported_resolutions(cam_t *cam, gboolean all_supported)
     }
 
     if (!cam->res)
-	return;
+        return;
 
     qsort(cam->res, cam->n_res, sizeof(struct resolutions), sort_func);
 
+    /* Select the best quality for a given resolution */
+    tmp = cam->res;
+    n = 0;
+    for (i = 0; i < cam->n_res; i++) {
+        if (n > 0 && tmp[n - 1].x == tmp[i].x && tmp[n - 1].y == tmp[i].y)
+            continue;
+
+        tmp[n++] = tmp[i];
+    }
+    cam->n_res = n;
+
     if (cam->debug == TRUE) {
-	for (i = 0; i < cam->n_res; i++) {
-	    printf("Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps, %d depth)\n",
-		   i,
-		    cam->res[i].pixformat & 0xff,
-		   (cam->res[i].pixformat >> 8) & 0xff,
-		   (cam->res[i].pixformat >> 16) & 0xff,
-		    cam->res[i].pixformat >> 24,
-		   cam->res[i].x,
-		   cam->res[i].y,
-		   (double)cam->res[i].max_fps,
-		   cam->res[i].depth);
-	}
+        for (i = 0; i < cam->n_res; i++) {
+            printf("Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps, %d depth)\n",
+            i,
+                cam->res[i].pixformat & 0xff,
+            (cam->res[i].pixformat >> 8) & 0xff,
+            (cam->res[i].pixformat >> 16) & 0xff,
+                cam->res[i].pixformat >> 24,
+            cam->res[i].x,
+            cam->res[i].y,
+            (double)cam->res[i].max_fps,
+            cam->res[i].depth);
+        }
     }
 }
 
@@ -979,6 +982,7 @@ void try_set_win_info(cam_t *cam, unsigned int pixformat,
 void set_win_info(cam_t *cam)
 {
     struct v4l2_format fmt;
+    unsigned int i;
     gchar *msg;
 
     memset(&fmt, 0, sizeof(fmt));
@@ -1003,7 +1007,14 @@ void set_win_info(cam_t *cam)
         exit(0);
     }
 
+    /* Chose a different pixformat if quality is better or provide more fps */
     cam->pixformat = cam->res[0].pixformat;
+    for (i = 0; i < cam->n_res; i++) {
+        if (cam->res[i].x == cam->width && cam->res[i].y == cam->height) {
+            cam->pixformat = cam->res[i].pixformat;
+            break;
+        }
+    }
 
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.pixelformat = cam->pixformat;
