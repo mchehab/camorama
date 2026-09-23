@@ -9,6 +9,13 @@
 
 extern int frame_number;
 
+static const struct cam_v4l_ops *test_v4l_ops;
+
+void cam_set_v4l_ops(const struct cam_v4l_ops *ops)
+{
+    test_v4l_ops = ops;
+}
+
 static gboolean is_format_supported(cam_t *cam, unsigned int pixformat)
 {
     /*
@@ -23,6 +30,8 @@ static gboolean is_format_supported(cam_t *cam, unsigned int pixformat)
 
 int cam_open(cam_t *cam, int oflag)
 {
+    if (test_v4l_ops && test_v4l_ops->open)
+        return test_v4l_ops->open(cam->video_dev, oflag);
     if (cam->use_libv4l)
         return v4l2_open(cam->video_dev, oflag);
     else
@@ -31,6 +40,8 @@ int cam_open(cam_t *cam, int oflag)
 
 int cam_close(cam_t *cam)
 {
+    if (test_v4l_ops && test_v4l_ops->close)
+        return test_v4l_ops->close(cam->dev);
     if (cam->use_libv4l)
         return v4l2_close(cam->dev);
     else
@@ -44,7 +55,12 @@ unsigned char *cam_read(cam_t *cam)
 
     g_mutex_lock(&cam->pixbuf_mutex);
     if (cam->read) {
-        if (cam->use_libv4l)
+        if (test_v4l_ops && test_v4l_ops->read) {
+            ret = test_v4l_ops->read(cam, cam->tmp,
+                      (cam->width * cam->height * cam->bpp / 8));
+            if (!ret)
+                img_convert_to_rgb24(cam, cam->tmp);
+        } else if (cam->use_libv4l)
             ret = v4l2_read(cam->dev, cam->pic_buf,
                             (cam->width * cam->height * cam->bpp / 8));
         else {
@@ -68,6 +84,8 @@ unsigned char *cam_read(cam_t *cam)
 
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
 {
+    if (test_v4l_ops && test_v4l_ops->ioctl)
+        return test_v4l_ops->ioctl(cam->dev, cmd, arg);
     if (cam->use_libv4l)
         return v4l2_ioctl(cam->dev, cmd, arg);
     else

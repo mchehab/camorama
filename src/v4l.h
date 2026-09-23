@@ -179,6 +179,14 @@ int cam_open(cam_t *cam, int oflag);
 int cam_close(cam_t *cam);
 unsigned char *cam_read(cam_t *cam);
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg);
+/* Optional syscall backend, primarily for hardware-independent unit tests. */
+struct cam_v4l_ops {
+    int (*open)(const char *path, int flags);
+    int (*close)(int fd);
+    int (*read)(cam_t *cam, void *buffer, size_t size);
+    int (*ioctl)(int fd, unsigned long cmd, void *arg);
+};
+void cam_set_v4l_ops(const struct cam_v4l_ops *ops);
 int cam_query_controls(cam_t *cam);
 void cam_free_controls(cam_t *cam);
 video_controls_t *cam_find_control_per_id(cam_t *cam, guint32 id);

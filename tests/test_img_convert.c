@@ -6,20 +6,16 @@
 #define _GNU_SOURCE
 
 #include <errno.h>
-#include <libgen.h>
-#include <math.h>
-#include <png.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "unittest.h"
 
 #include "src/v4l.h"
 #include "src/img_convert.h"
+#include "test_utils.h"
 
 #define COLOR_BAR_WIDTH  330
 #define COLOR_BAR_HEIGHT 186
@@ -80,39 +76,24 @@ static unsigned char *rgb24_buffer = NULL;
 static const unsigned int rgb24_size = COLOR_BAR_HEIGHT * COLOR_BAR_WIDTH * 3;
 static bool nv16_supported = true;
 
-static char *get_dir()
-{
-    char exe[PATH_MAX];
-    size_t size;
-
-    size = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
-    assert_true(size > 0);
-
-    exe[size] = '\0';
-
-    return dirname(strdup(exe));
-}
-
 static int color_bars_generate(struct raw_imgs *img)
 {
-    char *dir, *png_file, *fname;
+    char *dir, *png_file, *fname, *extra = NULL;
     const char *codec;
     int argc, status;
     char *argv[32];
     struct stat st;
     int rc;
 
-    dir = get_dir();
+    dir = test_get_executable_dir();
+    assert_non_null(dir);
     rc = asprintf(&png_file, "%s/%s", dir, PNG_FILE);
     assert_true(rc > 0);
     rc = asprintf(&fname, "%s/color_bars_%s.raw", dir, img->name);
     assert_true(rc > 0);
     free(dir);
 
-    pid_t pid = fork();
-    assert_true(pid >= 0);
-
-    if (pid == 0) {
+    {
         argc = 0;
         argv[argc++] = (char *)FFMPEG_BIN;
         argv[argc++] = "-loglevel";
@@ -125,9 +106,12 @@ static int color_bars_generate(struct raw_imgs *img)
         argv[argc++] = (char *)img->av_fmt;
 
         if (img->av_extra) {
-            char *extra = strdup(img->av_extra);
-            if (!extra)
-                _exit(127);
+            extra = strdup(img->av_extra);
+            if (!extra) {
+                free(png_file);
+                free(fname);
+                return -ENOMEM;
+            }
 
             char *saveptr = NULL;
             char *tok = strtok_r(extra, " ", &saveptr);
@@ -136,8 +120,12 @@ static int color_bars_generate(struct raw_imgs *img)
                 argv[argc++] = tok;
                 tok = strtok_r(NULL, " ", &saveptr);
             }
-            if (tok)
-                _exit(127);
+            if (tok) {
+                free(extra);
+                free(png_file);
+                free(fname);
+                return -E2BIG;
+            }
         }
 
         if (!strcmp(img->name, "H264"))
@@ -152,14 +140,15 @@ static int color_bars_generate(struct raw_imgs *img)
         argv[argc++] = fname;
         argv[argc] = NULL;
 
-        execvp(FFMPEG_BIN, argv);
-        perror("execvp ffmpeg");
-        _exit(127);
     }
 
+    status = test_run_program(argv);
+    free(extra);
     free(png_file);
-    assert_true(waitpid(pid, &status, 0) >= 0);
-    assert_int_equal(!WIFEXITED(status) || WEXITSTATUS(status), 0);
+    if (status) {
+        free(fname);
+        return -EIO;
+    }
     assert_false(stat(fname, &st));
     assert_true(S_ISREG(st.st_mode));
     assert_int_not_equal(st.st_size, 0);
@@ -219,87 +208,6 @@ static unsigned char *load_raw_file(struct raw_imgs *img, cam_t *cam)
     return buffer;
 }
 
-static double estimate_psnr(const unsigned char *orig,
-                            const unsigned char *reconstruct,
-                            unsigned int size)
-{
-    if (size == 0)
-        return 0.0; /* or some sentinel */
-
-    double mse = 0.0;
-
-    for (unsigned int i = 0; i < size; ++i) {
-        double d = (double)orig[i] - (double)reconstruct[i];
-        mse += d * d;
-    }
-
-    mse /= (double)size;
-
-    if (mse == 0.0)
-        return 999.0; /* infinite PSNR sentinel */
-
-    return 10.0 * log10((255.0 * 255.0) / mse);
-}
-/* Helpful for visual inspection */
-void save_png(const char *name, const unsigned char *buffer,
-              unsigned width, unsigned height, int original)
-{
-    png_structp png = NULL;
-    png_infop info = NULL;
-    png_bytep *rows = NULL;
-    FILE *fp = NULL;
-    int rc, ok = 0;
-    char *fname;
-
-    if (original)
-        rc = asprintf(&fname, "/tmp/%s-original.png", name);
-    else
-        rc = asprintf(&fname, "/tmp/%s-reconstructed.png", name);
-
-    assert_true(rc > 0);
-
-    fp = fopen(fname, "wb");
-    assert_non_null(fp);
-
-    png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    assert_non_null(png);
-
-    info = png_create_info_struct(png);
-    assert_non_null(info);
-
-    if (setjmp(png_jmpbuf(png)))
-        goto done;
-
-    png_init_io(png, fp);
-
-    png_set_IHDR(png, info, width, height,
-                 8,                    /* bit depth */
-                 PNG_COLOR_TYPE_RGB,   /* 3 bytes per pixel */
-                 PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_DEFAULT,
-                 PNG_FILTER_TYPE_DEFAULT);
-    png_write_info(png, info);
-
-    /* Build the row pointer table. libpng writes from this. */
-    rows = (png_bytep *)malloc(sizeof(png_bytep) * height);
-    assert_non_null(rows);
-
-    for (unsigned y = 0; y < height; ++y) {
-        rows[y] = (png_bytep)(buffer + (size_t)y * width * 3);
-    }
-
-    png_write_image(png, rows);
-    png_write_end(png, NULL);
-    ok = 1;
-
-done:
-    free(rows);
-    png_destroy_write_struct(png ? &png : NULL, info ? &info : NULL);
-    fclose(fp);
-
-    assert_int_equal(ok, 1);
-}
-
 /*
  * Test set
  */
@@ -325,7 +233,8 @@ void test_lossless(void **state)
             errors++;
 
     // FIXME: add a command line arg to enable it
-    save_png(img->name, cam.pic_buf, cam.width, cam.height, 0);
+    assert_int_equal(test_save_png_named(img->name, cam.pic_buf, cam.width,
+                                         cam.height, 0), 0);
 
     assert_int_equal(errors, 0);
 
@@ -348,10 +257,11 @@ void test_psnr(void **state)
     rc = img_convert_to_rgb24(&cam, buffer);
     assert_int_not_equal(rc, 0);
 
-    img->psnr = estimate_psnr(rgb24_buffer, cam.pic_buf, rgb24_size);
+    img->psnr = test_estimate_psnr(rgb24_buffer, cam.pic_buf, rgb24_size);
 
     // FIXME: add a command line arg to enable it
-    save_png(img->name, cam.pic_buf, cam.width, cam.height, 0);
+    assert_int_equal(test_save_png_named(img->name, cam.pic_buf, cam.width,
+                                         cam.height, 0), 0);
 
     /* Should be OK for 12 bits YUV */
     assert_true(img->psnr >= PSNR_GOAL);
@@ -370,8 +280,8 @@ static int group_setup(void **)
      rgb24_buffer = load_raw_file(&exact_imgs[0], &cam_rgb24);
 
     // FIXME: add a command line arg to enable it
-    save_png(exact_imgs[0].name, rgb24_buffer,
-             cam_rgb24.width, cam_rgb24.height, 1);
+    assert_int_equal(test_save_png_named(exact_imgs[0].name, rgb24_buffer,
+                                         cam_rgb24.width, cam_rgb24.height, 1), 0);
 
     return 0;
 }

@@ -3,10 +3,14 @@ tests_c_flags = []
 test_deps = []
 enable_unittest = false
 
+unittest_sources += ['test_v4l.c', 'mock_v4l.c']
+enable_unittest = true
+
 if enable_ffmpeg
     configure_file(input: png_file, output: png_file, copy: true)
 
-    unittest_sources += 'test_img_convert.c'
+    unittest_sources += ['test_utils.c', 'test_img_convert.c',
+                         'test_img_streaming.c']
     test_deps += dependency('libpng', required: true)
     enable_unittest = true
 endif
