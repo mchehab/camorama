@@ -11,26 +11,22 @@
 
 #define BYTE_CLAMP(a) CLAMP(a, 0, 255)
 
-/* Formats that are natively supported */
+/*
+ * Formats that are natively supported.
+ *
+ * Ordered by quality: better first.
+ *
+ * On experimental tests, YUYV and MJPEG are similar for simple images
+ * like SMPTE color bars, but for more complex images, YuYV is probably
+ * better.
+ *
+ * H.264 provides good quality, but as it may have B-frames, it could
+ * introduce delays. So, place it at the end.
+ */
 static const struct img_format supported_formats[] = {
+    /* lossless formats */
     { V4L2_PIX_FMT_RGB24,   24, -1, -1,  IMG_COLORMAP_RGB },
     { V4L2_PIX_FMT_BGR24,   24, -1, -1,  IMG_COLORMAP_RGB },
-
-    { V4L2_PIX_FMT_YUYV,    16, -1, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_UYVY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_YVYU,    16, -1, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_VYUY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
-
-    { V4L2_PIX_FMT_NV12,     8,  1, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_NV21,     8,  1, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_NV16,     8,  0, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_NV61,     8,  0, -1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_YUV420,   8,  1 , 1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_YVU420,   8,  1,  1,  IMG_COLORMAP_YCBCR },
-    { V4L2_PIX_FMT_YUV422P,  8,  0,  1,  IMG_COLORMAP_YCBCR },
-
-    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  IMG_COLORMAP_RGB },
-    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  IMG_COLORMAP_RGB },
 
     { V4L2_PIX_FMT_BGR32,   32, -1, -1,  IMG_COLORMAP_RGB },
     { V4L2_PIX_FMT_ABGR32,  32, -1, -1,  IMG_COLORMAP_RGB },
@@ -40,14 +36,38 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_ARGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
     { V4L2_PIX_FMT_XRGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
 
+    /* YUV 16-bit formats */
+    { V4L2_PIX_FMT_YUYV,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_UYVY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YVYU,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_VYUY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+
+#ifdef HAVE_FFMPEG
+    { V4L2_PIX_FMT_MJPEG,    0, -1, -1 , IMG_COLORMAP_JPEG },
+#endif
+
+    /* Semi-planar YUV formats (12-bits average) */
+    { V4L2_PIX_FMT_NV12,     8,  1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV21,     8,  1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV16,     8,  0, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV61,     8,  0, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV420,   8,  1 , 1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YVU420,   8,  1,  1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV422P,  8,  0,  1,  IMG_COLORMAP_YCBCR },
+
+    /* lossy decoding RGB Formats */
+    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  IMG_COLORMAP_RGB },
+
+    /* Bayer formats */
     { V4L2_PIX_FMT_SBGGR8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SGBRG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SGRBG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SRGGB8,   8, -1, -1,  IMG_COLORMAP_OTHER },
 #ifdef HAVE_FFMPEG
-    { V4L2_PIX_FMT_MJPEG,    0, -1, -1 , IMG_COLORMAP_JPEG },
     { V4L2_PIX_FMT_H264,     0, -1, -1,  IMG_COLORMAP_YCBCR },
 #endif
+
 };
 
 #define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
