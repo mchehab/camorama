@@ -14,5 +14,8 @@ extern const unsigned int mock_c920_yuyv_sizes_count;
 extern const struct mock_v4l_size mock_c920_compressed_sizes[];
 extern const unsigned int mock_c920_compressed_sizes_count;
 extern const struct cam_v4l_ops mock_c920_v4l_ops;
+extern const struct mock_v4l_size mock_eye_sizes[];
+extern const unsigned int mock_eye_sizes_count;
+extern const struct cam_v4l_ops mock_eye_v4l_ops;
 
 #endif

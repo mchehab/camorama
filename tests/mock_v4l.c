@@ -181,3 +181,73 @@ const struct cam_v4l_ops mock_c920_v4l_ops = {
     .read = c920_read,
     .ioctl = c920_ioctl,
 };
+
+const struct mock_v4l_size mock_eye_sizes[] = {
+    { 320, 240, 187 }, { 640, 480, 60 },
+};
+const unsigned int mock_eye_sizes_count =
+    sizeof(mock_eye_sizes) / sizeof(mock_eye_sizes[0]);
+
+static int eye_ioctl(int fd, unsigned long request, void *arg)
+{
+    static const unsigned int formats[] = {
+        V4L2_PIX_FMT_SGRBG8, V4L2_PIX_FMT_YUYV,
+    };
+    static const unsigned int small_rates[] = {
+        187, 150, 137, 125, 100, 75, 60, 50, 37, 30,
+    };
+    static const unsigned int large_rates[] = { 60, 50, 40, 30, 15 };
+    (void)fd;
+
+    if (request == VIDIOC_ENUM_FMT) {
+        struct v4l2_fmtdesc *fmt = arg;
+        if (fmt->index >= 2)
+            goto invalid;
+        fmt->pixelformat = formats[fmt->index];
+        return 0;
+    }
+    if (request == VIDIOC_TRY_FMT)
+        return 0;
+    if (request == VIDIOC_ENUM_FRAMESIZES) {
+        struct v4l2_frmsizeenum *size = arg;
+        if (size->index >= mock_eye_sizes_count)
+            goto invalid;
+        size->type = V4L2_FRMSIZE_TYPE_DISCRETE;
+        size->discrete.width = mock_eye_sizes[size->index].width;
+        size->discrete.height = mock_eye_sizes[size->index].height;
+        return 0;
+    }
+    if (request == VIDIOC_ENUM_FRAMEINTERVALS) {
+        struct v4l2_frmivalenum *iv = arg;
+        const unsigned int *rates;
+        unsigned int count, i;
+        if (iv->width == 320 && iv->height == 240) {
+            rates = small_rates;
+            count = sizeof(small_rates) / sizeof(small_rates[0]);
+        } else if (iv->width == 640 && iv->height == 480) {
+            rates = large_rates;
+            count = sizeof(large_rates) / sizeof(large_rates[0]);
+        } else {
+            goto invalid;
+        }
+        if (iv->index >= count)
+            goto invalid;
+        for (i = 0; i < mock_eye_sizes_count; i++)
+            if (mock_eye_sizes[i].width == iv->width &&
+                mock_eye_sizes[i].height == iv->height)
+                break;
+        if (i == mock_eye_sizes_count)
+            goto invalid;
+        iv->type = V4L2_FRMIVAL_TYPE_DISCRETE;
+        iv->discrete.numerator = 1;
+        iv->discrete.denominator = rates[iv->index];
+        return 0;
+    }
+invalid:
+    errno = EINVAL;
+    return -1;
+}
+
+const struct cam_v4l_ops mock_eye_v4l_ops = {
+    .ioctl = eye_ioctl,
+};

@@ -117,9 +117,29 @@ static void test_c920_read_backend(void **state)
     free(cam.tmp);
 }
 
+static void test_eye_supported_resolutions(void **state)
+{
+    cam_t cam = { 0 };
+    (void)state;
+
+    cam.dev = -1;
+    cam.min_width = cam.min_height = (unsigned int)-1;
+    cam_set_v4l_ops(&mock_eye_v4l_ops);
+    get_supported_resolutions(&cam, TRUE);
+    cam_set_v4l_ops(NULL);
+
+    assert_int_equal(cam.n_res, mock_eye_sizes_count);
+    assert_true(find_resolution(&cam, V4L2_PIX_FMT_YUYV, 320, 240, 187));
+    assert_true(find_resolution(&cam, V4L2_PIX_FMT_YUYV, 640, 480, 60));
+    assert_false(find_resolution(&cam, V4L2_PIX_FMT_SGRBG8, 320, 240, 187));
+    assert_false(find_resolution(&cam, V4L2_PIX_FMT_SGRBG8, 640, 480, 60));
+    free(cam.res);
+}
+
 static int test_v4l_resolutions(void)
 {
     const struct CMUnitTest tests[] = {
+        cmocka_unit_test(test_eye_supported_resolutions),
         cmocka_unit_test(test_c920_supported_resolutions),
         cmocka_unit_test(test_c920_read_backend),
     };
