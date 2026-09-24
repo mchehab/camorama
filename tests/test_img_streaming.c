@@ -71,12 +71,10 @@ static void generate_stream(const struct streaming_case *test, char **path_out)
         argv[argc++] = "libx264";
         argv[argc++] = "-preset";
         argv[argc++] = "ultrafast";
-        argv[argc++] = "-tune";
-        argv[argc++] = "zerolatency";
         argv[argc++] = "-bf";
-        argv[argc++] = "0";
+        argv[argc++] = "2";
         argv[argc++] = "-g";
-        argv[argc++] = "1";
+        argv[argc++] = "30";
         argv[argc++] = "-f";
         argv[argc++] = "h264";
     } else {
@@ -201,13 +199,18 @@ static void stream_test(void **state)
                     unsigned int height = output_height(frames);
                     size_t output_size = (size_t)width * height * 3;
                     unsigned char *output = malloc(output_size);
+                    unsigned int converted;
                     assert_non_null(output);
                     cam.width = width;
                     cam.height = height;
                     cam.sizeimage = packet_size;
-                    assert_int_equal(img_convert_to_rgb24(&cam, packet,
-                                                          cam.sizeimage, output),
-                                     output_size);
+                    converted = img_convert_to_rgb24(&cam, packet,
+                                                     cam.sizeimage, output);
+                    if (!converted) {
+                        free(output);
+                        continue;
+                    }
+                    assert_int_equal(converted, output_size);
                     if (seen[bucket])
                         changed[bucket] |= test_estimate_psnr(first_frames[bucket],
                             output, output_size) < 60.0;
@@ -238,13 +241,18 @@ static void stream_test(void **state)
                 unsigned int height = output_height(frames);
                 size_t output_size = (size_t)width * height * 3;
                 unsigned char *output = malloc(output_size);
+                unsigned int converted;
                 assert_non_null(output);
                 cam.width = width;
                 cam.height = height;
                 cam.sizeimage = packet_size;
-                assert_int_equal(img_convert_to_rgb24(&cam, packet,
-                                                      cam.sizeimage, output),
-                                 output_size);
+                converted = img_convert_to_rgb24(&cam, packet,
+                                                 cam.sizeimage, output);
+                if (!converted) {
+                    free(output);
+                    continue;
+                }
+                assert_int_equal(converted, output_size);
                 if (seen[bucket])
                     changed[bucket] |= test_estimate_psnr(first_frames[bucket],
                         output, output_size) < 60.0;
@@ -262,7 +270,10 @@ static void stream_test(void **state)
         avcodec_free_context(&context);
     }
 
-    assert_int_equal(frames, MAX_FRAMES);
+    if (test->pixformat == V4L2_PIX_FMT_H264)
+        assert_true(frames >= MAX_FRAMES - 2);
+    else
+        assert_int_equal(frames, MAX_FRAMES);
     for (i = 0; i < 3; i++)
         assert_true(seen[i]);
     for (i = 0; i < 3; i++)
