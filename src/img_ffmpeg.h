@@ -23,6 +23,13 @@ int img_ffmpeg_to_rgb24(struct img_ffmpeg_data **converter,
                         unsigned int width, unsigned int height);
 void img_ffmpeg_free_converter(struct img_ffmpeg_data **converter);
 
+#else
+struct img_ffmpeg_data;
+
+static inline void img_ffmpeg_free_converter(struct img_ffmpeg_data **)
+{
+}
+
 #endif // HAVE_FFMPEG
 
 #endif // IMG_CONFIG_H

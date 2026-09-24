@@ -10,6 +10,7 @@
 extern int frame_number;
 
 static const struct cam_v4l_ops *test_v4l_ops;
+static int wait_for_capture(cam_t *cam);
 
 void cam_set_v4l_ops(const struct cam_v4l_ops *ops)
 {
@@ -48,38 +49,51 @@ int cam_close(cam_t *cam)
         return close(cam->dev);
 }
 
-unsigned char *cam_read(cam_t *cam)
+unsigned char *cam_read(cam_t *cam, unsigned char *display_data)
 {
-    unsigned char *pic_buf = cam->pic_buf;
     int ret = 0;
 
-    g_mutex_lock(&cam->pixbuf_mutex);
     if (cam->read) {
         if (test_v4l_ops && test_v4l_ops->read) {
-            ret = test_v4l_ops->read(cam, cam->tmp,
-                      (cam->width * cam->height * cam->bpp / 8));
+            size_t input_size = cam->sizeimage ? cam->sizeimage :
+                                (cam->width * cam->height * cam->bpp / 8);
+            ret = test_v4l_ops->read(cam, cam->capture_input, input_size);
             if (!ret)
-                img_convert_to_rgb24(cam, cam->tmp);
-        } else if (cam->use_libv4l)
-            ret = v4l2_read(cam->dev, cam->pic_buf,
-                            (cam->width * cam->height * cam->bpp / 8));
-        else {
-            ret = read(cam->dev, cam->tmp,
-                       (cam->width * cam->height * cam->bpp / 8));
-	    if (!ret)
-		img_convert_to_rgb24(cam, cam->tmp);
-	}
+                ret = img_convert_to_rgb24(cam, cam->capture_input,
+                                           input_size, display_data) ? 0 : -1;
+        } else if (cam->use_libv4l) {
+            ret = v4l2_read(cam->dev, display_data,
+                            cam->width * cam->height * 3);
+            ret = ret > 0 ? 0 : -1;
+        } else {
+            if (!test_v4l_ops && wait_for_capture(cam) == 0)
+                ret = -1;
+            else {
+                ret = read(cam->dev, cam->capture_input, cam->sizeimage);
+                if (ret > 0)
+                    ret = img_convert_to_rgb24(cam, cam->capture_input,
+                                               ret, display_data) ? 0 : -1;
+                else
+                    ret = -1;
+            }
+        }
     } else if (cam->userptr) {
-            capture_buffers_userptr(cam, cam->pic_buf);
+            ret = !capture_buffers_userptr(cam, display_data);
     } else {
-            capture_buffers(cam, cam->pic_buf, cam->bytesperline);
+            ret = !capture_buffers(cam, display_data, cam->bytesperline);
     }
     if (ret)
         return NULL;
-    cam->frame_number++;
-    g_mutex_unlock(&cam->pixbuf_mutex);
+    g_atomic_int_inc(&cam->frame_number);
 
-    return pic_buf;
+    return display_data;
+}
+
+void cam_cancel_read(cam_t *cam)
+{
+    char byte = 1;
+    if (cam->stream_wakeup[1] >= 0)
+        (void)write(cam->stream_wakeup[1], &byte, 1);
 }
 
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
@@ -1357,26 +1371,45 @@ void start_streaming_userptr(cam_t *cam)
     }
 }
 
-void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
+static int wait_for_capture(cam_t *cam)
+{
+    fd_set fds;
+    struct timeval tv;
+    int maxfd = cam->dev;
+    int r;
+
+    do {
+        FD_ZERO(&fds);
+        FD_SET(cam->dev, &fds);
+        if (cam->stream_wakeup[0] >= 0) {
+            FD_SET(cam->stream_wakeup[0], &fds);
+            maxfd = MAX(maxfd, cam->stream_wakeup[0]);
+        }
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+        r = select(maxfd + 1, &fds, NULL, NULL, &tv);
+        if (r > 0 && cam->stream_wakeup[0] >= 0 &&
+            FD_ISSET(cam->stream_wakeup[0], &fds)) {
+            char byte;
+            (void)read(cam->stream_wakeup[0], &byte, 1);
+            return 0;
+        }
+    } while (r == 0 || (r < 0 && errno == EINTR));
+    return r;
+}
+
+int capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
 {
     char *msg;
     unsigned char *inbuf;
     int r;
     unsigned int y;
-    fd_set fds;
+    int converted;
     struct v4l2_buffer buf;
-    struct timeval tv;
 
-    do {
-        FD_ZERO(&fds);
-        FD_SET(cam->dev, &fds);
-
-        /* Timeout. */
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-
-        r = select(cam->dev + 1, &fds, NULL, NULL, &tv);
-    } while ((r == -1 && (errno == EINTR)));
+    r = wait_for_capture(cam);
+    if (!r)
+        return 0;
 
     if (r == -1) {
         msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
@@ -1389,7 +1422,14 @@ void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
     memset(&buf, 0, sizeof(buf));
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
-    cam_ioctl(cam, VIDIOC_DQBUF, &buf);
+    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
+        return 0;
+    if (buf.index >= cam->n_buffers || !cam->buffers ||
+        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
+        if (buf.index < cam->n_buffers)
+            cam_ioctl(cam, VIDIOC_QBUF, &buf);
+        return 0;
+    }
 
     if (len > buf.bytesused)
         len = buf.bytesused;
@@ -1402,32 +1442,25 @@ void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
 		inbuf += cam->bytesperline;
 	    }
     } else {
-	    img_convert_to_rgb24(cam, inbuf);
+        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
     }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return cam->use_libv4l || converted > 0;
 }
 
-void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
+int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
 {
     char *msg;
     unsigned char *inbuf;
     int r;
     unsigned int y;
-    fd_set fds;
+    int converted;
     struct v4l2_buffer buf;
-    struct timeval tv;
 
-    do {
-        FD_ZERO(&fds);
-        FD_SET(cam->dev, &fds);
-
-        /* Timeout. */
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-
-        r = select(cam->dev + 1, &fds, NULL, NULL, &tv);
-    } while ((r == -1 && (errno == EINTR)));
+    r = wait_for_capture(cam);
+    if (!r)
+        return 0;
 
     if (r == -1) {
         msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
@@ -1440,7 +1473,14 @@ void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
     memset(&buf, 0, sizeof(buf));
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_USERPTR;
-    cam_ioctl(cam, VIDIOC_DQBUF, &buf);
+    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
+        return 0;
+    if (buf.index >= cam->n_buffers || !cam->buffers ||
+        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
+        if (buf.index < cam->n_buffers)
+            cam_ioctl(cam, VIDIOC_QBUF, &buf);
+        return 0;
+    }
 
     inbuf = cam->buffers[buf.index].start;
     if (cam->use_libv4l) {
@@ -1450,10 +1490,11 @@ void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
 		inbuf += cam->bytesperline;
 	    }
     } else {
-	    img_convert_to_rgb24(cam, inbuf);
+        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
     }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return cam->use_libv4l || converted > 0;
 }
 
 void stop_streaming(cam_t *cam)

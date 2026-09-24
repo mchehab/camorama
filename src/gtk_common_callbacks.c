@@ -504,6 +504,8 @@ void cam_change_size(cam_t *cam, const gchar *name)
     if (width == cam->width && height == cam->height)
         return;
 
+    cam_stream_stop(cam);
+
     cam->width = width;
     cam->height = height;
 
@@ -519,7 +521,7 @@ void cam_change_size(cam_t *cam, const gchar *name)
 
     set_win_info(cam);
     if (cam->read)
-        cam->tmp = g_realloc(cam->tmp, cam->sizeimage);
+        cam->capture_input = g_realloc(cam->capture_input, cam->sizeimage);
     cam_set_max_fps(cam);
     frames = frames2 = seconds = 0;
 
@@ -529,6 +531,8 @@ void cam_change_size(cam_t *cam, const gchar *name)
         else if (cam->read == FALSE)
             start_streaming(cam);
     }
+    if (cam_stream_configure(cam))
+        cam_stream_start(cam);
     set_image_scale(cam);
 }
 
@@ -676,27 +680,13 @@ void capture_func(GtkWidget *, cam_t *cam)
 
 gint timeout_capture_func(cam_t *cam)
 {
-    /* need to return true, or the timeout will be destroyed - don't forget! :) */
-    if (cam->hidden == TRUE) {
-        /*
-         * call timeout_func to get a new picture.   stupid, but it works.
-         * also need to add this to capture_func
-         * maybe add a "window_state_event" handler to do the same when
-         * window is iconified
-         */
-        timeout_func(cam);
-        timeout_func(cam);
-        timeout_func(cam);
-        timeout_func(cam);
-
-    }
-
     if (cam->cap == TRUE)
         local_save(cam);
 
     if (cam->rcap == TRUE)
         remote_save(cam);
 
+    /* need to return true, or the timeout will be destroyed - don't forget! :) */
     return 1;
 }
 
@@ -858,20 +848,6 @@ void gtk_common_update_slider_value(video_controls_t *ctrl, cam_t *cam,
     }
 }
 
-static void update_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
-{
-    cam_t *cam = ctrl->cam;
-    gint32 value;
-    int ret;
-
-    ret = cam_get_control(cam, ctrl->id, &value);
-    if (ret)
-        return;
-
-    gtk_range_set_value((GtkRange *) sc1, value);
-    gtk_common_update_slider_value(ctrl, cam, value);
-}
-
 static void change_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
 {
     cam_t *cam = ctrl->cam;
@@ -886,6 +862,24 @@ static void change_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
             return;
         gtk_range_set_value((GtkRange *) sc1, value);
     }
+    gtk_common_update_slider_value(ctrl, cam, value);
+}
+
+static void update_ctrl_value(GtkScale *sc1, video_controls_t *ctrl)
+{
+    cam_t *cam = ctrl->cam;
+    gint32 value;
+    int ret;
+
+    ret = cam_get_control(cam, ctrl->id, &value);
+    if (ret)
+        return;
+
+    /* Wait for update to complete before accepting other control changes */
+    g_signal_handlers_block_by_func(sc1, change_ctrl_value, ctrl);
+    gtk_range_set_value((GtkRange *) sc1, value);
+    g_signal_handlers_unblock_by_func(sc1, change_ctrl_value, ctrl);
+
     gtk_common_update_slider_value(ctrl, cam, value);
 }
 
@@ -906,6 +900,14 @@ static void update_controls_window(cam_t *cam)
 #endif
         g_object_unref(window);
     }
+}
+
+static void update_control_widget(cam_t *cam, guint32 id)
+{
+    video_controls_t *ctrl = cam_find_control_per_id(cam, id);
+
+    if (cam->controls_window && ctrl && ctrl->widget)
+        g_signal_emit_by_name(ctrl->widget, "control_update");
 }
 
 static void reset_ctrls(GtkButton *, cam_t *cam)
@@ -937,9 +939,13 @@ static void reset_ctrls(GtkButton *, cam_t *cam)
 
 void gtk_common_clear_controls_window(cam_t *cam)
 {
+    video_controls_t *ctrl;
+
     g_mutex_lock(&cam->control_win_mutex);
     cam->controls_window = NULL;
     g_mutex_unlock(&cam->control_win_mutex);
+    for (ctrl = cam->controls; ctrl; ctrl = ctrl->next)
+        ctrl->widget = NULL;
 }
 
 void show_controls(GtkWidget *, cam_t *cam)
@@ -996,6 +1002,7 @@ void show_controls(GtkWidget *, cam_t *cam)
                 control = gtk4_create_control_button(ctrl, value);
 #endif
                 gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
+                ctrl->widget = control;
                 break;
             }
 
@@ -1012,6 +1019,7 @@ void show_controls(GtkWidget *, cam_t *cam)
                              G_CALLBACK(change_ctrl_value), ctrl);
             g_signal_connect(slider, "control_update",
                              G_CALLBACK(update_ctrl_value), ctrl);
+            ctrl->widget = slider;
             break;
         case V4L2_CTRL_TYPE_BOOLEAN:
         case V4L2_CTRL_TYPE_BUTTON:
@@ -1025,6 +1033,7 @@ void show_controls(GtkWidget *, cam_t *cam)
             control = gtk4_create_control_button(ctrl, value);
             #endif
             gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
+            ctrl->widget = control;
             break;
         case V4L2_CTRL_TYPE_INTEGER_MENU:
         case V4L2_CTRL_TYPE_MENU:
@@ -1041,6 +1050,7 @@ void show_controls(GtkWidget *, cam_t *cam)
             control = gtk4_create_control_menu(ctrl, value);
             #endif
             gtk_grid_attach(GTK_GRID(grid), control, 1, row++, 1, 1);
+            ctrl->widget = control;
             break;
         default:
             break;
@@ -1227,7 +1237,7 @@ void contrast_change(GtkScale *sc1, cam_t *cam)
     cam->contrast = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_CONTRAST, &cam->contrast);
 
-    update_controls_window(cam);
+    update_control_widget(cam, V4L2_CID_CONTRAST);
 }
 
 void brightness_change(GtkScale *sc1, cam_t *cam)
@@ -1236,7 +1246,7 @@ void brightness_change(GtkScale *sc1, cam_t *cam)
     cam->brightness = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_BRIGHTNESS, &cam->brightness);
 
-    update_controls_window(cam);
+    update_control_widget(cam, V4L2_CID_BRIGHTNESS);
 }
 
 void zoom_change(GtkScale *sc1, cam_t *cam)
@@ -1245,7 +1255,7 @@ void zoom_change(GtkScale *sc1, cam_t *cam)
     cam->zoom = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, cam->zoom_cid, &cam->zoom);
 
-    update_controls_window(cam);
+    update_control_widget(cam, cam->zoom_cid);
 }
 
 void colour_change(GtkScale *sc1, cam_t *cam)
@@ -1254,7 +1264,7 @@ void colour_change(GtkScale *sc1, cam_t *cam)
     cam->colour = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_SATURATION, &cam->colour);
 
-    update_controls_window(cam);
+    update_control_widget(cam, V4L2_CID_SATURATION);
 }
 
 void hue_change(GtkScale *sc1, cam_t *cam)
@@ -1263,7 +1273,7 @@ void hue_change(GtkScale *sc1, cam_t *cam)
     cam->hue = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_HUE, &cam->hue);
 
-    update_controls_window(cam);
+    update_control_widget(cam, V4L2_CID_HUE);
 }
 
 void wb_change(GtkScale *sc1, cam_t *cam)
@@ -1272,7 +1282,7 @@ void wb_change(GtkScale *sc1, cam_t *cam)
     cam->whiteness = gtk_range_get_value((GtkRange *) sc1);
     cam_set_control(cam, V4L2_CID_WHITENESS, &cam->whiteness);
 
-    update_controls_window(cam);
+    update_control_widget(cam, V4L2_CID_WHITENESS);
 }
 
 /*
@@ -1501,6 +1511,13 @@ void on_change_camera(GtkWidget *, cam_t *cam)
     old_cam = g_strdup(cam->video_dev);
     select_video_dev(cam);
 
+    /* Keep the current camera if the selection dialog was cancelled. */
+    if (!cam->video_dev) {
+        g_free(cam->video_dev);
+        cam->video_dev = old_cam;
+        return;
+    }
+
     /* Trivial case: nothing changed */
     if (!strcmp(cam->video_dev, old_cam)) {
         g_free(old_cam);
@@ -1525,12 +1542,15 @@ void on_change_camera(GtkWidget *, cam_t *cam)
 
 void start_camera(cam_t *cam)
 {
+    if (!cam->video_dev) {
+        g_warning("Cannot start camera: no device selected");
+        return;
+    }
+
     /* First step: free used resources, if any */
 
-    if (cam->idle_id) {
-        g_source_remove(cam->idle_id);
-        cam->idle_id = 0;
-    }
+    cam_stream_stop(cam);
+    cam->idle_id = 0;
 
     if (cam->dev >= 0) {
         if (cam->read == FALSE) {
@@ -1540,7 +1560,7 @@ void start_camera(cam_t *cam)
                 stop_streaming(cam);
         }
 
-        cam->pb = NULL;
+        g_clear_object(&cam->pb);
 
         cam_close(cam);
     }
@@ -1550,14 +1570,9 @@ void start_camera(cam_t *cam)
         cam->timeout_id = 0;
     }
 
-    if (cam->pic_buf) {
-        free(cam->pic_buf);
-        cam->pic_buf = NULL;
-    }
-
-    if (cam->tmp) {
-        free(cam->tmp);
-        cam->tmp = NULL;
+    if (cam->capture_input) {
+        free(cam->capture_input);
+        cam->capture_input = NULL;
     }
 
     cam_free_controls(cam);
@@ -1584,17 +1599,9 @@ void start_camera(cam_t *cam)
     /* Only store the device name after being able to successfully use it */
     g_settings_set_string(cam->gc, CAM_SETTINGS_DEVICE, cam->video_dev);
 
-    /* pic_buf is always for RGB3, which is the format expected by gtk */
-    cam->pic_buf = malloc(cam->max_width * cam->max_height * 3);
-
-    if (!cam->pic_buf) {
-        printf("Failed to allocate memory for buffers\n");
-        exit(0);
-    }
-
     if (cam->read) {
-	cam->tmp = malloc(cam->sizeimage);
-	if (!cam->pic_buf) {
+	cam->capture_input = malloc(cam->sizeimage);
+	if (!cam->capture_input) {
 	    printf("Failed to allocate memory for read buffer\n");
 	    exit(0);
 	}
@@ -1607,7 +1614,8 @@ void start_camera(cam_t *cam)
     else if (cam->read == FALSE)
         start_streaming(cam);
 
-    cam->idle_id = g_idle_add((GSourceFunc) timeout_func, (gpointer) cam);
+    if (cam_stream_configure(cam))
+        cam_stream_start(cam);
 
     if (cam->debug == TRUE)
         print_cam(cam);

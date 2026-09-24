@@ -21,7 +21,9 @@ struct img_format {
 const struct img_format *img_format_get(unsigned int pixformat);
 unsigned int img_format_order(unsigned int pixformat);
 unsigned int img_convert_to_rgb24(struct camera *cam,
-                                  unsigned char *inbuf);
+                                  unsigned char *inbuf,
+                                  size_t input_size,
+                                  unsigned char *display_data);
 void img_get_colorspace_data(struct camera *cam,
                              struct v4l2_format *fmt);
 gboolean img_codec_supported(unsigned int pixformat);

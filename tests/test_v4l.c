@@ -81,6 +81,7 @@ static void test_c920_read_backend(void **state)
     cam_t cam = { 0 };
     size_t frame_size = 160 * 90 * 3;
     unsigned char *first;
+    unsigned char *display_data;
     unsigned int i;
     int different = 0;
     (void)state;
@@ -91,30 +92,28 @@ static void test_c920_read_backend(void **state)
     cam.width = 160;
     cam.height = 90;
     cam.bpp = 16;
-    cam.tmp = calloc(160 * 90, 2);
-    cam.pic_buf = malloc(frame_size);
-    assert_non_null(cam.tmp);
-    assert_non_null(cam.pic_buf);
-    g_mutex_init(&cam.pixbuf_mutex);
+    cam.capture_input = calloc(160 * 90, 2);
+    display_data = malloc(frame_size);
+    assert_non_null(cam.capture_input);
+    assert_non_null(display_data);
 
     cam_set_v4l_ops(&mock_c920_v4l_ops);
     cam.dev = cam_open(&cam, O_RDONLY);
     assert_int_equal(cam.dev, 73);
-    assert_non_null(cam_read(&cam));
+    assert_non_null(cam_read(&cam, display_data));
     first = malloc(frame_size);
     assert_non_null(first);
-    memcpy(first, cam.pic_buf, frame_size);
-    assert_non_null(cam_read(&cam));
+    memcpy(first, display_data, frame_size);
+    assert_non_null(cam_read(&cam, display_data));
     for (i = 0; i < frame_size; i++)
-        different |= first[i] != cam.pic_buf[i];
+        different |= first[i] != display_data[i];
     assert_true(different);
     assert_int_equal(cam_close(&cam), 0);
     cam_set_v4l_ops(NULL);
 
-    g_mutex_clear(&cam.pixbuf_mutex);
     free(first);
-    free(cam.pic_buf);
-    free(cam.tmp);
+    free(display_data);
+    free(cam.capture_input);
 }
 
 static void test_eye_supported_resolutions(void **state)

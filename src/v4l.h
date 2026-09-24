@@ -79,6 +79,19 @@ typedef struct  {
 struct camera;
 struct cam_audio;
 
+struct cam_display_buffer {
+    unsigned char *data;
+    size_t capacity;
+    unsigned int width, height, rowstride;
+    guint64 generation, sequence;
+};
+
+enum cam_display_state {
+    CAM_DISPLAY_EMPTY,
+    CAM_DISPLAY_READY,
+    CAM_DISPLAY_OWNED
+};
+
 typedef struct {
     char *name;
     char *group;
@@ -92,6 +105,7 @@ typedef struct {
     video_control_menu_t *menu;
 
     struct camera *cam;
+    GtkWidget *widget;            /* Owned by the controls window */
 
     void *next;
 
@@ -114,13 +128,14 @@ typedef struct camera {
     gboolean force_pixformat;
     unsigned int requested_pixformat;
     int input;
-    int frame_number;
+    gint frame_number;
 
     int n_threads;
 
     GMutex remote_save_mutex;      /* Protects n_threads */
-    GMutex pixbuf_mutex;           /* Protects pic_buf */
     GMutex control_win_mutex;      /* Protects controls_window */
+    GMutex display_mutex;          /* Display roles and notification state */
+    int stream_wakeup[2];
 
     unsigned int min_width, min_height, max_width, max_height;
     struct colorspace_parms colorspc;
@@ -143,8 +158,15 @@ typedef struct camera {
     gboolean timestamp, rtimestamp, usedate, usestring;
     gboolean rtimefn, timefn;
     GtkWidget *da, *status, *audio_volume_widget;
-    unsigned char *pic_buf, *tmp;
+    unsigned char *capture_input; /* Native bytes used by read() */
     guint timeout_id, timeout_fps_id, idle_id;
+    GThread *stream_thread;
+    gint stream_stop;
+    guint display_source;
+    struct cam_display_buffer display_buffers[2];
+    guint display_write_index;    /* Worker-owned RGB slot */
+    enum cam_display_state display_state;
+    guint64 stream_generation, stream_sequence;
     guint32 timeout_interval;
     GSettings *gc;
     gboolean has_window_geometry_settings;
@@ -177,7 +199,7 @@ typedef struct camera {
 
 int cam_open(cam_t *cam, int oflag);
 int cam_close(cam_t *cam);
-unsigned char *cam_read(cam_t *cam);
+unsigned char *cam_read(cam_t *cam, unsigned char *display_data);
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg);
 /* Optional syscall backend, primarily for hardware-independent unit tests. */
 struct cam_v4l_ops {
@@ -207,10 +229,11 @@ void get_pic_info(cam_t *);
 void get_win_info(cam_t *);
 void get_supported_resolutions(cam_t *cam, gboolean all_supported);
 void start_streaming(cam_t *cam);
-void capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len);
+int capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len);
 void stop_streaming(cam_t *cam);
 void start_streaming_userptr(cam_t *cam);
-void capture_buffers_userptr(cam_t *cam, unsigned char *outbuf);
+int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf);
 void stop_streaming_userptr(cam_t *cam);
+void cam_cancel_read(cam_t *cam);
 
 #endif                          /* !CAMORAMA_V4L_H */

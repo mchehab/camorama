@@ -8,11 +8,55 @@
 #include <glib/gi18n.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 
 #define CHAR_HEIGHT  11
 #define CHAR_WIDTH   6
 #define CHAR_START   4
 #include "font_6x11.h"
+
+static void free_snapshot(guchar *pixels, gpointer)
+{
+    g_free(pixels);
+}
+
+static GdkPixbuf *snapshot_display(cam_t *cam, gboolean timestamp)
+{
+    int width, height, stride, y;
+    GdkPixbuf *source = cam->pb;
+    GdkPixbuf *snapshot;
+    guchar *pixels;
+
+    /*
+     * As this is running at gtk idle time as part of the display
+     * pipeline, there's no need to take a mutex here, as the cam->pb
+     * buffer won't be updated in background.
+     */
+
+    if (!source)
+        return NULL;
+
+    width = gdk_pixbuf_get_width(source);
+    height = gdk_pixbuf_get_height(source);
+    stride = gdk_pixbuf_get_rowstride(source);
+
+    pixels = g_malloc((size_t)width * height * 3);
+    for (y = 0; y < height; y++)
+        memcpy(pixels + (size_t)y * width * 3,
+               gdk_pixbuf_get_pixels(source) + y * stride, width * 3);
+
+    if (timestamp)
+        add_rgb_text(pixels, width, height, cam->ts_string, cam->date_format,
+                     cam->usestring, cam->usedate);
+
+    snapshot = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, FALSE, 8,
+                                        width, height, width * 3,
+                                        free_snapshot, NULL);
+    if (!snapshot)
+        free_snapshot(pixels, NULL);
+
+    return snapshot;
+}
 
 /* add timestamp/text to image - "borrowed" from gspy */
 int
@@ -116,16 +160,7 @@ void remote_save(cam_t *cam)
         goto ret;
     }
 
-    g_mutex_lock(&cam->pixbuf_mutex);
-    if (cam->rtimestamp == TRUE) {
-        add_rgb_text(cam->pic_buf, cam->width, cam->height, cam->ts_string,
-                     cam->date_format, cam->usestring, cam->usedate);
-    }
-
-    pb = gdk_pixbuf_new_from_data(cam->pic_buf, GDK_COLORSPACE_RGB, FALSE, 8,
-                                  cam->width, cam->height,
-                                  cam->width * cam->bpp / 8, NULL, NULL);
-    g_mutex_unlock(&cam->pixbuf_mutex);
+    pb = snapshot_display(cam, cam->rtimestamp);
 
     filename = g_strdup_printf("camorama.%s", ext);
     if (pb == NULL) {
@@ -309,7 +344,9 @@ gpointer save_thread(gpointer data)
     if (cam->rtimefn == TRUE) {
         output_uri_string = g_strdup_printf("%s/%s-%s-%03d.%s", cam->uri,
                                             cam->capturefile,
-                                            timenow, cam->frame_number % 1000, ext);
+                                            timenow,
+                                            g_atomic_int_get(&cam->frame_number) % 1000,
+                                            ext);
     } else {
         output_uri_string = g_strdup_printf("%s/%s.%s", cam->uri,
                                             cam->capturefile, ext);
@@ -395,7 +432,8 @@ int local_save(cam_t *cam)
     if (cam->timefn == TRUE)
         filename = g_strdup_printf("%s-%s-%03d.%s",
                                    cam->capturefile, timenow,
-                                   cam->frame_number % 1000, ext);
+                                   g_atomic_int_get(&cam->frame_number) % 1000,
+                                   ext);
     else
         filename = g_strdup_printf("%s.%s", cam->capturefile, ext);
 
@@ -425,15 +463,11 @@ int local_save(cam_t *cam)
         return -1;
     }
 
-    g_mutex_lock(&cam->pixbuf_mutex);
-    if (cam->timestamp == TRUE)
-        add_rgb_text(cam->pic_buf, cam->width, cam->height, cam->ts_string,
-                     cam->date_format, cam->usestring, cam->usedate);
-
-    pb = gdk_pixbuf_new_from_data(cam->pic_buf, GDK_COLORSPACE_RGB, FALSE, 8,
-                                  cam->width, cam->height,
-                                  (cam->width * cam->bpp / 8), NULL, NULL);
-    g_mutex_unlock(&cam->pixbuf_mutex);
+    pb = snapshot_display(cam, cam->timestamp);
+    if (!pb) {
+        g_free(filename);
+        return -1;
+    }
 
     pbs = gdk_pixbuf_save(pb, filename, ext, NULL, NULL);
     if (pbs == FALSE) {

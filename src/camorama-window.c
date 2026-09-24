@@ -37,6 +37,7 @@
 #endif
 #include "gtk_common_callbacks.h"
 #include "audio.h"
+#include "streaming.h"
 
 static void frame_rate_changed(GtkWidget *widget, gpointer data)
 {
@@ -52,6 +53,7 @@ static void frame_rate_changed(GtkWidget *widget, gpointer data)
     if (!intervals || selected < 0 || (guint)selected >= intervals->len)
         return;
 
+    cam_stream_stop(cam);
     if (!cam->read) {
         if (cam->userptr)
             stop_streaming_userptr(cam);
@@ -69,6 +71,7 @@ static void frame_rate_changed(GtkWidget *widget, gpointer data)
         else
             start_streaming(cam);
     }
+    cam_stream_start(cam);
 }
 
 static void update_frame_rates(cam_t *cam, GtkWidget *widget)

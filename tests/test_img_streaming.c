@@ -154,9 +154,9 @@ static void stream_test(void **state)
                         cam.width = width;
                         cam.height = height;
                         cam.sizeimage = i + 2 - start;
-                        cam.pic_buf = output;
                         assert_int_equal(img_convert_to_rgb24(&cam,
-                            (unsigned char *)data + start), width * height * 3);
+                            (unsigned char *)data + start, cam.sizeimage, output),
+                            width * height * 3);
                         if (seen[bucket])
                             changed[bucket] |= test_estimate_psnr(first_frames[bucket],
                                 output, (size_t)width * height * 3) < 60.0;
@@ -205,8 +205,8 @@ static void stream_test(void **state)
                     cam.width = width;
                     cam.height = height;
                     cam.sizeimage = packet_size;
-                    cam.pic_buf = output;
-                    assert_int_equal(img_convert_to_rgb24(&cam, packet),
+                    assert_int_equal(img_convert_to_rgb24(&cam, packet,
+                                                          cam.sizeimage, output),
                                      output_size);
                     if (seen[bucket])
                         changed[bucket] |= test_estimate_psnr(first_frames[bucket],
@@ -242,8 +242,8 @@ static void stream_test(void **state)
                 cam.width = width;
                 cam.height = height;
                 cam.sizeimage = packet_size;
-                cam.pic_buf = output;
-                assert_int_equal(img_convert_to_rgb24(&cam, packet),
+                assert_int_equal(img_convert_to_rgb24(&cam, packet,
+                                                      cam.sizeimage, output),
                                  output_size);
                 if (seen[bucket])
                     changed[bucket] |= test_estimate_psnr(first_frames[bucket],

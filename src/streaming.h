@@ -3,6 +3,9 @@
 
 #include "v4l.h"
 
-gint timeout_func(cam_t *cam);
+gboolean cam_stream_configure(cam_t *cam);
+void cam_stream_start(cam_t *cam);
+void cam_stream_stop(cam_t *cam);
+void cam_stream_cleanup(cam_t *cam);
 
 #endif

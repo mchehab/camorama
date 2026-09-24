@@ -253,10 +253,11 @@ static void copy_two_pixels(cam_t *cam,
     }
 }
 
-unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
+unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
+                                  size_t input_size, unsigned char *display_data)
 {
     unsigned char *plane0 = inbuf;
-    unsigned char *p_out = cam->pic_buf;
+    unsigned char *p_out = display_data;
     uint32_t width = cam->width;
     uint32_t height = cam->height;
     uint32_t bytesperline = cam->bytesperline;
@@ -289,14 +290,14 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
     case V4L2_PIX_FMT_SRGGB8:
         if (width < 3 || height < 2 || bytesperline < width)
             return 0;
-        img_bayer_to_rgb24(inbuf, cam->pic_buf, width, height,
+        img_bayer_to_rgb24(inbuf, display_data, width, height,
                            bytesperline, cam->pixformat);
         return width * height * 3;
 #ifdef HAVE_FFMPEG
     case V4L2_PIX_FMT_MJPEG:
     case V4L2_PIX_FMT_H264:
         return img_ffmpeg_to_rgb24(&cam->converter, cam->pixformat,
-                                   inbuf, cam->sizeimage, cam->pic_buf,
+                                   inbuf, input_size, display_data,
                                    width, height);
 #endif
     default:

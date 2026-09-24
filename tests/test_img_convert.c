@@ -203,7 +203,7 @@ static unsigned char *load_raw_file(struct raw_imgs *img, cam_t *cam)
     cam->sizeimage = size;
 
     /* Allocate space to store the converted RGB24 image */
-    cam->pic_buf = calloc(COLOR_BAR_HEIGHT, COLOR_BAR_WIDTH * 3);
+    cam->display_buffers[0].data = calloc(COLOR_BAR_HEIGHT, COLOR_BAR_WIDTH * 3);
 
     return buffer;
 }
@@ -225,20 +225,21 @@ void test_lossless(void **state)
     buffer = load_raw_file(img, &cam);
     assert_non_null(buffer);
 
-    rc = img_convert_to_rgb24(&cam, buffer);
+    rc = img_convert_to_rgb24(&cam, buffer, cam.sizeimage,
+                              cam.display_buffers[0].data);
     assert_int_not_equal(rc, 0);
 
     for  (i = 0; i < rgb24_size; i++)
-        if (rgb24_buffer[i] != cam.pic_buf[i])
+        if (rgb24_buffer[i] != cam.display_buffers[0].data[i])
             errors++;
 
     // FIXME: add a command line arg to enable it
-    assert_int_equal(test_save_png_named(img->name, cam.pic_buf, cam.width,
+    assert_int_equal(test_save_png_named(img->name, cam.display_buffers[0].data, cam.width,
                                          cam.height, 0), 0);
 
     assert_int_equal(errors, 0);
 
-    free(cam.pic_buf);
+    free(cam.display_buffers[0].data);
     free(buffer);
 }
 
@@ -254,19 +255,21 @@ void test_psnr(void **state)
     buffer = load_raw_file(img, &cam);
     assert_non_null(buffer);
 
-    rc = img_convert_to_rgb24(&cam, buffer);
+    rc = img_convert_to_rgb24(&cam, buffer, cam.sizeimage,
+                              cam.display_buffers[0].data);
     assert_int_not_equal(rc, 0);
 
-    img->psnr = test_estimate_psnr(rgb24_buffer, cam.pic_buf, rgb24_size);
+    img->psnr = test_estimate_psnr(rgb24_buffer, cam.display_buffers[0].data,
+                                   rgb24_size);
 
     // FIXME: add a command line arg to enable it
-    assert_int_equal(test_save_png_named(img->name, cam.pic_buf, cam.width,
+    assert_int_equal(test_save_png_named(img->name, cam.display_buffers[0].data, cam.width,
                                          cam.height, 0), 0);
 
     /* Should be OK for 12 bits YUV */
     assert_true(img->psnr >= PSNR_GOAL);
 
-    free(cam.pic_buf);
+    free(cam.display_buffers[0].data);
     free(buffer);
 }
 

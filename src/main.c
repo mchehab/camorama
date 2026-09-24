@@ -13,9 +13,12 @@
 #include "streaming.h"
 #include <config.h>
 
+#include <errno.h>
+#include <fcntl.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 GtkWidget *prefswindow;
 int frames, frames2, seconds;
@@ -191,6 +194,7 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
     if (cam->idle_id)
         g_source_remove(cam->idle_id);
     cam->idle_id = 0;
+    cam_stream_stop(cam);
 
     if (cam->read == FALSE) {
         if (cam->userptr)
@@ -219,6 +223,7 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
     g_clear_object(&cam->filter_chain);
     g_clear_object(&cam->status);
     g_clear_object(&cam->da);
+    g_clear_object(&cam->pb);
 
     g_free(cam->video_dev);
     g_free(cam->pixdir);
@@ -227,8 +232,12 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
     g_free(cam->rdir);
     g_free(cam->rcapturefile);
     g_free(cam->ts_string);
-    free(cam->pic_buf);
-    free(cam->tmp);
+    cam_stream_cleanup(cam);
+    if (cam->stream_wakeup[0] >= 0)
+        close(cam->stream_wakeup[0]);
+    if (cam->stream_wakeup[1] >= 0)
+        close(cam->stream_wakeup[1]);
+    free(cam->capture_input);
 
     g_object_unref (G_OBJECT (cam->xml));
     g_object_unref (G_OBJECT (cam->gc));
@@ -255,8 +264,22 @@ static void activate(GtkApplication *app)
     cam->input = input;
     cam->app = app;
     g_mutex_init(&cam->remote_save_mutex);
-    g_mutex_init(&cam->pixbuf_mutex);
+    g_mutex_init(&cam->display_mutex);
     g_mutex_init(&cam->control_win_mutex);
+
+    cam->stream_wakeup[0] = cam->stream_wakeup[1] = -1;
+
+    if (pipe(cam->stream_wakeup) < 0) {
+        g_printerr("Could not create camera stream wakeup pipe: %s",
+                   g_strerror(errno));
+        exit(1);
+    }
+
+    if (fcntl(cam->stream_wakeup[0], F_SETFL, O_NONBLOCK) < 0) {
+        g_printerr("Could not configure camera stream wakeup pipe: %s",
+                   g_strerror(errno));
+        exit(1);
+    }
 
     /* gtk is initialized now */
     camorama_filters_init();
