@@ -97,6 +97,8 @@ typedef struct camera {
     guint32 zoom_cid;
     unsigned int bytesperline, sizeimage;
     unsigned int pixformat;
+    gboolean force_pixformat;
+    unsigned int requested_pixformat;
     int input;
     int frame_number;
 

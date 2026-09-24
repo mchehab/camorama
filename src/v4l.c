@@ -1008,12 +1008,16 @@ void set_win_info(cam_t *cam)
     }
 
     /* Chose a different pixformat if quality is better or provide more fps */
-    cam->pixformat = cam->res[0].pixformat;
-    for (i = 0; i < cam->n_res; i++) {
-        if (cam->res[i].x == cam->width && cam->res[i].y == cam->height) {
-            cam->pixformat = cam->res[i].pixformat;
-            break;
+    if (!cam->force_pixformat) {
+        cam->pixformat = cam->res[0].pixformat;
+        for (i = 0; i < cam->n_res; i++) {
+            if (cam->res[i].x == cam->width && cam->res[i].y == cam->height) {
+                cam->pixformat = cam->res[i].pixformat;
+                break;
+            }
         }
+    } else {
+        cam->pixformat = cam->requested_pixformat;
     }
 
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;

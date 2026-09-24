@@ -28,6 +28,7 @@ static int half = 0, use_read = 0, use_userptr = 0, debug = 0;
 static int dont_use_libv4l = 0;
 static int disable_scaler = 0;
 static gchar *video_dev = NULL;
+static gchar *pixel_format = NULL;
 static int x = 0, y = 0;
 static int input = 0;
 
@@ -158,6 +159,8 @@ static GOptionEntry options[] = {
      N_("capture width"), NULL},
     {"height", 'y', 0, G_OPTION_ARG_INT, &y,
      N_("capture height"), NULL},
+    {"format", 0, 0, G_OPTION_ARG_STRING, &pixel_format,
+     N_("force a four-character V4L2 pixel format (for example GRBG)"), "FOURCC"},
     {"max", 'M', 0, G_OPTION_ARG_NONE, &max,
      N_("maximum capture size"), NULL},
     {"min", 'm', 0, G_OPTION_ARG_NONE, &min,
@@ -170,7 +173,7 @@ static GOptionEntry options[] = {
      N_("disable video scaler"), NULL},
     {"userptr", 'U', 0, G_OPTION_ARG_NONE, &use_userptr,
      N_("use userptr pointer rather than mmap()"), NULL},
-    {"dont-use-libv4l2", 'D', 0, G_OPTION_ARG_NONE, &dont_use_libv4l,
+    {"dont-use-libv4l2", 0, 0, G_OPTION_ARG_NONE, &dont_use_libv4l,
      N_("use userptr pointer rather than mmap()"), NULL},
     {"input", 'i', 0, G_OPTION_ARG_INT, &input,
      N_("v4l device input to use"), NULL},
@@ -260,6 +263,17 @@ static void activate(GtkApplication *app)
     camorama_filters_init();
 
     cam->debug = debug;
+    if (pixel_format) {
+        if (strlen(pixel_format) == 4) {
+            cam->requested_pixformat =
+                v4l2_fourcc(pixel_format[0], pixel_format[1],
+                            pixel_format[2], pixel_format[3]);
+            cam->force_pixformat = TRUE;
+        } else {
+            g_warning("Ignoring invalid pixel format '%s': expected four characters",
+                      pixel_format);
+        }
+    }
 
     if (ver) {
         fprintf(stderr, _("\n\nCamorama version %s\n\n"), PACKAGE_VERSION);
@@ -274,7 +288,7 @@ static void activate(GtkApplication *app)
     if (half)
         cam->size = PICHALF;
 
-    if (!dont_use_libv4l)
+    if (!dont_use_libv4l && cam->force_pixformat)
         cam->use_libv4l = TRUE;
 
     if (use_read) {
