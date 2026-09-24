@@ -15,7 +15,7 @@ extern struct devnodes *devices;
 
 G_BEGIN_DECLS
 
-void on_change_size_activate(GtkWidget * widget, cam_t *cam);
+void cam_change_size(cam_t *cam, const gchar *name);
 void on_quit_activate(GtkWidget *widget, cam_t *cam);
 gboolean on_configure_event(GtkWidget *widget, GdkEvent *event, cam_t *cam);
 int delete_event(GtkWidget *, gpointer data);
@@ -84,12 +84,13 @@ gchar *gtk_common_get_file_chooser_folder(GtkWidget *chooser);
 void gtk_common_set_file_chooser_folder(GtkWidget *chooser,
                                         const gchar *folder);
 void gtk_common_choice_append(GtkWidget *choice, const gchar *text);
+void gtk_common_choice_clear(GtkWidget *choice);
+void gtk_common_choice_setup(GtkWidget *choice);
 void gtk_common_choice_set_active(GtkWidget *choice, guint index);
 gint gtk_common_choice_get_active(GtkWidget *choice);
 gchar *gtk_common_choice_get_active_text(GtkWidget *choice);
 void gtk_common_destroy_widget(GtkWidget *widget);
 void gtk_common_box_append(GtkBox *box, GtkWidget *child);
-GList *gtk_common_get_children(GtkWidget *widget);
 void set_image_scale(cam_t *cam);
 void retrieve_video_dev(cam_t *cam);
 int select_video_dev(cam_t *cam);

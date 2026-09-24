@@ -262,6 +262,56 @@ static GtkWidget *gtk4_choice_widget(GtkWidget *choice)
     return g_object_get_data(G_OBJECT(choice), choice_widget_key);
 }
 
+struct choice_changed_data {
+    GtkWidget *choice;
+    void (*callback)(GtkWidget *, gpointer);
+    gpointer data;
+};
+
+static void choice_changed_data_free(gpointer data, GClosure *closure)
+{
+    (void)closure;
+    g_free(data);
+}
+
+#if GTK_CHECK_VERSION(4, 12, 0)
+static void choice_changed(GtkWidget *widget, GParamSpec *pspec,
+                           struct choice_changed_data *changed)
+#else
+static void choice_changed(GtkListBox *list,
+                           struct choice_changed_data *changed)
+#endif
+{
+#if GTK_CHECK_VERSION(4, 12, 0)
+    (void)widget;
+    (void)pspec;
+#else
+    (void)list;
+#endif
+    changed->callback(changed->choice, changed->data);
+}
+
+void gtk4_choice_connect_changed(GtkWidget *choice,
+                                 void (*callback)(GtkWidget *, gpointer),
+                                 gpointer data)
+{
+    struct choice_changed_data *changed = g_new0(
+        struct choice_changed_data, 1);
+
+    changed->choice = choice;
+    changed->callback = callback;
+    changed->data = data;
+#if GTK_CHECK_VERSION(4, 12, 0)
+    g_signal_connect_data(gtk4_choice_widget(choice), "notify::selected",
+                          G_CALLBACK(choice_changed), changed,
+                          choice_changed_data_free, 0);
+#else
+    g_signal_connect_data(g_object_get_data(G_OBJECT(choice), choice_list_key),
+                          "selected-rows-changed", G_CALLBACK(choice_changed),
+                          changed, choice_changed_data_free, 0);
+#endif
+}
+
 #if !GTK_CHECK_VERSION(4, 12, 0)
 
 static void gtk4_choice_row_selected(GtkListBox *list, GtkWidget *choice)
@@ -340,6 +390,28 @@ void gtk4_choice_append(GtkWidget *choice, const gchar *text)
 
     gtk_widget_set_halign(row, GTK_ALIGN_START);
     gtk_list_box_append(GTK_LIST_BOX(list), row);
+#endif
+}
+
+void gtk4_choice_clear(GtkWidget *choice)
+{
+    GtkWidget *widget = gtk4_choice_widget(choice);
+
+    if (!widget)
+        return;
+#if GTK_CHECK_VERSION(4, 12, 0)
+    gtk_drop_down_set_model(GTK_DROP_DOWN(widget),
+                            G_LIST_MODEL(gtk_string_list_new(NULL)));
+#else
+    GtkWidget *list = g_object_get_data(G_OBJECT(choice), choice_list_key);
+    GtkWidget *button = g_object_get_data(G_OBJECT(choice), choice_button_key);
+    GtkListBoxRow *row;
+
+    gtk_list_box_unselect_all(GTK_LIST_BOX(list));
+    g_object_set_data(G_OBJECT(choice), choice_active_key, NULL);
+    gtk_menu_button_set_label(GTK_MENU_BUTTON(button), "");
+    while ((row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(list), 0)))
+        gtk_list_box_remove(GTK_LIST_BOX(list), GTK_WIDGET(row));
 #endif
 }
 
@@ -533,18 +605,6 @@ int gtk4_error_dialog(const gchar *message)
 void gtk4_box_append(GtkBox *box, GtkWidget *child)
 {
     gtk_box_append(box, child);
-}
-
-GList *gtk4_get_children(GtkWidget *widget)
-{
-    GtkWidget *child;
-    GList *children = NULL;
-
-    for (child = gtk_widget_get_first_child(widget); child;
-         child = gtk_widget_get_next_sibling(child))
-        children = g_list_prepend(children, child);
-
-    return g_list_reverse(children);
 }
 
 /*

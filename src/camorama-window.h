@@ -32,6 +32,7 @@ G_BEGIN_DECLS
 extern const gchar *const protos[3];
 
 void load_interface(cam_t *cam);
+void update_resolution_fps(cam_t *cam);
 void camorama_effects_shutdown(cam_t *cam);
 
 G_END_DECLS

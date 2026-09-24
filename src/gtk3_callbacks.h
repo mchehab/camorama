@@ -25,7 +25,6 @@ gboolean gtk3_close_prefs_window(GtkWidget *widget, GdkEvent *event,
                                  cam_t *cam);
 int gtk3_error_dialog(char *message);
 void gtk3_box_append(GtkBox *box, GtkWidget *child);
-GList *gtk3_get_children(GtkWidget *widget);
 GtkWidget *gtk3_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk3_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk3_create_control_menu(video_controls_t *ctrl, gint32 value);

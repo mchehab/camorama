@@ -37,6 +37,161 @@
 #endif
 #include "gtk_common_callbacks.h"
 #include "audio.h"
+
+static void frame_rate_changed(GtkWidget *widget, gpointer data)
+{
+    cam_t *cam = data;
+    GArray *intervals;
+    gint selected;
+
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget),
+                                          "frame-rates-updating")))
+        return;
+    intervals = g_object_get_data(G_OBJECT(widget), "frame-intervals");
+    selected = gtk_common_choice_get_active(widget);
+    if (!intervals || selected < 0 || (guint)selected >= intervals->len)
+        return;
+
+    if (!cam->read) {
+        if (cam->userptr)
+            stop_streaming_userptr(cam);
+        else
+            stop_streaming(cam);
+    }
+    if (!cam_set_frame_interval(cam,
+                                &g_array_index(intervals,
+                                               struct v4l2_fract, selected)) &&
+        cam->debug)
+        g_warning("Could not set requested frame interval");
+    if (!cam->read) {
+        if (cam->userptr)
+            start_streaming_userptr(cam);
+        else
+            start_streaming(cam);
+    }
+}
+
+static void update_frame_rates(cam_t *cam, GtkWidget *widget)
+{
+    GArray *intervals = cam_get_frame_intervals(cam);
+    struct v4l2_fract current = { 0 };
+    guint selected = 0, i;
+
+#if GTK_MAJOR_VERSION < 4
+    gtk_combo_box_popdown(GTK_COMBO_BOX(widget));
+#endif
+    g_object_set_data(G_OBJECT(widget), "frame-rates-updating",
+                      GINT_TO_POINTER(TRUE));
+    gtk_common_choice_clear(widget);
+    gtk_widget_set_sensitive(widget, intervals->len > 1);
+    cam_get_frame_interval(cam, &current);
+    for (i = 0; i < intervals->len; i++) {
+        const struct v4l2_fract *interval = &g_array_index(
+            intervals, struct v4l2_fract, i);
+        gchar *text = g_strdup_printf(_("%.2f fps"),
+                                      (double)interval->denominator /
+                                      interval->numerator);
+
+        gtk_common_choice_append(widget, text);
+        g_free(text);
+        if ((guint64)interval->numerator * current.denominator ==
+            (guint64)current.numerator * interval->denominator)
+            selected = i;
+    }
+    g_object_set_data_full(G_OBJECT(widget), "frame-intervals", intervals,
+                           (GDestroyNotify)g_array_unref);
+    if (intervals->len)
+        gtk_common_choice_set_active(widget, selected);
+    g_object_set_data(G_OBJECT(widget), "frame-rates-updating",
+                      GINT_TO_POINTER(FALSE));
+}
+
+static void resolution_changed(GtkWidget *widget, gpointer data)
+{
+    cam_t *cam = data;
+    gchar *text = gtk_common_choice_get_active_text(widget);
+    GtkWidget *frame_rate = g_object_get_data(G_OBJECT(widget), "frame-rate");
+
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget),
+                                          "resolutions-updating"))) {
+        g_free(text);
+        return;
+    }
+    if (text) {
+        cam_change_size(cam, text);
+        update_frame_rates(cam, frame_rate);
+        g_free(text);
+    }
+}
+
+void update_resolution_fps(cam_t *cam)
+{
+    GtkWidget *resolution = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                               "resolution"));
+    GtkWidget *frame_rate = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                               "frame_rate"));
+    guint i, count = 0, selected = 0;
+    gboolean have_selected = FALSE;
+
+    if (!GTK_IS_WIDGET(resolution) || !GTK_IS_WIDGET(frame_rate))
+        return;
+
+    gtk_widget_set_size_request(resolution, 100, -1);
+    gtk_widget_set_size_request(frame_rate, 100, -1);
+    gtk_common_choice_setup(resolution);
+    gtk_common_choice_setup(frame_rate);
+#if GTK_MAJOR_VERSION < 4
+    gtk_combo_box_set_popup_fixed_width(GTK_COMBO_BOX(resolution), TRUE);
+    gtk_combo_box_set_popup_fixed_width(GTK_COMBO_BOX(frame_rate), TRUE);
+#endif
+
+    g_object_set_data(G_OBJECT(resolution), "resolutions-updating",
+                      GINT_TO_POINTER(TRUE));
+    get_supported_resolutions(cam, TRUE);
+    gtk_common_choice_clear(resolution);
+    for (i = 0; i < cam->n_res; i++) {
+        gchar *text;
+        guint j;
+
+        for (j = 0; j < i; j++)
+            if (cam->res[j].x == cam->res[i].x &&
+                cam->res[j].y == cam->res[i].y)
+                break;
+        if (j < i)
+            continue;
+
+        text = g_strdup_printf("%ux%u", cam->res[i].x, cam->res[i].y);
+        gtk_common_choice_append(resolution, text);
+        if (cam->res[i].x == cam->width && cam->res[i].y == cam->height) {
+            selected = count;
+            have_selected = TRUE;
+        }
+        count++;
+        g_free(text);
+    }
+    gtk_widget_set_sensitive(resolution, count > 1);
+    if (count)
+        gtk_common_choice_set_active(resolution,
+                                     have_selected ? selected : 0);
+    g_object_set_data(G_OBJECT(resolution), "frame-rate", frame_rate);
+    g_object_set_data(G_OBJECT(resolution), "resolutions-updating",
+                      GINT_TO_POINTER(FALSE));
+    if (g_object_get_data(G_OBJECT(resolution), "choice-signals-connected")) {
+        update_frame_rates(cam, frame_rate);
+        return;
+    }
+#if GTK_MAJOR_VERSION >= 4
+    gtk4_choice_connect_changed(resolution, resolution_changed, cam);
+    gtk4_choice_connect_changed(frame_rate, frame_rate_changed, cam);
+#else
+    g_signal_connect(resolution, "changed", G_CALLBACK(resolution_changed), cam);
+    g_signal_connect(frame_rate, "changed", G_CALLBACK(frame_rate_changed), cam);
+#endif
+    update_frame_rates(cam, frame_rate);
+    g_object_set_data(G_OBJECT(resolution), "choice-signals-connected",
+                      GINT_TO_POINTER(TRUE));
+}
+
 #include "camorama-filter-chain.h"
 #include "camorama-globals.h"
 #include "filter.h"
@@ -713,6 +868,7 @@ void load_interface(cam_t *cam)
                          "clicked", G_CALLBACK(show_controls), cam);
 
     update_sliders(cam);
+    update_resolution_fps(cam);
 
     if (cam->show_adjustments == FALSE)
         gtk_widget_set_visible(GTK_WIDGET(gtk_builder_get_object(cam->xml,

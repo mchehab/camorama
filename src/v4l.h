@@ -189,6 +189,11 @@ int camera_cap(cam_t *);
 void print_cam(cam_t *);
 void try_set_win_info(cam_t *cam, unsigned int pixformat,
                       unsigned int *x, unsigned int *y);
+GArray *cam_get_frame_intervals(cam_t *cam);
+gboolean cam_set_frame_interval(cam_t *cam,
+                                const struct v4l2_fract *interval);
+gboolean cam_get_frame_interval(cam_t *cam, struct v4l2_fract *interval);
+void cam_set_max_fps(cam_t *cam);
 void set_win_info(cam_t *cam);
 void get_pic_info(cam_t *);
 void get_win_info(cam_t *);

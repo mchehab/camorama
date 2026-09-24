@@ -124,24 +124,6 @@
             <property name="use-underline">True</property>
           </object>
         </child>
-        <child>
-          <object class="GtkSeparator">
-            <property name="visible">True</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox" id="resolution_box">
-            <property name="visible">True</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkButton" id="small">
-                <property name="visible">True</property>
-                <property name="name">small</property>
-                <property name="label" translatable="yes">Small</property>
-              </object>
-            </child>
-          </object>
-        </child>
       </object>
     </child>
   </object>
@@ -783,10 +765,14 @@
           </packing>
         </child>
         <child>
-          <object class="GtkStatusbar" id="status">
+          <object class="GtkBox" id="status_bar">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="spacing">4</property>
+            <property name="spacing">6</property>
+            <child><object class="GtkLabel" id="status"><property name="visible">True</property><property name="hexpand">True</property><property name="xalign">0</property></object></child>
+            <child><object class="GtkLabel"><property name="visible">True</property><property name="label" translatable="yes">Resolution:</property></object></child>
+            <child><object class="GtkComboBoxText" id="resolution"><property name="visible">True</property></object></child>
+            <child><object class="GtkLabel"><property name="visible">True</property><property name="label" translatable="yes">FPS:</property></object></child>
+            <child><object class="GtkComboBoxText" id="frame_rate"><property name="visible">True</property></object></child>
           </object>
           <packing>
             <property name="expand">False</property>

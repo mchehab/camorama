@@ -14,6 +14,10 @@ void gtk4_set_entry_text(GtkWidget *entry, const gchar *text);
 gchar *gtk4_get_file_chooser_folder(GtkWidget *chooser);
 void gtk4_set_file_chooser_folder(GtkWidget *chooser, const gchar *folder);
 void gtk4_choice_setup(GtkWidget *choice);
+void gtk4_choice_connect_changed(GtkWidget *choice,
+                                 void (*callback)(GtkWidget *, gpointer),
+                                 gpointer data);
+void gtk4_choice_clear(GtkWidget *choice);
 void gtk4_choice_append(GtkWidget *choice, const gchar *text);
 void gtk4_choice_set_active(GtkWidget *choice, guint index);
 gint gtk4_choice_get_active(GtkWidget *choice);
@@ -23,7 +27,6 @@ void gtk4_destroy_widget(GtkWidget *widget);
 gboolean gtk4_close_prefs_window(GtkWindow *window, cam_t *cam);
 int gtk4_error_dialog(const gchar *message);
 void gtk4_box_append(GtkBox *box, GtkWidget *child);
-GList *gtk4_get_children(GtkWidget *widget);
 GtkWidget *gtk4_create_controls_window(GtkWidget *child, cam_t *cam);
 GtkWidget *gtk4_create_control_button(video_controls_t *ctrl, gint32 value);
 GtkWidget *gtk4_create_control_menu(video_controls_t *ctrl, gint32 value);

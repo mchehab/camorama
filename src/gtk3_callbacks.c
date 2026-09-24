@@ -189,14 +189,6 @@ void gtk3_box_append(GtkBox *box, GtkWidget *child)
     gtk_container_add(GTK_CONTAINER(box), child);
 }
 
-GList *gtk3_get_children(GtkWidget *widget)
-{
-    if (!GTK_IS_CONTAINER(widget))
-        return NULL;
-
-    return gtk_container_get_children(GTK_CONTAINER(widget));
-}
-
 /*
  * Helper functions to support the camera controls window
  */

@@ -485,31 +485,16 @@ void set_image_scale(cam_t *cam)
     g_settings_set_int(cam->gc, CAM_SETTINGS_HEIGHT, cam->height);
 }
 
-void on_change_size_activate(GtkWidget *widget, cam_t *cam)
+void cam_change_size(cam_t *cam, const gchar *name)
 {
-    gchar const *name;
     unsigned int width = 0, height = 0, pixformat = cam->pixformat, i;
 
-    name = gtk_widget_get_name(widget);
-    gtk_popover_popdown(GTK_POPOVER(gtk_builder_get_object(cam->xml,
-                                                           "menuitem4_menu")));
-
-    if (strcmp(name, "small") == 0) {
-        width = cam->min_width;
-        height = cam->min_height;
-    } else if (strcmp(name, "medium") == 0) {
-        width = cam->max_width / 2;
-        height = cam->max_height / 2;
-    } else if (strcmp(name, "large") == 0) {
-        width = cam->max_width;
-        height = cam->max_height;
-    } else {
-        sscanf(name, "%dx%d", &width, &height);
-        for (i = 0; i < cam->n_res; i++) {
-            if (cam->res[i].x == width && cam->res[i].y == height) {
-                pixformat = cam->res[i].pixformat;
-                break;
-            }
+    if (sscanf(name, "%ux%u", &width, &height) != 2)
+        return;
+    for (i = 0; i < cam->n_res; i++) {
+        if (cam->res[i].x == width && cam->res[i].y == height) {
+            pixformat = cam->res[i].pixformat;
+            break;
         }
     }
 
@@ -533,6 +518,10 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
     }
 
     set_win_info(cam);
+    if (cam->read)
+        cam->tmp = g_realloc(cam->tmp, cam->sizeimage);
+    cam_set_max_fps(cam);
+    frames = frames2 = seconds = 0;
 
     if (cam->read == FALSE) {
         if (cam->userptr)
@@ -540,7 +529,6 @@ void on_change_size_activate(GtkWidget *widget, cam_t *cam)
         else if (cam->read == FALSE)
             start_streaming(cam);
     }
-
     set_image_scale(cam);
 }
 
@@ -657,19 +645,11 @@ gint fps(cam_t *cam)
     }
 
     gchar *stat;
-#if GTK_MAJOR_VERSION < 4
-    guint cont = gtk_statusbar_get_context_id(GTK_STATUSBAR(sb), "context");
-#endif
-
     seconds++;
     stat = g_strdup_printf(_("%.2f fps - current     %.2f fps - average"),
                            frames / 2., frames2 / (seconds * 2.));
     frames = 0;
-#if GTK_MAJOR_VERSION < 4
-    gtk_statusbar_push(GTK_STATUSBAR(sb), cont, stat);
-#else
     gtk_label_set_text(GTK_LABEL(sb), stat);
-#endif
     g_free(stat);
     return TRUE;
 }
@@ -770,6 +750,24 @@ void gtk_common_choice_append(GtkWidget *choice, const gchar *text)
 #endif
 }
 
+void gtk_common_choice_clear(GtkWidget *choice)
+{
+#if GTK_MAJOR_VERSION < 4
+    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(choice));
+#else
+    gtk4_choice_clear(choice);
+#endif
+}
+
+void gtk_common_choice_setup(GtkWidget *choice)
+{
+#if GTK_MAJOR_VERSION >= 4
+    gtk4_choice_setup(choice);
+#else
+    (void)choice;
+#endif
+}
+
 void gtk_common_choice_set_active(GtkWidget *choice, guint index)
 {
 #if GTK_MAJOR_VERSION < 4
@@ -820,15 +818,6 @@ void gtk_common_box_append(GtkBox *box, GtkWidget *child)
     gtk3_box_append(box, child);
 #else
     gtk4_box_append(box, child);
-#endif
-}
-
-GList *gtk_common_get_children(GtkWidget *widget)
-{
-#if GTK_MAJOR_VERSION < 4
-    return gtk3_get_children(widget);
-#else
-    return gtk4_get_children(widget);
 #endif
 }
 
@@ -1531,76 +1520,11 @@ void on_change_camera(GtkWidget *, cam_t *cam)
 
     start_camera(cam);
     update_sliders(cam);
-}
-
-static void add_gtk_view_resolutions(cam_t *cam)
-{
-    GtkWidget *small_res, *new_res;
-    GtkWidget *menu;
-    unsigned int i;
-
-    /*
-     * Dynamically generate the resolutions based on what the camera
-     * actually supports. Provide a fallback method, if the camera driver
-     * is too old and doesn't support formats enumeration.
-     */
-
-    small_res = GTK_WIDGET(gtk_builder_get_object(cam->xml, "small"));
-    menu = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
-
-    if (!small_res || !menu)
-        return;
-
-    /* Show every size, using its best supported pixel format. */
-    get_supported_resolutions(cam, TRUE);
-
-    if (cam->n_res > 0) {
-        for (i = 0; i < cam->n_res; i++) {
-            char name[80];
-
-            if (cam->res[i].max_fps > 0)
-                    sprintf(name, _("%dx%d (max %.1f fps)"),
-                            cam->res[i].x, cam->res[i].y,
-                            (double)cam->res[i].max_fps);
-                else
-                    sprintf(name, _("%dx%d"), cam->res[i].x, cam->res[i].y);
-
-            new_res = gtk_button_new_with_label(name);
-            gtk_common_box_append(GTK_BOX(menu), new_res);
-            gtk_widget_set_visible(new_res, TRUE);;
-            g_signal_connect(new_res, "clicked",
-                             G_CALLBACK(on_change_size_activate), cam);
-            gtk_widget_set_name(new_res, name);
-        }
-
-        /* We won't actually use the small res */
-        gtk_widget_set_visible(small_res, FALSE);;
-    } else {
-        g_signal_connect(gtk_builder_get_object(cam->xml, "small"),
-                         "clicked", G_CALLBACK(on_change_size_activate),
-                         cam);
-
-        new_res = gtk_button_new_with_label("Medium");
-        gtk_common_box_append(GTK_BOX(menu), new_res);
-        gtk_widget_set_visible(new_res, TRUE);;
-        g_signal_connect(new_res, "clicked",
-                         G_CALLBACK(on_change_size_activate), cam);
-        gtk_widget_set_name(new_res, "medium");
-
-        new_res = gtk_button_new_with_label("Large");
-        gtk_common_box_append(GTK_BOX(menu), new_res);
-        gtk_widget_set_visible(new_res, TRUE);;
-        g_signal_connect(new_res, "clicked",
-                         G_CALLBACK(on_change_size_activate), cam);
-        gtk_widget_set_name(new_res, "large");
-    }
+    update_resolution_fps(cam);
 }
 
 void start_camera(cam_t *cam)
 {
-    GList *children, *iter;
-    GtkWidget *widget, *container;
-
     /* First step: free used resources, if any */
 
     if (cam->idle_id) {
@@ -1642,19 +1566,6 @@ void start_camera(cam_t *cam)
     frames = 0;
     frames2 = 0;
     seconds = 0;
-
-    /* Second step: clean-up all resolutions */
-
-    container = GTK_WIDGET(gtk_builder_get_object(cam->xml, "resolution_box"));
-    children = container ? gtk_common_get_children(container) : NULL;
-    for (iter = children; iter != NULL; iter = g_list_next(iter)) {
-        widget = GTK_WIDGET(iter->data);
-        if (strstr(gtk_widget_get_name(widget), "x"))
-            gtk_common_destroy_widget(widget);
-    }
-    g_list_free(children);
-
-    /* Third step: allocate them again */
 
     if (cam->read)
         cam->dev = cam_open(cam, O_RDWR);
@@ -1700,9 +1611,6 @@ void start_camera(cam_t *cam)
 
     if (cam->debug == TRUE)
         print_cam(cam);
-
-    /* Add resolutions */
-    add_gtk_view_resolutions(cam);
 
     /* Adjust image scale */
     set_image_scale(cam);

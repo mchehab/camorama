@@ -117,20 +117,6 @@
             <property name="use-underline">True</property>
           </object>
         </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkBox" id="resolution_box">
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkButton" id="small">
-                <property name="name">small</property>
-                <property name="label" translatable="yes">Small</property>
-              </object>
-            </child>
-          </object>
-        </child>
       </object>
     </property>
   </object>
@@ -592,7 +578,14 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="status"/>
+          <object class="GtkBox" id="status_bar">
+            <property name="spacing">6</property>
+            <child><object class="GtkLabel" id="status"><property name="hexpand">True</property><property name="halign">start</property></object></child>
+            <child><object class="GtkLabel"><property name="label" translatable="yes">Resolution:</property></object></child>
+            <child><object class="GtkBox" id="resolution"/></child>
+            <child><object class="GtkLabel"><property name="label" translatable="yes">FPS:</property></object></child>
+            <child><object class="GtkBox" id="frame_rate"/></child>
+          </object>
         </child>
       </object>
     </property>

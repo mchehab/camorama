@@ -74,6 +74,103 @@ int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
         return ioctl(cam->dev, cmd, arg);
 }
 
+static void add_frame_interval(GArray *intervals,
+                              const struct v4l2_fract *interval)
+{
+    guint i;
+
+    if (!interval->numerator || !interval->denominator)
+        return;
+    for (i = 0; i < intervals->len; i++) {
+        const struct v4l2_fract *current = &g_array_index(
+            intervals, struct v4l2_fract, i);
+
+        if ((guint64)current->numerator * interval->denominator ==
+            (guint64)interval->numerator * current->denominator)
+            return;
+    }
+    g_array_append_val(intervals, *interval);
+}
+
+GArray *cam_get_frame_intervals(cam_t *cam)
+{
+    struct v4l2_frmivalenum interval = { 0 };
+    struct v4l2_fract current = { 0 };
+    GArray *intervals = g_array_new(FALSE, FALSE, sizeof(struct v4l2_fract));
+
+    /* Retain the negotiated value when a driver does not enumerate intervals. */
+    if (cam_get_frame_interval(cam, &current))
+        add_frame_interval(intervals, &current);
+
+    interval.pixel_format = cam->pixformat;
+    interval.width = cam->width;
+    interval.height = cam->height;
+    for (interval.index = 0;
+         !cam_ioctl(cam, VIDIOC_ENUM_FRAMEINTERVALS, &interval);
+         interval.index++) {
+        if (interval.type == V4L2_FRMIVAL_TYPE_DISCRETE)
+            add_frame_interval(intervals, &interval.discrete);
+        else if (interval.type == V4L2_FRMIVAL_TYPE_STEPWISE ||
+                 interval.type == V4L2_FRMIVAL_TYPE_CONTINUOUS) {
+            add_frame_interval(intervals, &interval.stepwise.min);
+            add_frame_interval(intervals, &interval.stepwise.max);
+        }
+    }
+
+    /* Keep a visible default on legacy drivers that expose no interval API. */
+    if (!intervals->len) {
+        current.numerator = 1;
+        current.denominator = 30;
+        add_frame_interval(intervals, &current);
+    }
+    return intervals;
+}
+
+gboolean cam_set_frame_interval(cam_t *cam,
+                                const struct v4l2_fract *interval)
+{
+    struct v4l2_streamparm parm = { 0 };
+
+    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (cam_ioctl(cam, VIDIOC_G_PARM, &parm) ||
+        !(parm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME))
+        return FALSE;
+    parm.parm.capture.timeperframe = *interval;
+    return !cam_ioctl(cam, VIDIOC_S_PARM, &parm);
+}
+
+gboolean cam_get_frame_interval(cam_t *cam, struct v4l2_fract *interval)
+{
+    struct v4l2_streamparm parm = { 0 };
+
+    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (cam_ioctl(cam, VIDIOC_G_PARM, &parm) ||
+        !parm.parm.capture.timeperframe.numerator ||
+        !parm.parm.capture.timeperframe.denominator)
+        return FALSE;
+    *interval = parm.parm.capture.timeperframe;
+    return TRUE;
+}
+
+void cam_set_max_fps(cam_t *cam)
+{
+    GArray *intervals = cam_get_frame_intervals(cam);
+    const struct v4l2_fract *best = NULL;
+    guint i;
+
+    for (i = 0; i < intervals->len; i++) {
+        const struct v4l2_fract *interval = &g_array_index(
+            intervals, struct v4l2_fract, i);
+
+        if (!best || (guint64)interval->numerator * best->denominator <
+                     (guint64)best->numerator * interval->denominator)
+            best = interval;
+    }
+    if (best)
+        cam_set_frame_interval(cam, best);
+    g_array_unref(intervals);
+}
+
 video_controls_t *cam_find_control_per_id(cam_t *cam, guint32 id)
 {
     video_controls_t *p = cam->controls;
