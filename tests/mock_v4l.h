@@ -2,7 +2,7 @@
 #ifndef TESTS_MOCK_V4L_H
 #define TESTS_MOCK_V4L_H
 
-#include "src/v4l.h"
+#include "src/camera-backend.h"
 
 struct mock_v4l_size {
     unsigned int width, height;

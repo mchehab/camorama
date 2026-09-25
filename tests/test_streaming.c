@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "unittest.h"
+#include "src/camera-backend.h"
 #include "src/streaming.h"
 
 static gint captured_frames;

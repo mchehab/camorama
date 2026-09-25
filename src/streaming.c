@@ -1,4 +1,5 @@
 #include "streaming.h"
+#include "camera-backend.h"
 #include "img_ffmpeg.h"
 
 #include <string.h>

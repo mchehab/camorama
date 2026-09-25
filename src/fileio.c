@@ -1,7 +1,7 @@
 #include "interface.h"
 #include "support.h"
 #include "fileio.h"
-#include "v4l.h"
+#include "camera-backend.h"
 
 #include <errno.h>
 #include <gio/gio.h>

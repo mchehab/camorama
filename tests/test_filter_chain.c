@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "unittest.h"
+#include "src/camera-backend.h"
 #include "src/streaming.h"
 #include "src/camorama-filter-chain.h"
 #include "src/filter.h"

@@ -21,7 +21,7 @@
  * USA
  */
 
-#include "v4l.h"
+#include "camera-backend.h"
 #include "camorama-filter-chain.h"
 
 #include "filter.h"

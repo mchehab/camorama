@@ -19,7 +19,7 @@
 #include "unittest.h"
 #include "src/img_convert.h"
 #include "src/img_ffmpeg.h"
-#include "src/v4l.h"
+#include "src/camera-backend.h"
 #include "test_utils.h"
 
 static const unsigned int MAX_FRAMES = 150;

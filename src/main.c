@@ -10,6 +10,7 @@
 #include "camorama-globals.h"
 #include "audio.h"
 #include "support.h"
+#include "camera-backend.h"
 #include "streaming.h"
 #include <config.h>
 

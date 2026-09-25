@@ -7,7 +7,7 @@
 #include "img_bayer.h"
 #include "img_convert.h"
 #include "img_ffmpeg.h"
-#include "v4l.h"
+#include "camera-backend.h"
 
 #define BYTE_CLAMP(a) CLAMP(a, 0, 255)
 

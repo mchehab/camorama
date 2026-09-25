@@ -1,4 +1,4 @@
-#include "v4l.h"
+#include "camera-backend.h"
 
 int add_rgb_text(guchar *, int, int, char *, char *, gboolean, gboolean);
 void remote_save(cam_t *);

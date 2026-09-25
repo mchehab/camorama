@@ -1,7 +1,7 @@
 #ifndef CAMORAMA_GTK_COMMON_CALLBACKS_H
 #define CAMORAMA_GTK_COMMON_CALLBACKS_H
 
-#include "v4l.h"
+#include "camera-backend.h"
 #include "fileio.h"
 
 struct devnodes {

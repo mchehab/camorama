@@ -13,7 +13,7 @@
 
 #include "unittest.h"
 
-#include "src/v4l.h"
+#include "src/camera-backend.h"
 #include "src/img_convert.h"
 #include "test_utils.h"
 

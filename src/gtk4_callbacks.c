@@ -1,7 +1,8 @@
-#include "gtk4_callbacks.h"
-#include "camorama-globals.h"
-
 #include <glib/gi18n.h>
+
+#include "gtk4_callbacks.h"
+#include "camera-backend.h"
+#include "camorama-globals.h"
 
 /*
  * Helper functions to support window area resize

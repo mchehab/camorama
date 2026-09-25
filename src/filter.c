@@ -1,10 +1,9 @@
-#include "filter.h"
-
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <glib/gi18n.h>
+
+#include "filter.h"
+#include "camera-backend.h"
 
 gchar const *camorama_filter_get_name(CamoramaFilter * self)
 {
@@ -61,8 +60,6 @@ static void camorama_filter_init(CamoramaFilter *)
 static void camorama_filter_class_init(CamoramaFilterClass *)
 {
 }
-
-#include "v4l.h"
 
 /* GType stuff for CamoramaFilterColor */
 typedef struct _CamoramaFilter CamoramaFilterColor;

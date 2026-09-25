@@ -6,6 +6,7 @@
 #endif
 #include "interface.h"
 #include "support.h"
+#include "camera-backend.h"
 #include "filter.h"
 #include "streaming.h"
 

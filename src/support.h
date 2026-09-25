@@ -1,3 +1,3 @@
-#include "v4l.h"
+#include "camera-backend.h"
 
 int error_dialog(char *);

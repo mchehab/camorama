@@ -1,7 +1,8 @@
-#include "gtk3_callbacks.h"
-#include "camorama-globals.h"
-
 #include <config.h>
+
+#include "gtk3_callbacks.h"
+#include "camera-backend.h"
+#include "camorama-globals.h"
 
 /*
  *Implement a Gtk3 function emulating Gtk4 gtk_window_is_fullscreen().

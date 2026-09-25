@@ -1,7 +1,7 @@
 #ifndef CAMORAMA_STREAMING_H
 #define CAMORAMA_STREAMING_H
 
-#include "v4l.h"
+#include "camera-backend.h"
 
 gboolean cam_stream_configure(cam_t *cam);
 void cam_stream_start(cam_t *cam);

@@ -1,7 +1,7 @@
 #ifndef CAMORAMA_AUDIO_H
 #define CAMORAMA_AUDIO_H
 
-#include "v4l.h"
+#include "camera-backend.h"
 
 #include <config.h>
 

@@ -25,7 +25,7 @@
 #ifndef CAMORAMA_GLOBALS_H
 #define CAMORAMA_GLOBALS_H
 
-#include "v4l.h"
+#include "camera-backend.h"
 
 G_BEGIN_DECLS
 
