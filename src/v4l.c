@@ -86,13 +86,43 @@ static int wait_for_capture(cam_t *cam)
     return r;
 }
 
-static int capture_buffers(cam_t *cam, unsigned char *outbuf,
-                           unsigned int len)
+static gboolean copy_rgb24(cam_t *cam, unsigned char *inbuf,
+                                  size_t input_size,
+                                  unsigned char *outbuf)
+{
+    size_t row_bytes;
+    size_t required_size;
+    size_t offset;
+
+    if (!cam->width || !cam->height || !cam->bytesperline)
+        return FALSE;
+
+    row_bytes =cam->width * 3;
+
+    if (row_bytes / 3 != cam->width)
+        return FALSE;
+
+    if (cam->bytesperline < row_bytes ||
+        (size_t)(cam->height - 1) > (G_MAXSIZE - row_bytes) / cam->bytesperline)
+        return FALSE;
+
+    required_size = (size_t)(cam->height - 1) * cam->bytesperline + row_bytes;
+    if (input_size < required_size)
+        return FALSE;
+
+    for (offset = 0; offset < cam->height; offset++) {
+        memcpy(outbuf, inbuf + offset * cam->bytesperline, row_bytes);
+        outbuf += row_bytes;
+    }
+
+    return TRUE;
+}
+
+static int capture_buffers(cam_t *cam, unsigned char *outbuf)
 {
     char *msg;
     unsigned char *inbuf;
     int r;
-    unsigned int y;
     int converted;
     struct v4l2_buffer buf;
 
@@ -120,22 +150,15 @@ static int capture_buffers(cam_t *cam, unsigned char *outbuf,
         return 0;
     }
 
-    if (len > buf.bytesused)
-        len = buf.bytesused;
-
     inbuf = cam->buffers[buf.index].start;
-    if (cam->use_libv4l) {
-	    for (y = 0; y < cam->height; y++) {
-		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
-		outbuf += cam->width * cam->bpp / 8;
-		inbuf += cam->bytesperline;
-	    }
-    } else {
+
+    if (cam->use_libv4l)
+        converted = copy_rgb24(cam, inbuf, buf.bytesused, outbuf);
+     else
         converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
-    }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
-    return cam->use_libv4l || converted > 0;
+    return converted > 0;
 }
 
 static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
@@ -143,7 +166,6 @@ static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
     char *msg;
     unsigned char *inbuf;
     int r;
-    unsigned int y;
     int converted;
     struct v4l2_buffer buf;
 
@@ -172,18 +194,14 @@ static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
     }
 
     inbuf = cam->buffers[buf.index].start;
-    if (cam->use_libv4l) {
-	    for (y = 0; y < cam->height; y++) {
-		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
-		outbuf += cam->width * cam->bpp / 8;
-		inbuf += cam->bytesperline;
-	    }
-    } else {
+
+    if (cam->use_libv4l)
+        converted = copy_rgb24(cam, inbuf, buf.bytesused, outbuf);
+    else
         converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
-    }
 
     cam_ioctl(cam, VIDIOC_QBUF, &buf);
-    return cam->use_libv4l || converted > 0;
+    return converted > 0;
 }
 
 static unsigned char *v4l_cam_read(cam_t *cam, unsigned char *display_data)
@@ -217,7 +235,7 @@ static unsigned char *v4l_cam_read(cam_t *cam, unsigned char *display_data)
     } else if (cam->userptr) {
             ret = !capture_buffers_userptr(cam, display_data);
     } else {
-            ret = !capture_buffers(cam, display_data, cam->bytesperline);
+            ret = !capture_buffers(cam, display_data);
     }
     if (ret)
         return NULL;
