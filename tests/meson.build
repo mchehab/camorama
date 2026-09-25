@@ -5,6 +5,7 @@ enable_unittest = false
 
 unittest_sources += ['test_v4l.c', 'mock_v4l.c']
 unittest_sources += ['test_streaming.c']
+unittest_sources += ['test_filter_chain.c']
 enable_unittest = true
 
 if enable_ffmpeg
