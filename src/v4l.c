@@ -435,7 +435,7 @@ int cam_set_control(cam_t *cam, guint32 id, void *value)
     if (cam->debug == TRUE)
         printf("  %s set to value %d\n", p->name, c.value);
 
-    return 0;
+    return ret;
 }
 
 int cam_get_control(cam_t *cam, guint32 id, void *value)
