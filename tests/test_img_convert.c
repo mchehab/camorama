@@ -67,7 +67,7 @@ static struct raw_imgs aprox_imgs[] = {
     { .name = "RGB565X", .fourcc = V4L2_PIX_FMT_RGB565X, .bits = 16, .av_fmt = "rgb565be"},
 
     { .name = "MJPEG",   .fourcc = V4L2_PIX_FMT_MJPEG,               .av_fmt = "yuvj422p", .av_extra = "-c:v mjpeg" },
-    { .name = "H264",    .fourcc = V4L2_PIX_FMT_H264,                .av_fmt = "yuv420p",  .av_extra = "-c:v libx264 -bf 0" },
+    { .name = "H264",    .fourcc = V4L2_PIX_FMT_H264,                .av_fmt = "yuv420p" },
 };
 
 static cam_t cam_rgb24 = { 0 };
@@ -104,6 +104,20 @@ static int color_bars_generate(struct raw_imgs *img)
         argv[argc++] = png_file;
         argv[argc++] = "-pix_fmt";
         argv[argc++] = (char *)img->av_fmt;
+
+        if (!strcmp(img->name, "H264")) {
+            const char *encoder = test_ffmpeg_h264_encoder(false);
+
+            if (!encoder) {
+                free(png_file);
+                free(fname);
+                return -ENOTSUP;
+            }
+            argv[argc++] = "-c:v";
+            argv[argc++] = (char *)encoder;
+            argv[argc++] = "-bf";
+            argv[argc++] = "0";
+        }
 
         if (img->av_extra) {
             extra = strdup(img->av_extra);
@@ -339,6 +353,12 @@ static void test_generate_fixture_case(void **state)
 
     if (!strcmp(img->name, "NV61") && !nv16_supported) {
         img->fname = NULL;
+        skip();
+    }
+
+    if (!strcmp(img->name, "H264") && !test_ffmpeg_h264_encoder(false)) {
+        img->fname = NULL;
+        fprintf(stderr, "Skipping H264 fixture: FFmpeg has no supported software H.264 encoder\n");
         skip();
     }
 

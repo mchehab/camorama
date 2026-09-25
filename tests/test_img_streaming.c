@@ -68,9 +68,10 @@ static void generate_stream(const struct streaming_case *test, char **path_out)
     argv[argc++] = "-an";
     if (test->pixformat == V4L2_PIX_FMT_H264) {
         argv[argc++] = "-c:v";
-        argv[argc++] = "libx264";
-        argv[argc++] = "-preset";
-        argv[argc++] = "ultrafast";
+        const char *encoder = test_ffmpeg_h264_encoder(true);
+
+        assert_non_null(encoder);
+        argv[argc++] = (char *)encoder;
         argv[argc++] = "-bf";
         argv[argc++] = "2";
         argv[argc++] = "-g";
@@ -299,6 +300,10 @@ static void test_mjpeg_stream(void **state)
 static void test_h264_stream(void **state)
 {
     (void)state;
+    if (!test_ffmpeg_h264_encoder(true)) {
+        fprintf(stderr, "Skipping H.264 stream: FFmpeg has no supported software H.264 encoder with B-frame support\n");
+        skip();
+    }
     static const struct streaming_case test = {
         "h264", V4L2_PIX_FMT_H264, AV_CODEC_ID_H264,
     };

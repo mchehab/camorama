@@ -2,12 +2,14 @@
 #ifndef TESTS_TEST_UTILS_H
 #define TESTS_TEST_UTILS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 
 char *test_get_executable_dir(void);
 int test_run_program(char *const argv[]);
+const char *test_ffmpeg_h264_encoder(bool require_b_frames);
 double test_estimate_psnr(const unsigned char *original,
                           const unsigned char *reconstructed,
                           size_t size);

@@ -2,6 +2,7 @@
 
 #define _GNU_SOURCE
 #include <errno.h>
+#include <stdbool.h>
 #include <libgen.h>
 #include <limits.h>
 #include <math.h>
@@ -13,6 +14,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "unittest.h"
 #include "test_utils.h"
 
 char *test_get_executable_dir(void)
@@ -49,6 +55,95 @@ int test_run_program(char *const argv[])
     if (!WIFEXITED(status))
         return -EINTR;
     return WEXITSTATUS(status);
+}
+
+const char *test_ffmpeg_h264_encoder(bool require_b_frames)
+{
+    /* Hardware encoders can be listed even when their device is unavailable.
+     * Keep these fixture tests reproducible by selecting software encoders. */
+    static const char *const software_preference[] = {
+        "libx264", "libopenh264",
+    };
+    static const char *const b_frame_preference[] = {
+        "libx264",
+    };
+    static char selected[2][64];
+    static bool initialized[2];
+    static bool available[2];
+    unsigned int preference_index = require_b_frames;
+    const char *const *preference = require_b_frames ? b_frame_preference :
+                                                         software_preference;
+    unsigned int preference_count = require_b_frames ?
+        ARRAY_SIZE(b_frame_preference) : ARRAY_SIZE(software_preference);
+    char encoders[32][64];
+    unsigned int num_encoders = 0, i, j;
+    int fds[2], status;
+    pid_t waited;
+    pid_t pid;
+    FILE *output;
+    char *line = NULL;
+    size_t line_size = 0;
+
+    if (initialized[preference_index])
+        return available[preference_index] ? selected[preference_index] : NULL;
+    initialized[preference_index] = true;
+
+    if (pipe(fds) < 0)
+        return NULL;
+    pid = fork();
+    if (pid < 0) {
+        close(fds[0]);
+        close(fds[1]);
+        return NULL;
+    }
+    if (!pid) {
+        close(fds[0]);
+        if (dup2(fds[1], STDOUT_FILENO) < 0)
+            _exit(127);
+        close(fds[1]);
+        execl(FFMPEG_BIN, FFMPEG_BIN, "-hide_banner", "-encoders", NULL);
+        _exit(127);
+    }
+
+    close(fds[1]);
+    output = fdopen(fds[0], "r");
+    if (!output) {
+        close(fds[0]);
+        waitpid(pid, &status, 0);
+        return NULL;
+    }
+    while (getline(&line, &line_size, output) >= 0) {
+        char *saveptr = NULL;
+        char *flags = strtok_r(line, " \t\r\n", &saveptr);
+        char *name = strtok_r(NULL, " \t\r\n", &saveptr);
+
+        if (!flags || flags[0] != 'V' || !name ||
+            !strstr(name, "264") || !strcmp(name, "libx264rgb") ||
+            num_encoders == ARRAY_SIZE(encoders))
+            continue;
+        snprintf(encoders[num_encoders], sizeof(encoders[num_encoders]),
+                 "%s", name);
+        num_encoders++;
+    }
+    free(line);
+    fclose(output);
+    do {
+        waited = waitpid(pid, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    if (waited < 0 || !WIFEXITED(status) || WEXITSTATUS(status))
+        return NULL;
+
+    for (i = 0; i < preference_count; i++) {
+        for (j = 0; j < num_encoders; j++) {
+            if (strcmp(preference[i], encoders[j]))
+                continue;
+            snprintf(selected[preference_index],
+                     sizeof(selected[preference_index]), "%s", encoders[j]);
+            available[preference_index] = true;
+            return selected[preference_index];
+        }
+    }
+    return NULL;
 }
 
 double test_estimate_psnr(const unsigned char *original,
