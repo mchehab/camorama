@@ -70,6 +70,7 @@ const struct img_format supported_formats[] = {
 
 #ifdef HAVE_FFMPEG
     { V4L2_PIX_FMT_MJPEG,    0, -1, -1 , IMG_COLORMAP_JPEG },
+    { V4L2_PIX_FMT_JPEG,     0, -1, -1 , IMG_COLORMAP_JPEG },
 #endif
 
     /* lossy decoding RGB Formats */
@@ -569,6 +570,7 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
         return width * height * 3;
 #ifdef HAVE_FFMPEG
     case V4L2_PIX_FMT_MJPEG:
+    case V4L2_PIX_FMT_JPEG:
     case V4L2_PIX_FMT_H264:
         return img_ffmpeg_to_rgb24(&cam->converter, cam->pixformat,
                                    inbuf, input_size, display_data,

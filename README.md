@@ -21,12 +21,16 @@ sudo dnf install gcc meson ninja-build gettext libv4l-devel gtk3-devel \
 	gdk-pixbuf2-devel pulseaudio-libs-devel alsa-lib-devel
 ```
 
+For libcamera support, add `libcamera-devel`.
+
 On Ubuntu/Debian:
 
 ```
 sudo apt-get install gcc meson ninja-build gettext libv4l-dev libgtk-3-dev \
 	libgdk-pixbuf2.0-dev libpulse-dev libasound2-dev
 ```
+
+For libcamera support, add `libcamera-dev`.
 
 Once the dependencies are installed, building and installing camorama can
 be done with:
@@ -39,6 +43,9 @@ sudo meson install -C build
 
 GTK 3 is the default. To build the GTK 4 interface, configure a separate
 build directory with `meson setup build-gtk4 -Dgtk4=true`.
+
+Libcamera support is detected automatically. It can be required with
+`-Dlibcamera=enabled` or omitted with `-Dlibcamera=disabled`.
 
 # Run
 
@@ -53,7 +60,8 @@ Help Options:
 
 Application Options:
   -V, --version              show version and exit
-  -d, --device               v4l device to use
+  -d, --device               camera device or libcamera camera ID to use
+  -l, --libcamera            use libcamera instead of V4L2/libv4l
   -D, --debug                enable debugging code
   -x, --width                capture width
   -y, --height               capture height
@@ -67,6 +75,8 @@ Application Options:
   -i, --input                v4l device input to use
   --display=DISPLAY          X display to use
 ```
+
+Please notice that currently, libcamera support is experimental.
 
 # GUI:
 

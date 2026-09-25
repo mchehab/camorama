@@ -135,6 +135,7 @@ gint cam_media_audio_card(const gchar *video_dev, gboolean debug)
     GPtrArray *devices;
     gchar *video_path;
     gchar *video_node;
+    gboolean video_is_path;
     guint i;
     gint card = -1;
 
@@ -144,14 +145,18 @@ gint cam_media_audio_card(const gchar *video_dev, gboolean debug)
     g_ptr_array_sort(devices, compare_media_devices);
 
     video_path = realpath(video_dev, NULL);
+    video_is_path = video_path != NULL || g_path_is_absolute(video_dev);
     video_node = g_path_get_basename(video_path ? video_path : video_dev);
     free(video_path);
     for (i = 0; i < devices->len; i++) {
         struct media_device *video = g_ptr_array_index(devices, i);
         guint j;
 
-        if (video->type != MEDIA_DEVICE_VIDEO ||
-            strcmp(video->node, video_node))
+        if (video->type != MEDIA_DEVICE_VIDEO)
+            continue;
+        if (video_is_path && strcmp(video->node, video_node))
+            continue;
+        if (!video_is_path && strcmp(video->device, video_dev))
             continue;
 
         for (j = i + 1; j < devices->len; j++) {

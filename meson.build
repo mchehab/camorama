@@ -73,11 +73,18 @@ if enable_ffmpeg
     png_file = 'smpte_color_bars.png'
 endif
 
+libcamera_dep = dependency('libcamera', required: get_option('libcamera'))
+if libcamera_dep.found()
+  add_languages('cpp', required: true, native: false)
+  subdir('cpp')
+endif
+
 conf = configuration_data()
 conf.set('HAVE_CONFIG_H', 1)
 conf.set('HAVE_AUDIO', enable_audio)
 conf.set('HAVE_LIBV4L2', libv4l2_dep.found())
 conf.set('HAVE_FFMPEG', enable_ffmpeg)
+conf.set('HAVE_LIBCAMERA', libcamera_dep.found())
 conf.set_quoted('FFMPEG_BIN', ffmpeg.full_path())
 conf.set_quoted('PNG_FILE', png_file)
 conf.set_quoted('PACKAGE', meson.project_name())
@@ -102,6 +109,10 @@ devenv.set('CAMORAMA_ICON_FILE', join_paths(meson.current_source_dir(),
 meson.add_devenv(devenv)
 
 inc = include_directories('.', 'src')
+
+if libcamera_dep.found()
+  dependencies += dependency('camorama-libcamera')
+endif
 
 if gtk4
   gnome = import('gnome')
@@ -130,6 +141,7 @@ libcamorama = static_library(
     sources,
     dependencies: dependencies,
     c_args: c_flags,
+    cpp_args: c_flags,
 )
 
 executable('camorama', 'src/main.c',
@@ -168,6 +180,7 @@ summary(
         'Audio routing': enable_audio,
         'libv4l2': libv4l2_dep.found(),
         'FFmpeg': enable_ffmpeg,
+        'libcamera': libcamera_dep.found(),
     },
     bool_yn: true,
     section: 'Configuration'

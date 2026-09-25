@@ -7,6 +7,7 @@
 static enum AVCodecID v4l2_to_ffmeg(unsigned int pixformat)
 {
     switch (pixformat) {
+    case V4L2_PIX_FMT_JPEG:
     case V4L2_PIX_FMT_MJPEG:
         return AV_CODEC_ID_MJPEG;
     case V4L2_PIX_FMT_H264:

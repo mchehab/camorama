@@ -27,6 +27,13 @@ struct img_format {
     enum img_colormap colormap;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const struct img_format supported_formats[];
+extern const size_t supported_formats_count;
+
 const struct img_format *img_format_get(unsigned int pixformat);
 unsigned int img_format_order(unsigned int pixformat);
 unsigned int img_convert_to_rgb24(struct camera *cam,
@@ -41,5 +48,9 @@ int img_decode_to_rgb24(img_converter_t **converter,
                         const unsigned char *input, size_t input_size,
                         unsigned char *output,
                         unsigned int width, unsigned int height);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

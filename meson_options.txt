@@ -6,3 +6,5 @@ option('libv4l2', type: 'feature', value: 'auto',
        description: 'Build with optional libv4l2 support')
 option('ffmpeg', type: 'feature', value: 'auto',
        description: 'Build optional FFmpeg media support')
+option('libcamera', type: 'feature', value: 'auto',
+       description: 'Build the optional libcamera capture backend')

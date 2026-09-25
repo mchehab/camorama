@@ -19,6 +19,10 @@
 #include <pthread.h>
 #include <sys/sysmacros.h>
 
+#ifdef HAVE_LIBCAMERA
+#include "libcamera.h"
+#endif
+
 #define GPL_LICENSE \
     "GPL version 2.\n\n"                                                      \
     "This program is free software; you can redistribute it and/or modify it" \
@@ -521,7 +525,7 @@ void cam_change_size(cam_t *cam, const gchar *name)
     }
 
     set_win_info(cam);
-    if (cam->read)
+    if (cam->read || camera_backend_is_libcamera(cam))
         cam->capture_input = g_realloc(cam->capture_input, cam->sizeimage);
     cam_set_max_fps(cam);
     frames = frames2 = seconds = 0;
@@ -1292,6 +1296,10 @@ void wb_change(GtkScale *sc1, cam_t *cam)
 
 unsigned int n_devices = 0, n_valid_devices = 0;
 struct devnodes *devices = NULL;
+#ifdef HAVE_LIBCAMERA
+static struct libcamera_camera_info *libcamera_devices;
+static unsigned int n_libcamera_devices;
+#endif
 
 static int handle_video_devs(const char *file,
                              const struct stat *st,
@@ -1430,6 +1438,33 @@ void retrieve_video_dev(cam_t *cam)
     /* This function is not meant to be called more than once */
     assert (n_devices == 0);
 
+#ifdef HAVE_LIBCAMERA
+    if (camera_backend_is_libcamera(cam)) {
+        char *error = NULL;
+
+        if (libcamera_bridge_list_cameras(&libcamera_devices,
+                                          &n_libcamera_devices, &error) ||
+            !n_libcamera_devices) {
+            error_dialog(error ? error : _("Didn't find any camera"));
+            libcamera_bridge_free_string(error);
+            exit(EXIT_FAILURE);
+        }
+
+        n_valid_devices = n_libcamera_devices;
+        cam->video_dev = g_strdup(libcamera_devices[0].id);
+        widget = GTK_WIDGET(gtk_builder_get_object(cam->xml,
+                                                   "videodev_combo"));
+        gtk_common_choice_setup(widget);
+        for (i = 0; i < n_libcamera_devices; i++)
+            gtk_common_choice_append(widget, libcamera_devices[i].name);
+
+        widget = GTK_WIDGET(gtk_builder_get_object(cam->xml, "videodev_ok"));
+        g_signal_connect(G_OBJECT(widget), "clicked",
+                         G_CALLBACK(videodev_response), cam);
+        return;
+    }
+#endif
+
     /* Get all video devices */
     if (ftw("/dev", handle_video_devs, 4) || !n_devices) {
         char *msg = g_strdup_printf(_("Didn't find any camera"));
@@ -1472,9 +1507,19 @@ int select_video_dev(cam_t *cam)
     GtkWidget *okbutton;
 #endif
     int ret;
+#ifdef HAVE_LIBCAMERA
+    int active;
+#endif
 
     /* Only ask if there are multiple cameras */
     if (n_valid_devices == 1) {
+#ifdef HAVE_LIBCAMERA
+        if (camera_backend_is_libcamera(cam)) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(libcamera_devices[0].id);
+            return 0;
+        }
+#endif
         cam->video_dev = devices[0].fname;
         return 0;
     }
@@ -1498,7 +1543,16 @@ int select_video_dev(cam_t *cam)
     ret = gtk4_window_run(GTK_WINDOW(window), okbutton);
 #endif
 
-    cam->video_dev = gtk_common_choice_get_active_text(widget);
+#ifdef HAVE_LIBCAMERA
+    active = gtk_common_choice_get_active(widget);
+    if (camera_backend_is_libcamera(cam)) {
+        if (active >= 0 && (unsigned int)active < n_libcamera_devices) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(libcamera_devices[active].id);
+        }
+    } else
+#endif
+        cam->video_dev = gtk_common_choice_get_active_text(widget);
 
     gtk_widget_set_visible(window, FALSE);;
     return ret;
@@ -1588,6 +1642,11 @@ void start_camera(cam_t *cam)
     else
         cam->dev = cam_open(cam, O_RDWR | O_NONBLOCK);
 
+#ifdef HAVE_LIBCAMERA
+    if (cam->dev < 0 && camera_backend_is_libcamera(cam))
+        exit(EXIT_FAILURE);
+#endif
+
     if (camera_cap(cam))
         exit(-1);
 
@@ -1600,7 +1659,7 @@ void start_camera(cam_t *cam)
     /* Only store the device name after being able to successfully use it */
     g_settings_set_string(cam->gc, CAM_SETTINGS_DEVICE, cam->video_dev);
 
-    if (cam->read) {
+    if (cam->read || camera_backend_is_libcamera(cam)) {
 	cam->capture_input = malloc(cam->sizeimage);
 	if (!cam->capture_input) {
 	    printf("Failed to allocate memory for read buffer\n");

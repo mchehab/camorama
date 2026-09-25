@@ -51,6 +51,11 @@ void camera_backend_select(cam_t *cam, const struct camera_backend *backend)
     camera_backend_set(cam, backend);
 }
 
+gboolean camera_backend_is_libcamera(const cam_t *cam)
+{
+    return camera_backend_get(cam)->is_libcamera;
+}
+
 const char *camera_backend_name(const cam_t *cam)
 {
     return camera_backend_get(cam)->name;

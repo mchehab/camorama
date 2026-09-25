@@ -9,10 +9,14 @@
 #include "filter.h"
 #include "camorama-globals.h"
 #include "audio.h"
-#include "support.h"
 #include "camera-backend.h"
+#include "support.h"
 #include "streaming.h"
 #include <config.h>
+
+#ifdef HAVE_LIBCAMERA
+extern const struct camera_backend libcamera_camera_backend;
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -29,6 +33,7 @@ GtkWidget *host_entry, *protocol, *rdir_entry, *filename_entry;
 static int ver = 0, max = 0, min;
 static int half = 0, use_read = 0, use_userptr = 0, debug = 0;
 static int dont_use_libv4l = 0;
+static int use_libcamera = 0;
 static int disable_scaler = 0;
 static gchar *video_dev = NULL;
 static gchar *pixel_format = NULL;
@@ -155,7 +160,9 @@ static GOptionEntry options[] = {
     {"version", 'V', 0, G_OPTION_ARG_NONE, &ver,
      N_("show version and exit"), NULL},
     {"device", 'd', 0, G_OPTION_ARG_STRING, &video_dev,
-     N_("v4l device to use"), NULL},
+     N_("camera device or libcamera camera ID to use"), NULL},
+    {"libcamera", 'l', 0, G_OPTION_ARG_NONE, &use_libcamera,
+     N_("use libcamera instead of Video4Linux"), NULL},
     {"debug", 'D', 0, G_OPTION_ARG_NONE, &debug,
      N_("enable debugging code"), NULL},
     {"width", 'x', 0, G_OPTION_ARG_INT, &x,
@@ -265,6 +272,16 @@ static void activate(GtkApplication *app)
     cam->dev = -1;
     cam->input = input;
     cam->app = app;
+    if (use_libcamera) {
+#ifdef HAVE_LIBCAMERA
+        camera_backend_select(cam, &libcamera_camera_backend);
+#else
+        fprintf(stderr, _("This build has no libcamera support.\n"));
+        exit(EXIT_FAILURE);
+#endif
+    } else {
+        camera_backend_select(cam, NULL);
+    }
     g_mutex_init(&cam->remote_save_mutex);
     g_mutex_init(&cam->display_mutex);
     g_mutex_init(&cam->control_win_mutex);
@@ -317,7 +334,7 @@ static void activate(GtkApplication *app)
     if (half)
         cam->size = PICHALF;
 
-    if (!dont_use_libv4l)
+    if (!dont_use_libv4l && !camera_backend_is_libcamera(cam))
         cam->use_libv4l = TRUE;
 
     if (use_read) {
@@ -374,7 +391,12 @@ static void activate(GtkApplication *app)
                                                                    CAM_SETTINGS_WINDOW_HEIGHT);
     g_settings_schema_unref(schema);
 
-    if (!video_dev) {
+    if (camera_backend_is_libcamera(cam)) {
+        if (video_dev) {
+            g_free(cam->video_dev);
+            cam->video_dev = g_strdup(video_dev);
+        }
+    } else if (!video_dev) {
         gchar const *gconf_device = g_settings_get_string(cam->gc,
                                                           CAM_SETTINGS_DEVICE);
         if (gconf_device)
@@ -385,7 +407,7 @@ static void activate(GtkApplication *app)
         cam->video_dev = g_strdup(video_dev);
     }
 
-    if (cam->video_dev) {
+    if (!camera_backend_is_libcamera(cam) && cam->video_dev) {
         for (i = 0; i < n_devices; i++)
             if (!strcmp(cam->video_dev, devices[i].fname) && devices[i].is_valid)
                 break;
@@ -406,12 +428,13 @@ static void activate(GtkApplication *app)
             /* Ask user or get the only one device, if it is the case */
             select_video_dev(cam);
         }
-    } else {
+    } else if (!camera_backend_is_libcamera(cam)) {
         cam->video_dev = devices[0].fname;
     }
 
     if (cam->debug)
-        printf("Using videodev: %s\n", cam->video_dev);
+        printf("Using %s backend: %s\n", camera_backend_name(cam),
+               cam->video_dev);
 
     cam->date_format = (char *) "%Y-%m-%d %H:%M:%S";
 

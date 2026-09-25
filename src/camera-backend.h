@@ -22,10 +22,7 @@
 #include <signal.h>
 #include <png.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 #include <gtk/gtk.h>
-#pragma GCC diagnostic pop
 
 #include "camorama-filter-chain.h"
 
@@ -102,6 +99,8 @@ typedef struct video_controls {
 } video_controls_t;
 
 struct camera_backend;
+
+typedef struct libcamera_bridge libcamera_bridge_t;
 
 typedef struct camera {
     int dev;
@@ -190,6 +189,9 @@ typedef struct camera {
 
     /* Selected camera operations; NULL selects the default V4L backend. */
     const struct camera_backend *backend;
+
+    /* Opaque state owned by the libcamera backend. */
+    libcamera_bridge_t *libcamera;
 } cam_t;
 
 int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg);
@@ -231,6 +233,7 @@ int stop_streaming_userptr(cam_t *cam);
 
 struct camera_backend {
     const char *name;
+    gboolean is_libcamera;
     int (*open)(cam_t *cam, int oflag);
     int (*close)(cam_t *cam);
     unsigned char *(*read)(cam_t *cam, unsigned char *output);
@@ -261,6 +264,7 @@ extern const struct camera_backend v4l_camera_backend;
 
 void camera_backend_set(cam_t *cam, const struct camera_backend *backend);
 void camera_backend_select(cam_t *cam, const struct camera_backend *backend);
+gboolean camera_backend_is_libcamera(const cam_t *cam);
 const char *camera_backend_name(const cam_t *cam);
 
 #endif /* CAMORAMA_CAMERA_BACKEND_H */
