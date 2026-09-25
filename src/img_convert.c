@@ -133,7 +133,7 @@ static void copy_two_pixels(cam_t *cam,
     int i;
 
     switch (cam->pixformat) {
-    case V4L2_PIX_FMT_RGB565: /* rrrrrggg gggbbbbb */
+    case V4L2_PIX_FMT_RGB565X: /* rrrrrggg gggbbbbb */
         for (i = 0; i < 2; i++) {
             pix = (plane0[0] << 8) + plane0[1];
 
@@ -144,7 +144,7 @@ static void copy_two_pixels(cam_t *cam,
             plane0 += 2;
         }
         break;
-    case V4L2_PIX_FMT_RGB565X: /* gggbbbbb rrrrrggg */
+    case V4L2_PIX_FMT_RGB565: /* gggbbbbb rrrrrggg */
         for (i = 0; i < 2; i++) {
             pix = (plane0[1] << 8) + plane0[0];
 
