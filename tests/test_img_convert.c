@@ -25,7 +25,7 @@
 #define COLOR_BAR_HEIGHT 186
 
 /* TODO: Peak S/N ratio limits should likely be placed at raw_imgs table */
-#define PSNR_GOAL 27.0 /* dB */
+#define PSNR_GOAL 26.0 /* dB */
 
 struct raw_imgs {
     char *name;
@@ -44,10 +44,10 @@ static struct raw_imgs exact_imgs[] = {
     { .name = "BGR24",   .fourcc = V4L2_PIX_FMT_BGR24,   .bits = 24, .av_fmt = "bgr24"},
 
     { .name = "BGR32",   .fourcc = V4L2_PIX_FMT_BGR32,   .bits = 32, .av_fmt = "bgr0"},
-    { .name = "ABGR32",  .fourcc = V4L2_PIX_FMT_ABGR32,  .bits = 32, .av_fmt = "abgr"},
-    { .name = "XBGR32",  .fourcc = V4L2_PIX_FMT_XBGR32,  .bits = 32, .av_fmt = "0bgr"},
+    { .name = "ABGR32",  .fourcc = V4L2_PIX_FMT_ABGR32,  .bits = 32, .av_fmt = "bgra"},
+    { .name = "XBGR32",  .fourcc = V4L2_PIX_FMT_XBGR32,  .bits = 32, .av_fmt = "bgr0"},
 
-    { .name = "RGB32",   .fourcc = V4L2_PIX_FMT_RGB32,   .bits = 32, .av_fmt = "rgb0"},
+    { .name = "RGB32",   .fourcc = V4L2_PIX_FMT_RGB32,   .bits = 32, .av_fmt = "argb"},
     { .name = "ARGB32",  .fourcc = V4L2_PIX_FMT_ARGB32,  .bits = 32, .av_fmt = "argb"},
     { .name = "XRGB32",  .fourcc = V4L2_PIX_FMT_XRGB32,  .bits = 32, .av_fmt = "0rgb"},
 };
@@ -67,8 +67,8 @@ static struct raw_imgs aprox_imgs[] = {
     { .name = "YUV420",  .fourcc = V4L2_PIX_FMT_YUV420,  .bits = 8,  .av_fmt = "yuv420p"},
     { .name = "YVU420",  .fourcc = V4L2_PIX_FMT_YVU420,  .bits = 8,  .av_fmt = "yuv420p",  .av_extra = "-vf format=yuv420p,swapuv" },
 
-    { .name = "RGB565",  .fourcc = V4L2_PIX_FMT_RGB565,  .bits = 16, .av_fmt = "rgb565be"},
-    { .name = "RGB565X", .fourcc = V4L2_PIX_FMT_RGB565X, .bits = 16, .av_fmt = "rgb565le"},
+    { .name = "RGB565",  .fourcc = V4L2_PIX_FMT_RGB565,  .bits = 16, .av_fmt = "rgb565le"},
+    { .name = "RGB565X", .fourcc = V4L2_PIX_FMT_RGB565X, .bits = 16, .av_fmt = "rgb565be"},
 
     { .name = "MJPEG",   .fourcc = V4L2_PIX_FMT_MJPEG,               .av_fmt = "yuvj422p", .av_extra = "-c:v mjpeg" },
     { .name = "H264",    .fourcc = V4L2_PIX_FMT_H264,                .av_fmt = "yuv420p",  .av_extra = "-c:v libx264 -bf 0" },

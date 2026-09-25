@@ -4,7 +4,7 @@ test_deps = []
 enable_unittest = false
 
 if enable_ffmpeg
-    configure_file(input: png_file , output: png_file, copy: true)
+    configure_file(input: png_file, output: png_file, copy: true)
 
     unittest_sources += 'test_img_convert.c'
     test_deps += dependency('libpng', required: true)
