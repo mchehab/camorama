@@ -31,17 +31,71 @@ CamoramaFilterChain *camorama_filter_chain_new(void)
     return g_object_new(CAMORAMA_TYPE_FILTER_CHAIN, NULL);
 }
 
+static cam_t *camorama_filter_chain_lock(CamoramaFilterChain *self)
+{
+    cam_t *cam = self->data;
+
+    if (cam)
+        g_mutex_lock(&cam->display_mutex);
+    return cam;
+}
+
+static void camorama_filter_chain_unlock(cam_t *cam)
+{
+    if (cam)
+        g_mutex_unlock(&cam->display_mutex);
+}
+
 void camorama_filter_chain_apply(CamoramaFilterChain *self,
                                  guchar *image, gint width, gint height,
                                  gint depth)
 {
     guint i;
+    cam_t *cam = camorama_filter_chain_lock(self);
 
     for (i = 0; i < self->filters->len; i++) {
         CamoramaFilter *filter = g_ptr_array_index(self->filters, i);
 
         camorama_filter_apply(filter, image, width, height, depth);
     }
+    camorama_filter_chain_unlock(cam);
+}
+
+void camorama_filter_chain_insert(CamoramaFilterChain *self, guint position,
+                                  CamoramaFilter *filter)
+{
+    cam_t *cam = camorama_filter_chain_lock(self);
+
+    g_ptr_array_insert(self->filters, position, filter);
+    camorama_filter_chain_unlock(cam);
+}
+
+void camorama_filter_chain_remove(CamoramaFilterChain *self, guint position)
+{
+    cam_t *cam = camorama_filter_chain_lock(self);
+
+    if (position < self->filters->len) {
+        camorama_filter_hide(g_ptr_array_index(self->filters, position));
+        g_ptr_array_remove_index(self->filters, position);
+    }
+    camorama_filter_chain_unlock(cam);
+}
+
+void camorama_filter_chain_replace(CamoramaFilterChain *self, guint position,
+                                   CamoramaFilter *filter)
+{
+    cam_t *cam = camorama_filter_chain_lock(self);
+
+    if (position < self->filters->len) {
+        CamoramaFilter *old_filter = g_ptr_array_index(self->filters, position);
+
+        camorama_filter_hide(old_filter);
+        g_ptr_array_index(self->filters, position) = filter;
+        g_object_unref(old_filter);
+    } else {
+        g_object_unref(filter);
+    }
+    camorama_filter_chain_unlock(cam);
 }
 
 void camorama_filter_chain_set_data(CamoramaFilterChain *self,

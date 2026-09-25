@@ -551,13 +551,7 @@ static void effect_changed(struct effect_row *effect_row)
 
     if (selected_type == G_TYPE_INVALID) {
         /* Remove effect */
-        if (position < chain->filters->len) {
-            CamoramaFilter *filter = g_ptr_array_index(chain->filters,
-                                                        position);
-
-            camorama_filter_hide(filter);
-            g_ptr_array_remove_index(chain->filters, position);
-        }
+        camorama_filter_chain_remove(chain, position);
 
         effect_row->selected_type = G_TYPE_INVALID;
         effect_row->removing = TRUE;
@@ -575,7 +569,7 @@ static void effect_changed(struct effect_row *effect_row)
         CamoramaFilter *filter = g_object_new(selected_type, NULL);
 
         camorama_filter_show(filter, effect_row->pane->cam);
-        g_ptr_array_insert(chain->filters, position, filter);
+        camorama_filter_chain_insert(chain, position, filter);
 
         effect_row->selected_type = selected_type;
         update_effect_row(effect_row);
@@ -585,15 +579,11 @@ static void effect_changed(struct effect_row *effect_row)
     }
 
     /* Replace effect */
-    if (position < chain->filters->len) {
-        CamoramaFilter *old_filter = g_ptr_array_index(chain->filters,
-                                                        position);
+    {
         CamoramaFilter *filter = g_object_new(selected_type, NULL);
 
         camorama_filter_show(filter, effect_row->pane->cam);
-        camorama_filter_hide(old_filter);
-        g_ptr_array_index(chain->filters, position) = filter;
-        g_object_unref(old_filter);
+        camorama_filter_chain_replace(chain, position, filter);
     }
     effect_row->selected_type = selected_type;
     update_effect_row(effect_row);

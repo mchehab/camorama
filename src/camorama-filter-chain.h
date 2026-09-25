@@ -28,6 +28,7 @@ G_BEGIN_DECLS
 
 typedef struct _CamoramaFilterChain CamoramaFilterChain;
 typedef struct _CamoramaFilterChainClass CamoramaFilterChainClass;
+typedef struct _CamoramaFilter CamoramaFilter;
 
 #define CAMORAMA_TYPE_FILTER_CHAIN         (camorama_filter_chain_get_type())
 GType camorama_filter_chain_get_type(void);
@@ -36,6 +37,11 @@ CamoramaFilterChain *camorama_filter_chain_new(void);
 void camorama_filter_chain_apply(CamoramaFilterChain *self,
                                  guchar *image,
                                  gint width, gint height, gint depth);
+void camorama_filter_chain_insert(CamoramaFilterChain *self, guint position,
+                                  CamoramaFilter *filter);
+void camorama_filter_chain_remove(CamoramaFilterChain *self, guint position);
+void camorama_filter_chain_replace(CamoramaFilterChain *self, guint position,
+                                   CamoramaFilter *filter);
 void camorama_filter_chain_set_data(CamoramaFilterChain *self,
                                     gpointer user_data);
 
