@@ -7,6 +7,8 @@
 #include <glib.h>
 #include <linux/videodev2.h>
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 struct camera;
 typedef struct img_converter img_converter_t;
 

@@ -30,7 +30,7 @@
  * H.264 provides good quality, but as it may have B-frames, it could
  * introduce delays. So, place it at the end.
  */
-static const struct img_format supported_formats[] = {
+const struct img_format supported_formats[] = {
     /* lossless formats */
     { V4L2_PIX_FMT_RGB24,   24, -1, -1,  IMG_COLORMAP_RGB },
     { V4L2_PIX_FMT_BGR24,   24, -1, -1,  IMG_COLORMAP_RGB },
@@ -126,7 +126,7 @@ static const struct img_format supported_formats[] = {
 
 };
 
-#define ARRAY_SIZE(a)  (sizeof(a)/sizeof(*a))
+const size_t supported_formats_count = ARRAY_SIZE(supported_formats);
 
 const struct img_format *img_format_get(unsigned int pixformat)
 {

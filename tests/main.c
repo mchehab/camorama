@@ -3,6 +3,8 @@
 * Copyright (C) 2026 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
 */
 
+#include "config.h"
+
 #include <argp.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -10,6 +12,10 @@
 #include <string.h>
 #include <sys/queue.h>
 #include <unistd.h>
+
+#ifdef HAVE_FFMPEG
+#include <libavutil/log.h>
+#endif
 
 #include "unittest.h"
 
@@ -313,6 +319,10 @@ int main(int argc, char **argv)
     int failed = 0;
 
     argp_parse(&argp, argc, argv, 0, NULL, &arguments);
+
+#ifdef HAVE_FFMPEG
+    av_log_set_level(AV_LOG_QUIET);
+#endif
 
     if (arguments.output_was_set)
         cmocka_set_message_output(arguments.output_formats);
