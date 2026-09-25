@@ -204,29 +204,63 @@ void cam_set_v4l_ops(const struct cam_v4l_ops *ops);
 int cam_open(cam_t *cam, int oflag);
 int cam_close(cam_t *cam);
 unsigned char *cam_read(cam_t *cam, unsigned char *display_data);
-void cam_cancel_read(cam_t *cam);
+int cam_cancel_read(cam_t *cam);
 int cam_query_controls(cam_t *cam);
 void cam_free_controls(cam_t *cam);
 video_controls_t *cam_find_control_per_id(cam_t *cam, guint32 id);
 int cam_set_control(cam_t *cam, guint32 id, void *value);
 int cam_get_control(cam_t *cam, guint32 id, void *value);
 int camera_cap(cam_t *cam);
-void print_cam(cam_t *cam);
+int print_cam(cam_t *cam);
 GArray *cam_get_frame_intervals(cam_t *cam);
 gboolean cam_set_frame_interval(cam_t *cam,
                                 const struct v4l2_fract *interval);
 gboolean cam_get_frame_interval(cam_t *cam,
                                 struct v4l2_fract *interval);
-void cam_set_max_fps(cam_t *cam);
-void get_pic_info(cam_t *cam);
-void get_win_info(cam_t *cam);
-void try_set_win_info(cam_t *cam, unsigned int pixformat,
-                      unsigned int *x, unsigned int *y);
-void set_win_info(cam_t *cam);
-void get_supported_resolutions(cam_t *cam, gboolean all_supported);
-void start_streaming(cam_t *cam);
-void stop_streaming(cam_t *cam);
-void start_streaming_userptr(cam_t *cam);
-void stop_streaming_userptr(cam_t *cam);
+int cam_set_max_fps(cam_t *cam);
+int get_pic_info(cam_t *cam);
+int get_win_info(cam_t *cam);
+int try_set_win_info(cam_t *cam, unsigned int pixformat,
+                     unsigned int *x, unsigned int *y);
+int set_win_info(cam_t *cam);
+int get_supported_resolutions(cam_t *cam, gboolean all_supported);
+int start_streaming(cam_t *cam);
+int stop_streaming(cam_t *cam);
+int start_streaming_userptr(cam_t *cam);
+int stop_streaming_userptr(cam_t *cam);
+
+struct camera_backend {
+    const char *name;
+    int (*open)(cam_t *cam, int oflag);
+    int (*close)(cam_t *cam);
+    unsigned char *(*read)(cam_t *cam, unsigned char *output);
+    void (*cancel_read)(cam_t *cam);
+    int (*query_controls)(cam_t *cam);
+    int (*set_control)(cam_t *cam, guint32 id, void *value);
+    int (*get_control)(cam_t *cam, guint32 id, void *value);
+    GArray *(*get_frame_intervals)(cam_t *cam);
+    gboolean (*set_frame_interval)(cam_t *cam,
+                                   const struct v4l2_fract *interval);
+    gboolean (*get_frame_interval)(cam_t *cam,
+                                   struct v4l2_fract *interval);
+    int (*camera_cap)(cam_t *cam);
+    void (*get_pic_info)(cam_t *cam);
+    void (*get_win_info)(cam_t *cam);
+    void (*try_set_win_info)(cam_t *cam, unsigned int pixformat,
+                             unsigned int *width, unsigned int *height);
+    void (*set_win_info)(cam_t *cam);
+    void (*get_supported_resolutions)(cam_t *cam, gboolean all_supported);
+    void (*print_cam)(cam_t *cam);
+    void (*start_streaming)(cam_t *cam);
+    void (*stop_streaming)(cam_t *cam);
+    void (*start_streaming_userptr)(cam_t *cam);
+    void (*stop_streaming_userptr)(cam_t *cam);
+};
+
+extern const struct camera_backend v4l_camera_backend;
+
+void camera_backend_set(cam_t *cam, const struct camera_backend *backend);
+void camera_backend_select(cam_t *cam, const struct camera_backend *backend);
+const char *camera_backend_name(const cam_t *cam);
 
 #endif /* CAMORAMA_CAMERA_BACKEND_H */

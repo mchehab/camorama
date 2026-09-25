@@ -6,11 +6,11 @@
 #include "v4l.h"
 #include "img_convert.h"
 #include "support.h"
+#include "camera-backend.h"
 
 extern int frame_number;
 
 static const struct cam_v4l_ops *test_v4l_ops;
-static int wait_for_capture(cam_t *cam);
 
 void cam_set_v4l_ops(const struct cam_v4l_ops *ops)
 {
@@ -29,7 +29,7 @@ static gboolean is_format_supported(cam_t *cam, unsigned int pixformat)
     return img_format_get(pixformat) != NULL;
 }
 
-int cam_open(cam_t *cam, int oflag)
+static int v4l_cam_open(cam_t *cam, int oflag)
 {
     if (test_v4l_ops && test_v4l_ops->open)
         return test_v4l_ops->open(cam->video_dev, oflag);
@@ -39,7 +39,7 @@ int cam_open(cam_t *cam, int oflag)
         return open(cam->video_dev, oflag);
 }
 
-int cam_close(cam_t *cam)
+static int v4l_cam_close(cam_t *cam)
 {
     if (test_v4l_ops && test_v4l_ops->close)
         return test_v4l_ops->close(cam->dev);
@@ -49,7 +49,144 @@ int cam_close(cam_t *cam)
         return close(cam->dev);
 }
 
-unsigned char *cam_read(cam_t *cam, unsigned char *display_data)
+int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
+{
+    if (test_v4l_ops && test_v4l_ops->ioctl)
+        return test_v4l_ops->ioctl(cam->dev, cmd, arg);
+    if (cam->use_libv4l)
+        return v4l2_ioctl(cam->dev, cmd, arg);
+    else
+        return ioctl(cam->dev, cmd, arg);
+}
+
+static int wait_for_capture(cam_t *cam)
+{
+    fd_set fds;
+    struct timeval tv;
+    int maxfd = cam->dev;
+    int r;
+
+    do {
+        FD_ZERO(&fds);
+        FD_SET(cam->dev, &fds);
+        if (cam->stream_wakeup[0] >= 0) {
+            FD_SET(cam->stream_wakeup[0], &fds);
+            maxfd = MAX(maxfd, cam->stream_wakeup[0]);
+        }
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+        r = select(maxfd + 1, &fds, NULL, NULL, &tv);
+        if (r > 0 && cam->stream_wakeup[0] >= 0 &&
+            FD_ISSET(cam->stream_wakeup[0], &fds)) {
+            char byte;
+            (void)read(cam->stream_wakeup[0], &byte, 1);
+            return 0;
+        }
+    } while (r == 0 || (r < 0 && errno == EINTR));
+    return r;
+}
+
+static int capture_buffers(cam_t *cam, unsigned char *outbuf,
+                           unsigned int len)
+{
+    char *msg;
+    unsigned char *inbuf;
+    int r;
+    unsigned int y;
+    int converted;
+    struct v4l2_buffer buf;
+
+    r = wait_for_capture(cam);
+    if (!r)
+        return 0;
+
+    if (r == -1) {
+        msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
+                              cam->video_dev);
+        error_dialog(msg);
+        g_free(msg);
+        exit(0);
+    }
+
+    memset(&buf, 0, sizeof(buf));
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_MMAP;
+    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
+        return 0;
+    if (buf.index >= cam->n_buffers || !cam->buffers ||
+        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
+        if (buf.index < cam->n_buffers)
+            cam_ioctl(cam, VIDIOC_QBUF, &buf);
+        return 0;
+    }
+
+    if (len > buf.bytesused)
+        len = buf.bytesused;
+
+    inbuf = cam->buffers[buf.index].start;
+    if (cam->use_libv4l) {
+	    for (y = 0; y < cam->height; y++) {
+		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
+		outbuf += cam->width * cam->bpp / 8;
+		inbuf += cam->bytesperline;
+	    }
+    } else {
+        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
+    }
+
+    cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return cam->use_libv4l || converted > 0;
+}
+
+static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
+{
+    char *msg;
+    unsigned char *inbuf;
+    int r;
+    unsigned int y;
+    int converted;
+    struct v4l2_buffer buf;
+
+    r = wait_for_capture(cam);
+    if (!r)
+        return 0;
+
+    if (r == -1) {
+        msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
+                              cam->video_dev);
+        error_dialog(msg);
+        g_free(msg);
+        exit(0);
+    }
+
+    memset(&buf, 0, sizeof(buf));
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_USERPTR;
+    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
+        return 0;
+    if (buf.index >= cam->n_buffers || !cam->buffers ||
+        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
+        if (buf.index < cam->n_buffers)
+            cam_ioctl(cam, VIDIOC_QBUF, &buf);
+        return 0;
+    }
+
+    inbuf = cam->buffers[buf.index].start;
+    if (cam->use_libv4l) {
+	    for (y = 0; y < cam->height; y++) {
+		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
+		outbuf += cam->width * cam->bpp / 8;
+		inbuf += cam->bytesperline;
+	    }
+    } else {
+        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
+    }
+
+    cam_ioctl(cam, VIDIOC_QBUF, &buf);
+    return cam->use_libv4l || converted > 0;
+}
+
+static unsigned char *v4l_cam_read(cam_t *cam, unsigned char *display_data)
 {
     int ret = 0;
 
@@ -89,21 +226,11 @@ unsigned char *cam_read(cam_t *cam, unsigned char *display_data)
     return display_data;
 }
 
-void cam_cancel_read(cam_t *cam)
+static void v4l_cancel_read(cam_t *cam)
 {
     char byte = 1;
     if (cam->stream_wakeup[1] >= 0)
         (void)write(cam->stream_wakeup[1], &byte, 1);
-}
-
-int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
-{
-    if (test_v4l_ops && test_v4l_ops->ioctl)
-        return test_v4l_ops->ioctl(cam->dev, cmd, arg);
-    if (cam->use_libv4l)
-        return v4l2_ioctl(cam->dev, cmd, arg);
-    else
-        return ioctl(cam->dev, cmd, arg);
 }
 
 static void add_frame_interval(GArray *intervals,
@@ -124,14 +251,28 @@ static void add_frame_interval(GArray *intervals,
     g_array_append_val(intervals, *interval);
 }
 
-GArray *cam_get_frame_intervals(cam_t *cam)
+static gboolean v4l_get_frame_interval(cam_t *cam,
+                                       struct v4l2_fract *interval)
+{
+    struct v4l2_streamparm parm = { 0 };
+
+    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (cam_ioctl(cam, VIDIOC_G_PARM, &parm) ||
+        !parm.parm.capture.timeperframe.numerator ||
+        !parm.parm.capture.timeperframe.denominator)
+        return FALSE;
+    *interval = parm.parm.capture.timeperframe;
+    return TRUE;
+}
+
+static GArray *v4l_get_frame_intervals(cam_t *cam)
 {
     struct v4l2_frmivalenum interval = { 0 };
     struct v4l2_fract current = { 0 };
     GArray *intervals = g_array_new(FALSE, FALSE, sizeof(struct v4l2_fract));
 
     /* Retain the negotiated value when a driver does not enumerate intervals. */
-    if (cam_get_frame_interval(cam, &current))
+    if (v4l_get_frame_interval(cam, &current))
         add_frame_interval(intervals, &current);
 
     interval.pixel_format = cam->pixformat;
@@ -158,8 +299,8 @@ GArray *cam_get_frame_intervals(cam_t *cam)
     return intervals;
 }
 
-gboolean cam_set_frame_interval(cam_t *cam,
-                                const struct v4l2_fract *interval)
+static gboolean v4l_set_frame_interval(cam_t *cam,
+                                       const struct v4l2_fract *interval)
 {
     struct v4l2_streamparm parm = { 0 };
 
@@ -169,72 +310,6 @@ gboolean cam_set_frame_interval(cam_t *cam,
         return FALSE;
     parm.parm.capture.timeperframe = *interval;
     return !cam_ioctl(cam, VIDIOC_S_PARM, &parm);
-}
-
-gboolean cam_get_frame_interval(cam_t *cam, struct v4l2_fract *interval)
-{
-    struct v4l2_streamparm parm = { 0 };
-
-    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (cam_ioctl(cam, VIDIOC_G_PARM, &parm) ||
-        !parm.parm.capture.timeperframe.numerator ||
-        !parm.parm.capture.timeperframe.denominator)
-        return FALSE;
-    *interval = parm.parm.capture.timeperframe;
-    return TRUE;
-}
-
-void cam_set_max_fps(cam_t *cam)
-{
-    GArray *intervals = cam_get_frame_intervals(cam);
-    const struct v4l2_fract *best = NULL;
-    guint i;
-
-    for (i = 0; i < intervals->len; i++) {
-        const struct v4l2_fract *interval = &g_array_index(
-            intervals, struct v4l2_fract, i);
-
-        if (!best || (guint64)interval->numerator * best->denominator <
-                     (guint64)best->numerator * interval->denominator)
-            best = interval;
-    }
-    if (best)
-        cam_set_frame_interval(cam, best);
-    g_array_unref(intervals);
-}
-
-video_controls_t *cam_find_control_per_id(cam_t *cam, guint32 id)
-{
-    video_controls_t *p = cam->controls;
-
-    while (p) {
-	if (p->id == id)
-	    return p;
-	p = p->next;
-    }
-
-    return NULL;
-}
-
-void cam_free_controls(cam_t *cam)
-{
-    guint32 i;
-
-    if (cam->controls) {
-	video_controls_t *p = cam->controls;
-	while (p) {
-	    free(p->name);
-	    free(p->group);
-	    if (p->menu) {
-		for (i = 0; i < p->menu_size; i++)
-		    free(p->menu[i].name);
-		free(p->menu);
-	    }
-	    p = p->next;
-	}
-	free(cam->controls);
-    }
-    cam->controls = NULL;
 }
 
 static const char *cam_ctrl_type(uint32_t type)
@@ -483,7 +558,7 @@ static int cam_add_ctrl(cam_t *cam,
     return (0);
 }
 
-int cam_query_controls(cam_t *cam)
+static int v4l_cam_query_controls(cam_t *cam)
 {
     video_controls_t *ptr = NULL;
     struct v4l2_query_ext_ctrl query = { 0 };
@@ -519,7 +594,7 @@ int cam_query_controls(cam_t *cam)
     return (0);
 }
 
-int cam_set_control(cam_t *cam, guint32 id, void *value)
+static int v4l_cam_set_control(cam_t *cam, guint32 id, void *value)
 {
     struct v4l2_ext_controls ctrls;
     struct v4l2_ext_control c;
@@ -567,7 +642,7 @@ int cam_set_control(cam_t *cam, guint32 id, void *value)
     return ret;
 }
 
-int cam_get_control(cam_t *cam, guint32 id, void *value)
+static int v4l_cam_get_control(cam_t *cam, guint32 id, void *value)
 {
     struct v4l2_ext_controls ctrls;
     struct v4l2_ext_control c;
@@ -616,7 +691,7 @@ int cam_get_control(cam_t *cam, guint32 id, void *value)
     #pragma GCC diagnostic pop
 }
 
-void print_cam(cam_t *cam)
+static void v4l_print_cam(cam_t *cam)
 {
     printf("\nCamera Info\n");
     printf("-----------\n");
@@ -644,6 +719,22 @@ void print_cam(cam_t *cam)
         printf("timestamp = %s\n\n", cam->ts_string);
 }
 
+static void v4l_try_set_win_info(cam_t *cam, unsigned int pixformat,
+                                 unsigned int *x, unsigned int *y)
+{
+    struct v4l2_format fmt;
+
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    fmt.fmt.pix.pixelformat = pixformat;
+    fmt.fmt.pix.width = *x;
+    fmt.fmt.pix.height = *y;
+    if (!cam_ioctl(cam, VIDIOC_TRY_FMT, &fmt)) {
+        *x = fmt.fmt.pix.width;
+        *y = fmt.fmt.pix.height;
+    }
+}
+
 static void insert_resolution(cam_t *cam, unsigned int pixformat,
                               unsigned int x, unsigned int y,
                               float max_fps)
@@ -651,7 +742,7 @@ static void insert_resolution(cam_t *cam, unsigned int pixformat,
     const struct img_format *video_fmt;
     unsigned int i;
 
-    try_set_win_info(cam, pixformat, &x, &y);
+    v4l_try_set_win_info(cam, pixformat, &x, &y);
 
     if (cam->res) {
         for (i = 0; i < cam->n_res; i++) {
@@ -726,7 +817,8 @@ static float get_max_fps_discrete(cam_t *cam,
     return max_fps;
 }
 
-void get_supported_resolutions(cam_t *cam, gboolean all_supported)
+static void v4l_get_supported_resolutions(cam_t *cam,
+                                          gboolean all_supported)
 {
     struct v4l2_frmsizeenum frmsize = { 0 };
     struct v4l2_fmtdesc fmtdesc = { 0 };
@@ -860,7 +952,7 @@ void get_supported_resolutions(cam_t *cam, gboolean all_supported)
     }
 }
 
-int camera_cap(cam_t *cam)
+static int v4l_camera_cap(cam_t *cam)
 {
     char *msg;
     struct v4l2_capability vid_cap = { 0 };
@@ -896,10 +988,10 @@ int camera_cap(cam_t *cam)
         cam->req.memory = V4L2_MEMORY_MMAP;
         if (cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req)) {
             printf("Device doesn't support mmap. Using userptr mode\n");
-            cam_close(cam);
+            v4l_cam_close(cam);
             cam->userptr = TRUE;
             cam->use_libv4l = FALSE;
-            cam_open(cam, O_RDWR);
+            v4l_cam_open(cam, O_RDWR);
         } else {
             cam->req.count = 0;
             cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req);
@@ -917,7 +1009,7 @@ int camera_cap(cam_t *cam)
     cam->max_width = 0;
     cam->max_height = 0;
 
-    get_supported_resolutions(cam, TRUE);
+    v4l_get_supported_resolutions(cam, TRUE);
 
     /* Adjust camera resolution */
 
@@ -976,17 +1068,17 @@ static int v4l_get_zoom(cam_t *cam, int *value)
     int ret;
 
     cam->zoom_cid = V4L2_CID_ZOOM_ABSOLUTE;
-    ret = cam_get_control(cam, cam->zoom_cid, value);
+    ret = v4l_cam_get_control(cam, cam->zoom_cid, value);
     if (!ret)
         return 0;
 
     cam->zoom_cid = V4L2_CID_ZOOM_RELATIVE;
-    ret = cam_get_control(cam, cam->zoom_cid, value);
+    ret = v4l_cam_get_control(cam, cam->zoom_cid, value);
     if (!ret)
         return 0;
 
     cam->zoom_cid = V4L2_CID_ZOOM_CONTINUOUS;
-    ret = cam_get_control(cam, cam->zoom_cid,value);
+    ret = v4l_cam_get_control(cam, cam->zoom_cid,value);
     if (!ret)
         return 0;
 
@@ -995,22 +1087,22 @@ static int v4l_get_zoom(cam_t *cam, int *value)
     return -1;
 }
 
-void get_pic_info(cam_t *cam)
+static void v4l_get_pic_info(cam_t *cam)
 {
     int i, ret;
 
-    cam_query_controls(cam);
+    v4l_cam_query_controls(cam);
 
     if (cam->debug == TRUE)
         printf("\nVideo control settings:\n");
 
-    ret = cam_get_control(cam, V4L2_CID_HUE, &i);
+    ret = v4l_cam_get_control(cam, V4L2_CID_HUE, &i);
     if (!ret) {
         cam->hue = i;
     } else {
         cam->hue = -1;
     }
-    ret = cam_get_control(cam, V4L2_CID_SATURATION, &i);
+    ret = v4l_cam_get_control(cam, V4L2_CID_SATURATION, &i);
     if (!ret) {
         cam->colour = i;
     } else {
@@ -1023,19 +1115,19 @@ void get_pic_info(cam_t *cam)
         cam->zoom = -1;
     }
 
-    ret = cam_get_control(cam, V4L2_CID_CONTRAST, &i);
+    ret = v4l_cam_get_control(cam, V4L2_CID_CONTRAST, &i);
     if (!ret) {
         cam->contrast = i;
     } else {
         cam->contrast = -1;
     }
-    ret = cam_get_control(cam, V4L2_CID_WHITENESS, &i);
+    ret = v4l_cam_get_control(cam, V4L2_CID_WHITENESS, &i);
     if (!ret) {
         cam->whiteness = i;
     } else {
         cam->whiteness = -1;
     }
-    ret = cam_get_control(cam, V4L2_CID_BRIGHTNESS, &i);
+    ret = v4l_cam_get_control(cam, V4L2_CID_BRIGHTNESS, &i);
     if (!ret) {
         cam->brightness = i;
     } else {
@@ -1043,7 +1135,7 @@ void get_pic_info(cam_t *cam)
     }
 }
 
-void get_win_info(cam_t *cam)
+static void v4l_get_win_info(cam_t *cam)
 {
     gchar *msg;
     struct v4l2_format fmt = { 0 };
@@ -1092,23 +1184,7 @@ void get_win_info(cam_t *cam)
     }
 }
 
-void try_set_win_info(cam_t *cam, unsigned int pixformat,
-                      unsigned int *x, unsigned int *y)
-{
-    struct v4l2_format fmt;
-
-    memset(&fmt, 0, sizeof(fmt));
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.pixelformat = pixformat;
-    fmt.fmt.pix.width = *x;
-    fmt.fmt.pix.height = *y;
-    if (!cam_ioctl(cam, VIDIOC_TRY_FMT, &fmt)) {
-        *x = fmt.fmt.pix.width;
-        *y = fmt.fmt.pix.height;
-    }
-}
-
-void set_win_info(cam_t *cam)
+static void v4l_set_win_info(cam_t *cam)
 {
     struct v4l2_format fmt;
     unsigned int i;
@@ -1209,7 +1285,7 @@ void set_win_info(cam_t *cam)
     cam->height = fmt.fmt.pix.height;
 }
 
-void start_streaming(cam_t *cam)
+static void v4l_start_streaming(cam_t *cam)
 {
     char *msg;
     unsigned int i;
@@ -1297,7 +1373,7 @@ void start_streaming(cam_t *cam)
 #define PAGE_MASK (~(PAGE_SIZE - 1))
 #define PAGE_ALIGN(x) ((typeof(x))(((unsigned long)(x) + PAGE_SIZE - 1) & PAGE_MASK))
 
-void start_streaming_userptr(cam_t *cam)
+static void v4l_start_streaming_userptr(cam_t *cam)
 {
     char *msg;
     enum v4l2_buf_type type;
@@ -1371,133 +1447,7 @@ void start_streaming_userptr(cam_t *cam)
     }
 }
 
-static int wait_for_capture(cam_t *cam)
-{
-    fd_set fds;
-    struct timeval tv;
-    int maxfd = cam->dev;
-    int r;
-
-    do {
-        FD_ZERO(&fds);
-        FD_SET(cam->dev, &fds);
-        if (cam->stream_wakeup[0] >= 0) {
-            FD_SET(cam->stream_wakeup[0], &fds);
-            maxfd = MAX(maxfd, cam->stream_wakeup[0]);
-        }
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-        r = select(maxfd + 1, &fds, NULL, NULL, &tv);
-        if (r > 0 && cam->stream_wakeup[0] >= 0 &&
-            FD_ISSET(cam->stream_wakeup[0], &fds)) {
-            char byte;
-            (void)read(cam->stream_wakeup[0], &byte, 1);
-            return 0;
-        }
-    } while (r == 0 || (r < 0 && errno == EINTR));
-    return r;
-}
-
-int capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len)
-{
-    char *msg;
-    unsigned char *inbuf;
-    int r;
-    unsigned int y;
-    int converted;
-    struct v4l2_buffer buf;
-
-    r = wait_for_capture(cam);
-    if (!r)
-        return 0;
-
-    if (r == -1) {
-        msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
-                              cam->video_dev);
-        error_dialog(msg);
-        g_free(msg);
-        exit(0);
-    }
-
-    memset(&buf, 0, sizeof(buf));
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = V4L2_MEMORY_MMAP;
-    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
-        return 0;
-    if (buf.index >= cam->n_buffers || !cam->buffers ||
-        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
-        if (buf.index < cam->n_buffers)
-            cam_ioctl(cam, VIDIOC_QBUF, &buf);
-        return 0;
-    }
-
-    if (len > buf.bytesused)
-        len = buf.bytesused;
-
-    inbuf = cam->buffers[buf.index].start;
-    if (cam->use_libv4l) {
-	    for (y = 0; y < cam->height; y++) {
-		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
-		outbuf += cam->width * cam->bpp / 8;
-		inbuf += cam->bytesperline;
-	    }
-    } else {
-        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
-    }
-
-    cam_ioctl(cam, VIDIOC_QBUF, &buf);
-    return cam->use_libv4l || converted > 0;
-}
-
-int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
-{
-    char *msg;
-    unsigned char *inbuf;
-    int r;
-    unsigned int y;
-    int converted;
-    struct v4l2_buffer buf;
-
-    r = wait_for_capture(cam);
-    if (!r)
-        return 0;
-
-    if (r == -1) {
-        msg = g_strdup_printf(_("Timeout while waiting for frames (%s)"),
-                              cam->video_dev);
-        error_dialog(msg);
-        g_free(msg);
-        exit(0);
-    }
-
-    memset(&buf, 0, sizeof(buf));
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = V4L2_MEMORY_USERPTR;
-    if (cam_ioctl(cam, VIDIOC_DQBUF, &buf))
-        return 0;
-    if (buf.index >= cam->n_buffers || !cam->buffers ||
-        buf.bytesused > cam->buffers[buf.index].length || !buf.bytesused) {
-        if (buf.index < cam->n_buffers)
-            cam_ioctl(cam, VIDIOC_QBUF, &buf);
-        return 0;
-    }
-
-    inbuf = cam->buffers[buf.index].start;
-    if (cam->use_libv4l) {
-	    for (y = 0; y < cam->height; y++) {
-		memcpy(outbuf, inbuf, cam->width * cam->bpp / 8);
-		outbuf += cam->width * cam->bpp / 8;
-		inbuf += cam->bytesperline;
-	    }
-    } else {
-        converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
-    }
-
-    cam_ioctl(cam, VIDIOC_QBUF, &buf);
-    return cam->use_libv4l || converted > 0;
-}
-
-void stop_streaming(cam_t *cam)
+static void v4l_stop_streaming(cam_t *cam)
 {
     char *msg;
     unsigned int i;
@@ -1556,7 +1506,7 @@ void stop_streaming(cam_t *cam)
     cam->buffers = NULL;
 }
 
-void stop_streaming_userptr(cam_t *cam)
+static void v4l_stop_streaming_userptr(cam_t *cam)
 {
     char *msg;
     unsigned int i;
@@ -1614,3 +1564,28 @@ void stop_streaming_userptr(cam_t *cam)
     free(cam->buffers);
     cam->buffers = NULL;
 }
+
+const struct camera_backend v4l_camera_backend = {
+    .name = "Video4Linux",
+    .open = v4l_cam_open,
+    .close = v4l_cam_close,
+    .read = v4l_cam_read,
+    .cancel_read = v4l_cancel_read,
+    .query_controls = v4l_cam_query_controls,
+    .set_control = v4l_cam_set_control,
+    .get_control = v4l_cam_get_control,
+    .get_frame_intervals = v4l_get_frame_intervals,
+    .set_frame_interval = v4l_set_frame_interval,
+    .get_frame_interval = v4l_get_frame_interval,
+    .camera_cap = v4l_camera_cap,
+    .get_pic_info = v4l_get_pic_info,
+    .get_win_info = v4l_get_win_info,
+    .try_set_win_info = v4l_try_set_win_info,
+    .set_win_info = v4l_set_win_info,
+    .get_supported_resolutions = v4l_get_supported_resolutions,
+    .print_cam = v4l_print_cam,
+    .start_streaming = v4l_start_streaming,
+    .stop_streaming = v4l_stop_streaming,
+    .start_streaming_userptr = v4l_start_streaming_userptr,
+    .stop_streaming_userptr = v4l_stop_streaming_userptr,
+};

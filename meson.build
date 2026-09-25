@@ -4,6 +4,7 @@ project('camorama', 'c', version: '0.21.2',
 cc = meson.get_compiler('c')
 
 sources = [
+  'src/camera-backend.c',
   'src/gtk_common_callbacks.c',
   'src/img_convert.c',
   'src/camorama-filter-chain.c',

@@ -29,7 +29,4 @@
 
 #include "camera-backend.h"
 
-int capture_buffers(cam_t *cam, unsigned char *outbuf, unsigned int len);
-int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf);
-
 #endif /* CAMORAMA_V4L_H */
