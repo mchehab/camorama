@@ -316,7 +316,7 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf)
     p_start = p_out;
 
     if (num_planes > 1) {
-        plane0_size = (width * height * depth) >> 3;
+        plane0_size = bytesperline * height;
         plane1_start = plane0_start + plane0_size;
     }
 
