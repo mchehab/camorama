@@ -49,7 +49,10 @@ static void camorama_filter_laplace_filter(void *, guchar *image,
     int x, y;
     unsigned char *image2;
 
-    image2 = malloc(sizeof(unsigned char) * width * height * depth);
+    if (width < 3 || height < 2)
+        return;
+
+    image2 = g_malloc_n((size_t)width * height, depth);
     memcpy(image2, image, width * height * depth);
 
     y = 0;
