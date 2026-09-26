@@ -368,87 +368,32 @@ static void
 camorama_filter_smooth_filter(void *, guchar *image, int x, int y,
                               int depth)
 {
-    int i;
-    int neighbours;
-    int total0, total1, total2;
-    unsigned char *image2, *image3;
-    int tr = 0;
+    int row, col, chan, dx, dy;
+    guchar *source = g_malloc_n((size_t)x * y, depth);
 
-    image2 = malloc(sizeof(unsigned char) * x * y * depth);
-    memcpy(image2, image, x * y * depth);
-    image3 = image2;
+    memcpy(source, image, (size_t)x * y * depth);
 
-    for (i = 0; i < x * y; i++) {
-        total0 = 0;
-        total1 = 0;
-        total2 = 0;
-        neighbours = 0;
+    for (row = 0; row < y; row++) {
+        for (col = 0; col < x; col++) {
+            for (chan = 0; chan < depth; chan++) {
+                int total = 0, neighbours = 0;
 
-        if (i < x) {
-            /*we are in the top row */
-            tr++;
-        } else {
-            image2 -= (x + 1) * depth;
-            total0 = total0 + image2[0];
-            total1 = total1 + image2[1];
-            total2 = total2 + image2[2];
-
-            total0 = total0 + image2[3];
-            total1 = total1 + image2[4];
-            total2 = total2 + image2[5];
-
-            total0 = total0 + image2[6];
-            total1 = total1 + image2[7];
-            total2 = total2 + image2[8];
-            neighbours = neighbours + depth;
-        if (tr > 1) {
-                tr = 0;
+                for (dy = -1; dy <= 1; dy++) {
+                    if (row + dy < 0 || row + dy >= y)
+                        continue;
+                    for (dx = -1; dx <= 1; dx++) {
+                        if ((!dx && !dy) || col + dx < 0 || col + dx >= x)
+                            continue;
+                        total += source[((row + dy) * x + col + dx) * depth + chan];
+                        neighbours++;
+                    }
+                }
+                if (neighbours)
+                    image[(row * x + col) * depth + chan] = total / neighbours;
+            }
         }
-            image2 += (x + 1) * depth;
-        }
-        if (i > x * (y - 1)) {
-            /*we are in the bottom row */
-        } else {
-            image2 += (x - 1) * depth;
-            total0 = total0 + image2[0];
-            total1 = total1 + image2[1];
-            total2 = total2 + image2[2];
-
-            total0 = total0 + image2[3];
-            total1 = total1 + image2[4];
-            total2 = total2 + image2[5];
-
-            total0 = total0 + image2[6];
-            total1 = total1 + image2[7];
-            total2 = total2 + image2[8];
-
-            image2 -= (x - 1) * depth;
-
-            neighbours = neighbours + depth;
-        }
-
-        image2 += 3;
-        total0 = total0 + image2[0];
-        total1 = total1 + image2[1];
-        total2 = total2 + image2[2];
-        image2 -= 3;
-        neighbours++;
-
-        image2 -= 3;
-        total0 = total0 + image2[0];
-        total1 = total1 + image2[1];
-        total2 = total2 + image2[2];
-        image2 += 3;
-        neighbours++;
-
-        image[0] = (int)(total0 / neighbours);
-        image[1] = (int)(total1 / neighbours);
-        image[2] = (int)(total2 / neighbours);
-
-        image += 3;
-        image2 += 3;
     }
-    free(image3);
+    g_free(source);
 }
 
 static void
