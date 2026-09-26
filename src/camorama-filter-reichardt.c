@@ -90,7 +90,7 @@ char debug = 0;
 
 static void MaybeNewMemory(gint width, gint height, gint depth)
 {
-    long needed, i, memory;
+    size_t needed, i;
 
     if (width == oldWidth && height == oldHeight && depth == oldDepth)
         return;
@@ -108,28 +108,11 @@ static void MaybeNewMemory(gint width, gint height, gint depth)
         printf("\n\nwidth: %d, height: %d, depth: %d\n\n",
                width, height, depth);
 
-    needed = 5 + (width + 1) * (height + 1);
-    memory = needed * sizeof(long);
-    lastSignal = (long *)malloc(memory);
-    if (!lastSignal) {
-        printf("ERROR: Cannot malloc image memory for lastSignal\n");
-        return;
-    }
-    lastHigh = (long *)malloc(memory);
-    if (!lastHigh) {
-        printf("ERROR: Cannot malloc image memory for lastHigh\n");
-        return;
-    }
-    lastHighThenLow = (long *)malloc(memory);
-    if (!lastHighThenLow) {
-        printf("ERROR: Cannot malloc image memory for lastHighThenLow\n");
-        return;
-    }
-    output = (long *)malloc(memory);
-    if (!output) {
-        printf("ERROR: Cannot malloc image memory for output\n");
-        return;
-    }
+    needed = (size_t)width * height;
+    lastSignal = g_new(long, needed);
+    lastHigh = g_new(long, needed);
+    lastHighThenLow = g_new(long, needed);
+    output = g_new(long, needed);
     for (i = 0; i < needed; i++) {
         lastSignal[i] = 127;
         lastHigh[i] = 127;
