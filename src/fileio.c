@@ -365,13 +365,11 @@ int local_save(cam_t *cam)
         return -1;
     }
 
-    if (chdir(cam->pixdir) != 0) {
-        error_message = g_strdup_printf(_("Could not change to directory '%s'."),
-                                        cam->pixdir);
-        error_dialog(error_message);
+    {
+        gchar *path = g_build_filename(cam->pixdir, filename, NULL);
+
         g_free(filename);
-        g_free(error_message);
-        return -1;
+        filename = path;
     }
 
     pb = snapshot_display(cam, cam->timestamp);
