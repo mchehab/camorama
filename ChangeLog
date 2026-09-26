@@ -1,3 +1,32 @@
+2026-09-26 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+
+	Version 0.30.0 - changes since 0.21.2
+
+	* Convert the build system to Meson
+	* Port to GTK 4, setting as default, keeping GTK 3 with
+          identical (as much as possible) layout
+	* Rework effects, preferences and camera control widgets
+	* Prevent screen blanking during capture
+	* Move resolution and frame rate selection to the lower bar
+	* Capture frames in backtround to speedup UI
+	* Add optional PulseAudio capture to default playback
+	* Add support for libcamera (optional)
+	* Improved internal decoders, adding support for more formats
+	* Add internal decoder for Bayer (code from libv4l2)
+	* Add FFmpeg decoding for MJPEG, JPEG and H.264
+	* With V4L2, libv4l2 is now optional and diabled by default
+	* Added support to decode most of vivid formats
+	* Improve format selection, frame rate handling and V4L2 controls
+	* Fix crashes with atomisp2 cameras and open camera control windows
+	* Validate raw frame lengths, strides, planes and output sizes
+	* Fix several issues on USERPTR allocation logic
+	* Fix some issues at the timestamp watermark
+	* Apply several fixes to avoid out-of-bound access
+        * Resolution changes don't rescale the window size anymore
+	* Add unit tests to test some internal components, in particular
+	  image conversion and fourcc support
+	* Update documentation and translations
+
 2022-03-24 Mauro Carvalho Chehab <mchehab@kernel.org>
 
 	* Add support for reset all controls
