@@ -34,3 +34,6 @@ distclean:
 
 tests: all
 	build/tests/unittest
+
+dist:
+	meson dist -C build --no-tests $(if $(DRY_RUN),--allow-dirty)
