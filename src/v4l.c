@@ -1024,7 +1024,6 @@ static int v4l_camera_cap(cam_t *cam)
 
     /* Query supported resolutions */
 
-    cam->rdir_ok = FALSE;
     cam->min_width = (unsigned)-1;
     cam->min_height = (unsigned)-1;
     cam->max_width = 0;
