@@ -227,12 +227,6 @@ void remote_save(cam_t *cam)
     g_object_unref(task);
 }
 
-struct mount_params {
-    GFile *rdir_file;
-    GMountOperation *mop;
-    gchar *uri;
-};
-
 static void mount_cb(GObject *obj, GAsyncResult *res, gpointer user_data)
 {
     cam_t *cam = user_data;
@@ -240,6 +234,11 @@ static void mount_cb(GObject *obj, GAsyncResult *res, gpointer user_data)
     GError *err = NULL;
 
     ret = g_file_mount_enclosing_volume_finish(G_FILE(obj), res, &err);
+
+    if (G_FILE(obj) != cam->rdir_file) {
+        g_clear_error(&err);
+        return;
+    }
 
     /* Ignore G_IO_ERROR_ALREADY_MOUNTED */
     if (g_error_matches(err, G_IO_ERROR, G_IO_ERROR_ALREADY_MOUNTED))
@@ -258,6 +257,7 @@ static void mount_cb(GObject *obj, GAsyncResult *res, gpointer user_data)
         error_dialog(error_message);
         g_free(error_message);
     }
+    g_clear_error(&err);
 }
 
 gchar *volume_uri(gchar *host, gchar *proto, gchar *rdir)
@@ -283,6 +283,10 @@ void mount_volume(cam_t *cam)
     /* Only try to mount if remote capture is enabled */
     if (!cam->rcap)
         return;
+
+    cam->rdir_ok = FALSE;
+    g_clear_object(&cam->rdir_file);
+    g_clear_object(&cam->rdir_mop);
 
     /* Prepare a mount operation */
     cam->rdir_file = g_file_new_for_uri(cam->uri);

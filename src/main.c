@@ -233,6 +233,9 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
     g_clear_object(&cam->da);
     g_clear_object(&cam->pb);
 
+    g_clear_object(&cam->rdir_file);
+    g_clear_object(&cam->rdir_mop);
+
     g_free(cam->video_dev);
     g_free(cam->pixdir);
     g_free(cam->host);
