@@ -307,7 +307,8 @@ void mount_volume(cam_t *cam)
 
 int local_save(cam_t *cam)
 {
-    gchar *filename, *ext;
+    gchar *filename;
+    const gchar *ext;
     time_t t;
     struct tm *tm;
     char timenow[64], *error_message;
@@ -321,13 +322,13 @@ int local_save(cam_t *cam)
 
     switch (cam->savetype) {
     case JPEG:
-        ext = g_strdup((gchar *) "jpeg");
+        ext = "jpeg";
         break;
     case PNG:
-        ext = g_strdup((gchar *) "png");
+        ext = "png";
         break;
     default:
-        ext = g_strdup((gchar *) "jpeg");
+        ext = "jpeg";
     }
 
     time(&t);
@@ -380,6 +381,7 @@ int local_save(cam_t *cam)
     }
 
     pbs = gdk_pixbuf_save(pb, filename, ext, NULL, NULL);
+    g_object_unref(pb);
     if (pbs == FALSE) {
         error_message = g_strdup_printf(_("Could not save image '%s/%s'."),
                                         cam->pixdir, filename);
