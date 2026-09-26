@@ -779,17 +779,18 @@ static void insert_resolution(cam_t *cam, unsigned int pixformat,
 
     video_fmt = img_format_get(pixformat);
     if (video_fmt) {
-	int depth = video_fmt->depth;
+        unsigned int depth = video_fmt->depth;
+
         cam->res[cam->n_res].depth = depth;
-	if (video_fmt->x_decimation)
-	    depth /= video_fmt->x_decimation;
-	if (video_fmt->y_decimation)
-	    depth /= video_fmt->y_decimation;
-
+        if (video_fmt->y_decimation >= 0) {
+            if (video_fmt->x_decimation >= 0)
+                depth = (depth * 2) >> (video_fmt->x_decimation +
+                                       video_fmt->y_decimation);
+            else
+                depth >>= video_fmt->y_decimation;
+            cam->res[cam->n_res].depth += depth;
+        }
         cam->res[cam->n_res].order = img_format_order(pixformat);
-
-	if (video_fmt->x_decimation || video_fmt->y_decimation)
-	    cam->res[cam->n_res].depth += depth << 1;
     } else {
         cam->res[cam->n_res].order = 99999;
     }
