@@ -102,6 +102,8 @@ static void test_c920_read_backend(void **state)
     cam.width = 160;
     cam.height = 90;
     cam.bpp = 16;
+    cam.bytesperline = cam.width * 2;
+    cam.sizeimage = cam.bytesperline * cam.height;
     cam.capture_input = calloc(160 * 90, 2);
     display_data = malloc(frame_size);
     assert_non_null(cam.capture_input);
