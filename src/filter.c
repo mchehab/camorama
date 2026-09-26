@@ -493,37 +493,28 @@ static void
 camorama_filter_sobel_filter(void *, unsigned char *image, int x,
                              int y, int)
 {
-    int i, j, grad[3];
-    int deltaX[3], deltaY[3];
-    int width = x * 3;
-    guchar *image2;
+    int row, col, chan;
+    int stride = x * 3;
+    guchar *output = g_malloc0_n((size_t)x * y, 3);
 
-    image2 = (guchar *) malloc(sizeof(guchar) * (x * y * 3));
+    for (row = 1; row < y - 1; row++) {
+        for (col = 1; col < x - 1; col++) {
+            for (chan = 0; chan < 3; chan++) {
+                int i = row * stride + col * 3 + chan;
+                int dx = 2 * image[i + 3] + image[i - stride + 3] +
+                         image[i + stride + 3] - 2 * image[i - 3] -
+                         image[i - stride - 3] - image[i + stride - 3];
+                int dy = image[i - stride - 3] + 2 * image[i - stride] +
+                         image[i - stride + 3] - image[i + stride - 3] -
+                         2 * image[i + stride] - image[i + stride + 3];
 
-    for (i = width; i < (y - 1) * width; i++) {
-        for (j = 0; j <= 2; j++) {
-            deltaX[j] =
-                2 * image[i + 1] + image[i - width + 1] +
-                image[i + width + 1] - 2 * image[i - 1] -
-                image[i - width - 1] - image[i + width - 1];
-
-            deltaY[j] =
-                image[i - width - 1] + 2 * image[i -
-                                                 width] +
-                image[i - width + 1] - image[i + width -
-                                             1] -
-                2 * image[i + width] - image[i + width + 1];
-            grad[j] = (abs(deltaX[j]) + abs(deltaY[j]));
-            grad[j] = grad[j] / 5.66;   /* <<<<<------------------------ new line */
-        if (grad[j] > 255) {
-                grad[j] = 255;
-        }
-            image2[i + j] = (unsigned char)grad[j];
+                output[i] = MIN((abs(dx) + abs(dy)) / 5.66, 255);
+            }
         }
     }
 
-    memcpy(image, image2, (x * y * 3));
-    free(image2);
+    memcpy(image, output, (size_t)x * y * 3);
+    g_free(output);
 }
 
 static void
