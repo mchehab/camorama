@@ -23,7 +23,7 @@ static gboolean is_format_supported(cam_t *cam, unsigned int pixformat)
      * As libv4l supports more formats and already selects the format
      * that provides the highest frame rate, use it, if not disabled.
      */
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         return pixformat == V4L2_PIX_FMT_RGB24;
 
     return img_format_get(pixformat) != NULL;
@@ -33,7 +33,7 @@ static int v4l_cam_open(cam_t *cam, int oflag)
 {
     if (test_v4l_ops && test_v4l_ops->open)
         return test_v4l_ops->open(cam->video_dev, oflag);
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         return v4l2_open(cam->video_dev, oflag);
     else
         return open(cam->video_dev, oflag);
@@ -43,7 +43,7 @@ static int v4l_cam_close(cam_t *cam)
 {
     if (test_v4l_ops && test_v4l_ops->close)
         return test_v4l_ops->close(cam->dev);
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         return v4l2_close(cam->dev);
     else
         return close(cam->dev);
@@ -53,7 +53,7 @@ int cam_ioctl(cam_t *cam, unsigned long cmd, void *arg)
 {
     if (test_v4l_ops && test_v4l_ops->ioctl)
         return test_v4l_ops->ioctl(cam->dev, cmd, arg);
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         return v4l2_ioctl(cam->dev, cmd, arg);
     else
         return ioctl(cam->dev, cmd, arg);
@@ -152,7 +152,7 @@ static int capture_buffers(cam_t *cam, unsigned char *outbuf)
 
     inbuf = cam->buffers[buf.index].start;
 
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         converted = copy_rgb24(cam, inbuf, buf.bytesused, outbuf);
      else
         converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
@@ -195,7 +195,7 @@ static int capture_buffers_userptr(cam_t *cam, unsigned char *outbuf)
 
     inbuf = cam->buffers[buf.index].start;
 
-    if (cam->use_libv4l)
+    if (cam->use_libv4l2)
         converted = copy_rgb24(cam, inbuf, buf.bytesused, outbuf);
     else
         converted = img_convert_to_rgb24(cam, inbuf, buf.bytesused, outbuf);
@@ -216,7 +216,7 @@ static unsigned char *v4l_cam_read(cam_t *cam, unsigned char *display_data)
             if (!ret)
                 ret = img_convert_to_rgb24(cam, cam->capture_input,
                                            input_size, display_data) ? 0 : -1;
-        } else if (cam->use_libv4l) {
+        } else if (cam->use_libv4l2) {
             ret = v4l2_read(cam->dev, display_data,
                             cam->width * cam->height * 3);
             ret = ret > 0 ? 0 : -1;
@@ -1008,7 +1008,7 @@ static int v4l_camera_cap(cam_t *cam)
             printf("Device doesn't support mmap. Using userptr mode\n");
             v4l_cam_close(cam);
             cam->userptr = TRUE;
-            cam->use_libv4l = FALSE;
+            cam->use_libv4l2 = FALSE;
             v4l_cam_open(cam, O_RDWR);
         } else {
             cam->req.count = 0;

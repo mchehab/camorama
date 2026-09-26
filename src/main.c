@@ -32,7 +32,7 @@ GtkWidget *host_entry, *protocol, *rdir_entry, *filename_entry;
 
 static int ver = 0, max = 0, min;
 static int half = 0, use_read = 0, use_userptr = 0, debug = 0;
-static int dont_use_libv4l = 0;
+static int use_libv4l2 = 0;
 static int use_libcamera = 0;
 static int disable_scaler = 0;
 static gchar *video_dev = NULL;
@@ -183,8 +183,8 @@ static GOptionEntry options[] = {
      N_("disable video scaler"), NULL},
     {"userptr", 'U', 0, G_OPTION_ARG_NONE, &use_userptr,
      N_("use userptr pointer rather than mmap()"), NULL},
-    {"dont-use-libv4l2", 0, 0, G_OPTION_ARG_NONE, &dont_use_libv4l,
-     N_("use userptr pointer rather than mmap()"), NULL},
+    {"libv4l2", 'L', 0, G_OPTION_ARG_NONE, &use_libv4l2,
+     N_("use libv4l2 for Video4Linux devices"), NULL},
     {"input", 'i', 0, G_OPTION_ARG_INT, &input,
      N_("v4l device input to use"), NULL},
     {NULL}
@@ -266,6 +266,11 @@ static void activate(GtkApplication *app)
     unsigned int i;
     char fourcc[4];
 
+    if (use_libcamera && use_libv4l2) {
+        g_printerr(_("--libcamera and --libv4l2 cannot be used together.\n"));
+        exit(EXIT_FAILURE);
+    }
+
     /* set non-zero default values */
     cam->size = PICHALF;
     cam->scale = 1.f;
@@ -291,13 +296,13 @@ static void activate(GtkApplication *app)
     if (pipe(cam->stream_wakeup) < 0) {
         g_printerr("Could not create camera stream wakeup pipe: %s",
                    g_strerror(errno));
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (fcntl(cam->stream_wakeup[0], F_SETFL, O_NONBLOCK) < 0) {
         g_printerr("Could not configure camera stream wakeup pipe: %s",
                    g_strerror(errno));
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /* gtk is initialized now */
@@ -307,7 +312,7 @@ static void activate(GtkApplication *app)
     if (pixel_format) {
         if (strlen(pixel_format) > 4) {
             g_printerr("Invalid pixformat: '%s'\n", pixel_format);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         for (i = 0; i < strlen(pixel_format); i++)
             fourcc[i] = pixel_format[i];
@@ -318,12 +323,11 @@ static void activate(GtkApplication *app)
         cam->requested_pixformat = v4l2_fourcc(fourcc[0], fourcc[1],
                                                fourcc[2], fourcc[3]);
         cam->force_pixformat = TRUE;
-        dont_use_libv4l = TRUE;
     }
 
     if (ver) {
         fprintf(stderr, _("\n\nCamorama version %s\n\n"), PACKAGE_VERSION);
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
     if (max)
         cam->size = PICMAX;
@@ -334,8 +338,7 @@ static void activate(GtkApplication *app)
     if (half)
         cam->size = PICHALF;
 
-    if (!dont_use_libv4l && !camera_backend_is_libcamera(cam))
-        cam->use_libv4l = TRUE;
+    cam->use_libv4l2 = use_libv4l2;
 
     if (use_read) {
         printf("Forcing read mode\n");
@@ -343,7 +346,7 @@ static void activate(GtkApplication *app)
     } else if (use_userptr) {
         printf("Forcing userptr mode\n");
         cam->userptr = TRUE;
-        cam->use_libv4l = FALSE;
+        cam->use_libv4l2 = FALSE;
     }
 
     if (disable_scaler) {
@@ -376,7 +379,7 @@ static void activate(GtkApplication *app)
         g_clear_error(&error);
         error_dialog(message);
         g_free(message);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     retrieve_video_dev(cam);

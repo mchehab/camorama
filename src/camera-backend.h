@@ -141,7 +141,7 @@ typedef struct camera {
     int savetype, rsavetype;
     gchar *ts_string;
     gchar *date_format;
-    gboolean debug, read, userptr, use_libv4l, hidden;
+    gboolean debug, read, userptr, use_libv4l2, hidden;
     gboolean cap, rcap, acap, show_adjustments, show_effects, audio_enabled;
     gboolean audio_available;
     gboolean audio_volume_available;

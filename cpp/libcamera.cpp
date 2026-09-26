@@ -1371,7 +1371,6 @@ static int libcamera_camera_cap(cam_t *cam)
 
     cam->read = FALSE;
     cam->userptr = FALSE;
-    cam->use_libv4l = FALSE;
 
     return 0;
 }

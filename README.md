@@ -71,7 +71,7 @@ Application Options:
   -R, --read                 use read() rather than mmap()
   -S, --disable-scaler       disable video scaler
   -U, --userptr              use userptr pointer rather than mmap()
-  --dont-use-libv4l2         use userptr pointer rather than mmap()
+  -L, --libv4l2              use libv4l2 for Video4Linux devices
   -i, --input                v4l device input to use
   --display=DISPLAY          X display to use
 ```
