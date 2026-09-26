@@ -1010,7 +1010,9 @@ static int v4l_camera_cap(cam_t *cam)
             v4l_cam_close(cam);
             cam->userptr = TRUE;
             cam->use_libv4l2 = FALSE;
-            v4l_cam_open(cam, O_RDWR);
+            cam->dev = v4l_cam_open(cam, O_RDWR | O_NONBLOCK);
+            if (cam->dev < 0)
+                return 1;
         } else {
             cam->req.count = 0;
             cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req);
