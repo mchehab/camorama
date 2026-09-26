@@ -13,40 +13,40 @@
 
 /* Formats that are natively supported */
 static const struct img_format supported_formats[] = {
-    { V4L2_PIX_FMT_RGB24,   24, -1, -1, 1},
-    { V4L2_PIX_FMT_BGR24,   24, -1, -1, 1},
+    { V4L2_PIX_FMT_RGB24,   24, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGR24,   24, -1, -1,  IMG_COLORMAP_RGB },
 
-    { V4L2_PIX_FMT_YUYV,    16, -1, -1, -1},
-    { V4L2_PIX_FMT_UYVY,    16, -1, -1, -1},
-    { V4L2_PIX_FMT_YVYU,    16, -1, -1, -1},
-    { V4L2_PIX_FMT_VYUY,    16, -1, -1, -1},
+    { V4L2_PIX_FMT_YUYV,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_UYVY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YVYU,    16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_VYUY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
 
-    { V4L2_PIX_FMT_NV12,     8,  1, -1, -1},
-    { V4L2_PIX_FMT_NV21,     8,  1, -1, -1},
-    { V4L2_PIX_FMT_NV16,     8,  0, -1, -1},
-    { V4L2_PIX_FMT_NV61,     8,  0, -1, -1},
-    { V4L2_PIX_FMT_YUV420,   8,  1 , 1, -1},
-    { V4L2_PIX_FMT_YVU420,   8,  1,  1, -1},
-    { V4L2_PIX_FMT_YUV422P,  8,  0,  1,  0},
+    { V4L2_PIX_FMT_NV12,     8,  1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV21,     8,  1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV16,     8,  0, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_NV61,     8,  0, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV420,   8,  1 , 1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YVU420,   8,  1,  1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV422P,  8,  0,  1,  IMG_COLORMAP_YCBCR },
 
-    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  1},
-    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  1},
+    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  IMG_COLORMAP_RGB },
 
-    { V4L2_PIX_FMT_BGR32,   32, -1, -1,  1},
-    { V4L2_PIX_FMT_ABGR32,  32, -1, -1,  1},
-    { V4L2_PIX_FMT_XBGR32,  32, -1, -1,  1},
+    { V4L2_PIX_FMT_BGR32,   32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ABGR32,  32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XBGR32,  32, -1, -1,  IMG_COLORMAP_RGB },
 
-    { V4L2_PIX_FMT_RGB32,   32, -1, -1,  1},
-    { V4L2_PIX_FMT_ARGB32,  32, -1, -1,  1},
-    { V4L2_PIX_FMT_XRGB32,  32, -1, -1,  1},
+    { V4L2_PIX_FMT_RGB32,   32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ARGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XRGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
 
-    { V4L2_PIX_FMT_SBGGR8,   8, -1, -1,  1},
-    { V4L2_PIX_FMT_SGBRG8,   8, -1, -1,  1},
-    { V4L2_PIX_FMT_SGRBG8,   8, -1, -1,  1},
-    { V4L2_PIX_FMT_SRGGB8,   8, -1, -1,  1},
+    { V4L2_PIX_FMT_SBGGR8,   8, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_SGBRG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_SGRBG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_SRGGB8,   8, -1, -1,  IMG_COLORMAP_OTHER },
 #ifdef HAVE_FFMPEG
-    { V4L2_PIX_FMT_MJPEG,    0, -1, -1, 1},
-    { V4L2_PIX_FMT_H264,     0, -1, -1, 1},
+    { V4L2_PIX_FMT_MJPEG,    0, -1, -1 , IMG_COLORMAP_JPEG },
+    { V4L2_PIX_FMT_H264,     0, -1, -1,  IMG_COLORMAP_YCBCR },
 #endif
 };
 
@@ -352,6 +352,9 @@ void img_get_colorspace_data(cam_t *cam,
 {
     struct colorspace_parms *c = &cam->colorspc;
     const struct img_format *video_fmt;
+    enum v4l2_colorspace default_colorspace;
+    gboolean is_rgb = FALSE;
+    gboolean is_ycbcr = FALSE;
 
     memset(c, 0, sizeof(*c));
 
@@ -359,36 +362,54 @@ void img_get_colorspace_data(cam_t *cam,
     if (!video_fmt)
             return;
 
-    /*
-     * A more complete colorspace default detection would need to
-     * implement timings API, in order to check for SDTV/HDTV.
-     */
-    if (fmt->fmt.pix.colorspace == V4L2_COLORSPACE_DEFAULT)
-        c->colorspace = video_fmt->is_rgb ?
-                        V4L2_COLORSPACE_SRGB :
-                        V4L2_COLORSPACE_REC709;
-    else
+    switch (video_fmt->colormap) {
+    case IMG_COLORMAP_RGB:
+        default_colorspace = V4L2_COLORSPACE_SRGB;
+        is_rgb = TRUE;
+        break;
+    case IMG_COLORMAP_YCBCR:
+        default_colorspace = V4L2_COLORSPACE_SRGB;
+        is_ycbcr = TRUE;
+        break;
+    case IMG_COLORMAP_JPEG:
+        default_colorspace = V4L2_COLORSPACE_JPEG;
+        is_ycbcr = TRUE;
+        break;
+    case IMG_COLORMAP_OTHER:
+    default:
+        default_colorspace = V4L2_COLORSPACE_SRGB;
+        break;
+    }
+
+    /* Use the driver-returned colorspace when available. */
+    if (fmt->fmt.pix.colorspace != V4L2_COLORSPACE_DEFAULT) {
         c->colorspace = fmt->fmt.pix.colorspace;
+    } else {
+        c->colorspace = default_colorspace;
+    }
 
     if (fmt->fmt.pix.xfer_func == V4L2_XFER_FUNC_DEFAULT)
         c->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(c->colorspace);
     else
         c->xfer_func = fmt->fmt.pix.xfer_func;
 
-    if (!video_fmt->is_rgb) {
+    if (is_ycbcr) {
         if (fmt->fmt.pix.ycbcr_enc == V4L2_YCBCR_ENC_DEFAULT)
             c->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(c->colorspace);
         else
             c->ycbcr_enc = fmt->fmt.pix.ycbcr_enc;
     }
 
-    if (fmt->fmt.pix.quantization == V4L2_QUANTIZATION_DEFAULT)
-        c->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(video_fmt->is_rgb,
+    if (fmt->fmt.pix.quantization == V4L2_QUANTIZATION_DEFAULT) {
+        c->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(is_rgb,
                                                         c->colorspace,
                                                         c->ycbcr_enc);
+    } else {
+        c->quantization = fmt->fmt.pix.quantization;
+    }
 
     if (cam->debug == TRUE) {
-        if (!video_fmt->is_rgb) {
+        if (is_ycbcr) {
             printf("YUV standard: ");
                 switch (c->ycbcr_enc) {
                 case V4L2_YCBCR_ENC_601:

@@ -10,12 +10,19 @@
 struct camera;
 typedef struct img_converter img_converter_t;
 
+enum img_colormap {
+    IMG_COLORMAP_RGB,
+    IMG_COLORMAP_YCBCR,
+    IMG_COLORMAP_OTHER,
+    IMG_COLORMAP_JPEG,
+};
+
 struct img_format {
     unsigned int pixformat;
     unsigned int depth;
     int y_decimation;
     int x_decimation;
-    unsigned int is_rgb:1;
+    enum img_colormap colormap;
 };
 
 const struct img_format *img_format_get(unsigned int pixformat);

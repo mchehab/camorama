@@ -294,7 +294,20 @@ void test_psnr(void **state)
 
 static int group_setup(void **)
 {
-     rgb24_buffer = load_raw_file(&exact_imgs[0], &cam_rgb24);
+    struct v4l2_format fmt = { 0 };
+
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    fmt.fmt.pix.width = COLOR_BAR_WIDTH;
+    fmt.fmt.pix.height = COLOR_BAR_HEIGHT;
+    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+    fmt.fmt.pix.colorspace = V4L2_COLORSPACE_DEFAULT;
+    fmt.fmt.pix.xfer_func = V4L2_XFER_FUNC_DEFAULT;
+    fmt.fmt.pix.ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT;
+    fmt.fmt.pix.quantization = V4L2_QUANTIZATION_DEFAULT;
+    img_get_colorspace_data(&cam_rgb24, &fmt);
+    colspace = cam_rgb24.colorspc;
+
+    rgb24_buffer = load_raw_file(&exact_imgs[0], &cam_rgb24);
 
     // FIXME: add a command line arg to enable it
     assert_int_equal(test_save_png_named(exact_imgs[0].name, rgb24_buffer,

@@ -88,11 +88,13 @@ static int convert_decoded_frame(struct img_ffmpeg_data *state, uint8_t *rgb,
     uint8_t *destination[4] = { rgb, NULL, NULL, NULL };
     size_t row_size = (size_t)width * 3;
     enum AVPixelFormat source_format;
+    enum AVColorSpace color_space;
     const int *coefficients;
     int source_range;
     int ret;
 
     source_format = state->frame->format;
+    color_space = state->frame->colorspace;
     switch (source_format) {
     case AV_PIX_FMT_YUVJ420P:
         source_format = AV_PIX_FMT_YUV420P;
@@ -110,6 +112,28 @@ static int convert_decoded_frame(struct img_ffmpeg_data *state, uint8_t *rgb,
         break;
     }
 
+    switch (color_space) {
+    case AVCOL_SPC_BT709:
+        coefficients = sws_getCoefficients(SWS_CS_ITU709);
+        break;
+    case AVCOL_SPC_BT470BG:
+    case AVCOL_SPC_SMPTE170M:
+        coefficients = sws_getCoefficients(SWS_CS_ITU601);
+        break;
+    case AVCOL_SPC_SMPTE240M:
+        coefficients = sws_getCoefficients(SWS_CS_SMPTE240M);
+        break;
+    case AVCOL_SPC_BT2020_NCL:
+    case AVCOL_SPC_BT2020_CL:
+        coefficients = sws_getCoefficients(SWS_CS_BT2020);
+        break;
+    default:
+        /* Match V4L2's SDTV/HDTV fallback when the stream has no tag. */
+        coefficients = sws_getCoefficients(state->frame->height <= 576 ?
+					   SWS_CS_ITU601 : SWS_CS_ITU709);
+        break;
+    }
+
     state->sws = sws_getCachedContext(state->sws,
                                       state->frame->width,
                                       state->frame->height,
@@ -119,8 +143,11 @@ static int convert_decoded_frame(struct img_ffmpeg_data *state, uint8_t *rgb,
     if (!state->sws)
         return 0;
 
-    source_range = state->frame->color_range == AVCOL_RANGE_JPEG;
-    coefficients = sws_getCoefficients(SWS_CS_DEFAULT);
+    source_range = state->frame->color_range == AVCOL_RANGE_JPEG ||
+                   state->frame->format == AV_PIX_FMT_YUVJ420P ||
+                   state->frame->format == AV_PIX_FMT_YUVJ422P ||
+                   state->frame->format == AV_PIX_FMT_YUVJ444P ||
+                   state->frame->format == AV_PIX_FMT_YUVJ440P;
     ret = sws_setColorspaceDetails(state->sws, coefficients, source_range,
                                    coefficients, 1, 0, 1 << 16, 1 << 16);
     if (ret < 0)
