@@ -545,9 +545,13 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
     unsigned int x, y, depth;
     uint32_t num_planes = 1;
     unsigned char *p_start;
-    uint32_t plane0_size;
+    size_t plane0_size, required_size, row_size, chroma_size;
     uint32_t w_dec = 0;
     uint32_t h_dec = 0;
+
+    if (!inbuf || !display_data || !width || !height ||
+        width > G_MAXINT / 3 / height)
+        return 0;
 
     video_fmt = img_format_get(cam->pixformat);
     if (!video_fmt)
@@ -563,7 +567,9 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
     case V4L2_PIX_FMT_SGBRG8:
     case V4L2_PIX_FMT_SGRBG8:
     case V4L2_PIX_FMT_SRGGB8:
-        if (width < 3 || height < 2 || bytesperline < width)
+        if (width < 3 || height < 2 || bytesperline < width ||
+            (size_t)(height - 1) > (G_MAXSIZE - width) / bytesperline ||
+            input_size < (size_t)(height - 1) * bytesperline + width)
             return 0;
         img_bayer_to_rgb24(inbuf, display_data, width, height,
                            bytesperline, cam->pixformat);
@@ -592,10 +598,30 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
         w_dec = video_fmt->x_decimation;
     }
 
+    /* Packed converters consume pairs; subsampled planes need whole rows. */
+    if ((width & 1) || (height & ((1U << h_dec) - 1)) ||
+        (bytesperline & ((1U << w_dec) - 1)))
+        return 0;
+
+    row_size = (size_t)width * (depth / 8);
+    if (bytesperline < row_size ||
+        (size_t)height > G_MAXSIZE / bytesperline)
+        return 0;
+
+    plane0_size = (size_t)bytesperline * height;
+    required_size = (size_t)(height - 1) * bytesperline + row_size;
+    if (num_planes > 1) {
+        chroma_size = plane0_size >> (w_dec + h_dec);
+        if (chroma_size > (G_MAXSIZE - plane0_size) / (num_planes - 1))
+            return 0;
+        required_size = plane0_size + chroma_size * (num_planes - 1);
+    }
+    if (input_size < required_size)
+        return 0;
+
     p_start = p_out;
 
     if (num_planes > 1) {
-        plane0_size = bytesperline * height;
         plane1_start = plane0_start + plane0_size;
     }
 
@@ -603,11 +629,11 @@ unsigned int img_convert_to_rgb24(cam_t *cam, unsigned char *inbuf,
         plane2_start = plane1_start + (plane0_size >> (w_dec + h_dec));
 
     for (y = 0; y < height; y++) {
-        plane0 = plane0_start + bytesperline * y;
+        plane0 = plane0_start + (size_t)bytesperline * y;
         if (num_planes > 1)
-            plane1 = plane1_start + (bytesperline >> w_dec) * (y >> h_dec);
+            plane1 = plane1_start + (size_t)(bytesperline >> w_dec) * (y >> h_dec);
         if (num_planes > 2)
-            plane2 = plane2_start + (bytesperline >> w_dec) * (y >> h_dec);
+            plane2 = plane2_start + (size_t)(bytesperline >> w_dec) * (y >> h_dec);
 
         for (x = 0; x < width >> 1; x++) {
             copy_two_pixels(cam, &cam->colorspc, plane0, plane1, plane2, &p_out);
