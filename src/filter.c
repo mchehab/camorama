@@ -290,60 +290,29 @@ static void
 camorama_filter_wacky_filter(void *, unsigned char *image, int x,
                              int y, int depth)
 {
-    int i;
-    int neighbours;
-    int total;
-    unsigned char *image2;
+    int row, col, dx, dy;
+    guchar *source = g_malloc_n((size_t)x * y, depth);
 
-    image2 = malloc(sizeof(unsigned char) * x * y * depth);
-    memcpy(image2, image, x * y * depth);
+    memcpy(source, image, (size_t)x * y * depth);
+    for (row = 1; row < y - 1; row++) {
+        for (col = 1; col < x - 1; col++) {
+            int offset = (row * x + col) * depth;
+            int total = -20 * source[offset];
+            int chan;
 
-    for (i = 0; i < x * y; i++) {
-        total = 0;
-        neighbours = 0;
-
-        if (i < x * depth) {
-            /*we are in the top row */
-        } else {
-            image2 -= (x + 1) * depth;
-            total = total + ((1 / 6) * image2[0]);
-            image2 += depth;
-            total = total + ((4 / 6) * image2[0]);
-            image2 += depth;
-            total = total + ((1 / 6) * image2[0]);
-            neighbours = neighbours + depth;
-            image2 += (x - 1) * depth;
+            for (dy = -1; dy <= 1; dy++) {
+                for (dx = -1; dx <= 1; dx++) {
+                    if (!dx && !dy)
+                        continue;
+                    total += (dx && dy ? 1 : 4) *
+                             source[((row + dy) * x + col + dx) * depth];
+                }
+            }
+            for (chan = 0; chan < depth; chan++)
+                image[offset + chan] = CLAMP(total / 6, 0, 255);
         }
-        if (i > x * (y - 1) * depth) {
-            /*we are in the bottom row */
-        } else {
-            image2 += (x + 1) * depth;
-            total = total + ((1 / 6) * image2[0]);
-            image2 -= depth;
-            total = total + ((4 / 6) * image2[0]);
-            image2 -= depth;
-            total = total + ((1 / 6) * image2[0]);
-            image2 -= (x - 1) * depth;
-            neighbours = neighbours + depth;
-        }
-
-        image2 += depth;
-        total = total + ((4 / 6) * image2[0]);
-        image2 -= depth;
-        neighbours++;
-
-        image2 -= depth;
-        total = total + ((4 / 6) * image2[0]);
-        image2 += depth;
-        neighbours++;
-
-        image[0] = image[0] * (-20 / 6);
-        image[0] = image[0] + total;
-        image[1] = image[0];
-        image[2] = image[0];
-        image += depth;
     }
-    free(image2);
+    g_free(source);
 }
 
 static void
