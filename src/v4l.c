@@ -1387,12 +1387,9 @@ static void v4l_start_streaming(cam_t *cam)
     }
 }
 
-#define PAGE_SIZE 4096
-#define PAGE_MASK (~(PAGE_SIZE - 1))
-#define PAGE_ALIGN(x) ((typeof(x))(((unsigned long)(x) + PAGE_SIZE - 1) & PAGE_MASK))
-
 static void v4l_start_streaming_userptr(cam_t *cam)
 {
+    long page_size = sysconf(_SC_PAGESIZE);
     char *msg;
     enum v4l2_buf_type type;
     struct v4l2_buffer buf;
@@ -1422,17 +1419,10 @@ static void v4l_start_streaming_userptr(cam_t *cam)
          ++cam->n_buffers) {
         memset(&buf, 0, sizeof(buf));
 
-        /*
-         * The userptr buffer pages must not be used by anything else
-         * so round up the size to pagesize; and align the pointer
-         * returned by calloc to start at a page (which requires
-         * allocating an extra page)
-         */
-        cam->buffers[cam->n_buffers].length = PAGE_ALIGN(cam->sizeimage);
-        cam->buffers[cam->n_buffers].start = PAGE_ALIGN(
-                calloc(1, cam->buffers[cam->n_buffers].length + PAGE_SIZE));
-
-        if (!cam->buffers[cam->n_buffers].start) {
+        cam->buffers[cam->n_buffers].length = cam->sizeimage;
+        if (page_size <= 0 ||
+            posix_memalign(&cam->buffers[cam->n_buffers].start,
+                            page_size, cam->sizeimage)) {
             msg = g_strdup_printf(_("could not allocate memory for video buffers, exiting...."));
             error_dialog(msg);
             g_free(msg);
@@ -1568,15 +1558,15 @@ static void v4l_stop_streaming_userptr(cam_t *cam)
         exit(0);
     }
 
-    /* Unmap buffers */
+    /* Free the page-aligned USERPTR allocations. */
     for (i = 0; i < cam->n_buffers; ++i)
-        v4l2_munmap(cam->buffers[i].start, cam->buffers[i].length);
+        free(cam->buffers[i].start);
 
     /* Free existing buffers */
     memset(&cam->req, 0, sizeof(cam->req));
     cam->req.count = 0;
     cam->req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    cam->req.memory = V4L2_MEMORY_MMAP;
+    cam->req.memory = V4L2_MEMORY_USERPTR;
     cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req);
 
     free(cam->buffers);
