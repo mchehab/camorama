@@ -61,11 +61,21 @@ static void test_c920_supported_resolutions(void **state)
         expected = mock_c920_compressed_sizes_count + 2;
     assert_int_equal(cam.n_res, expected);
     if (have_ffmpeg) {
-        for (i = 0; i < mock_c920_compressed_sizes_count; i++)
-            assert_true(find_resolution(&cam, V4L2_PIX_FMT_MJPEG,
-                                        mock_c920_compressed_sizes[i].width,
-                                        mock_c920_compressed_sizes[i].height,
-                                        30));
+        for (i = 0; i < mock_c920_compressed_sizes_count; i++) {
+            const struct mock_v4l_size *size = &mock_c920_compressed_sizes[i];
+            unsigned int format = V4L2_PIX_FMT_MJPEG;
+            unsigned int j;
+
+            for (j = 0; j < mock_c920_yuyv_sizes_count; j++) {
+                const struct mock_v4l_size *raw = &mock_c920_yuyv_sizes[j];
+
+                if (raw->width == size->width && raw->height == size->height &&
+                    raw->max_fps == size->max_fps)
+                    format = V4L2_PIX_FMT_YUYV;
+            }
+            assert_true(find_resolution(&cam, format, size->width,
+                                        size->height, size->max_fps));
+        }
         assert_true(find_resolution(&cam, V4L2_PIX_FMT_YUYV, 2304, 1296, 2));
         assert_true(find_resolution(&cam, V4L2_PIX_FMT_YUYV, 2304, 1536, 2));
         assert_false(find_resolution(&cam, V4L2_PIX_FMT_H264, 640, 480, 30));
