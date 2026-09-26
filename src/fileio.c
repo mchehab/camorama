@@ -132,79 +132,99 @@ add_rgb_text(guchar *image, int width, int height, char *cstring,
     return 1;
 }
 
+struct remote_snapshot {
+    gchar *pixels;
+    gsize size;
+    GFile *destination;
+};
+
+static void free_remote_snapshot(gpointer data)
+{
+    struct remote_snapshot *snapshot = data;
+
+    g_free(snapshot->pixels);
+    g_object_unref(snapshot->destination);
+    g_free(snapshot);
+}
+
+static void save_remote_snapshot(GTask *task, gpointer,
+                                  gpointer data, GCancellable *cancellable)
+{
+    struct remote_snapshot *snapshot = data;
+    GError *error = NULL;
+
+    if (!g_file_replace_contents(snapshot->destination, snapshot->pixels,
+                                  snapshot->size, NULL, FALSE,
+                                  G_FILE_CREATE_REPLACE_DESTINATION,
+                                  NULL, cancellable, &error))
+        g_task_return_error(task, error);
+    else
+        g_task_return_boolean(task, TRUE);
+}
+
+static void remote_save_done(GObject *, GAsyncResult *result,
+                             gpointer data)
+{
+    cam_t *cam = data;
+    GError *error = NULL;
+
+    cam->n_threads--;
+    if (!g_task_propagate_boolean(G_TASK(result), &error)) {
+        error_dialog(error->message);
+        g_error_free(error);
+    }
+}
+
 void remote_save(cam_t *cam)
 {
-    GThread *remote_thread;
-    char *filename, *error_message;
-    gchar *ext;
-    gboolean pbs;
+    struct remote_snapshot *snapshot;
     GdkPixbuf *pb;
+    GTask *task;
+    GError *error = NULL;
+    GDateTime *now;
+    gchar *filename, *uri, *timestamp;
+    const gchar *ext = cam->rsavetype == PNG ? "png" : "jpeg";
 
-    /* Don't allow multiple threads to save image at the same time */
-    g_mutex_lock(&cam->remote_save_mutex);
-    if (cam->n_threads) {
-        g_mutex_unlock(&cam->remote_save_mutex);
+    /* This function and its completion callback run on the GTK thread. */
+    if (!cam->rdir_ok || cam->n_threads)
         return;
-    }
-    cam->n_threads++;
-    g_mutex_unlock(&cam->remote_save_mutex);
-
-    switch (cam->rsavetype) {
-    case JPEG:
-        ext = g_strdup((gchar *) "jpeg");
-        break;
-    case PNG:
-        ext = g_strdup((gchar *) "png");
-        break;
-    default:
-        ext = g_strdup((gchar *) "jpeg");
-    }
-
-    if (chdir("/tmp") != 0) {
-        error_dialog(_("Could save temporary image file in /tmp."));
-        goto ret;
-    }
 
     pb = snapshot_display(cam, cam->rtimestamp);
+    if (!pb)
+        return;
 
-    filename = g_strdup_printf("camorama.%s", ext);
-    if (pb == NULL) {
-        error_message = g_strdup_printf(_("Unable to create image '%s'."),
-                                        filename);
-        error_dialog(error_message);
-        g_free(error_message);
-        g_free(filename);
-
-        goto ret;
+    snapshot = g_new0(struct remote_snapshot, 1);
+    if (!gdk_pixbuf_save_to_buffer(pb, &snapshot->pixels, &snapshot->size,
+                                    ext, &error, NULL)) {
+        error_dialog(error->message);
+        g_error_free(error);
+        g_object_unref(pb);
+        g_free(snapshot);
+        return;
     }
+    g_object_unref(pb);
 
-    pbs = gdk_pixbuf_save(pb, filename, ext, NULL, NULL);
-    if (pbs == FALSE) {
-        error_message = g_strdup_printf(_("Could not save image '%s/%s'."),
-                                        cam->pixdir, filename);
-        error_dialog(error_message);
-        g_free(error_message);
-        g_free(filename);
-
-        goto ret;
-    }
-
-    remote_thread = g_thread_new("remote", &save_thread, cam);
-    if (!remote_thread) {
-        error_message = g_strdup_printf(_("Could not create a thread to save image '%s/%s'."),
-                                        cam->pixdir, filename);
-        error_dialog(error_message);
-        g_free(error_message);
-    }
-
+    now = g_date_time_new_now_local();
+    timestamp = g_date_time_format(now, "%Y%m%d-%H:%M:%S");
+    if (cam->rtimefn)
+        filename = g_strdup_printf("%s-%s-%03d.%s", cam->rcapturefile,
+                                    timestamp,
+                                    g_atomic_int_get(&cam->frame_number) % 1000,
+                                    ext);
+    else
+        filename = g_strdup_printf("%s.%s", cam->rcapturefile, ext);
+    uri = g_strdup_printf("%s/%s", cam->uri, filename);
+    snapshot->destination = g_file_new_for_uri(uri);
+    g_free(uri);
     g_free(filename);
+    g_free(timestamp);
+    g_date_time_unref(now);
 
-ret:
-    g_mutex_lock(&cam->remote_save_mutex);
-    cam->n_threads--;
-    g_mutex_unlock(&cam->remote_save_mutex);
-
-    g_free(ext);
+    cam->n_threads++;
+    task = g_task_new(NULL, NULL, remote_save_done, cam);
+    g_task_set_task_data(task, snapshot, free_remote_snapshot);
+    g_task_run_in_thread(task, save_remote_snapshot);
+    g_object_unref(task);
 }
 
 struct mount_params {
@@ -283,121 +303,6 @@ void mount_volume(cam_t *cam)
 
     g_file_mount_enclosing_volume(cam->rdir_file, G_MOUNT_MOUNT_NONE,
                                   cam->rdir_mop, NULL, mount_cb, cam);
-}
-
-gpointer save_thread(gpointer data)
-{
-    cam_t *cam = data;
-    char *output_uri_string, *input_uri_string;
-    GFile *uri_1;
-    GFileOutputStream *fout;
-    unsigned char *tmp;
-    char *error_message;
-    gssize ret;
-    FILE *fp;
-    int bytes = 0;
-    time_t t;
-    char timenow[64], *ext;
-    struct tm *tm;
-    GError *error = NULL;
-    int len;
-
-    /* Check if it is ready to mount */
-    if (!cam->rdir_ok)
-        return NULL;
-
-    switch (cam->rsavetype) {
-    case JPEG:
-        ext = g_strdup((gchar *) "jpeg");
-        break;
-    case PNG:
-        ext = g_strdup((gchar *) "png");
-        break;
-    default:
-        ext = g_strdup((gchar *) "jpeg");
-    }
-    input_uri_string = g_strdup_printf("camorama.%s", ext);
-
-    if (chdir("/tmp") != 0) {
-        error_dialog(_("Could save temporary image file in /tmp."));
-        g_free(ext);
-        g_thread_exit(NULL);
-    }
-
-    if (!(fp = fopen(input_uri_string, "rb"))) {
-        error_message = g_strdup_printf(_("Unable to open temporary image file '%s'.\nCannot upload image."),
-                                        input_uri_string);
-        error_dialog(error_message);
-        g_free(input_uri_string);
-        g_free(error_message);
-        g_thread_exit(NULL);
-        //exit (0);
-    }
-
-    tmp = malloc(sizeof(char) * cam->width * cam->height * cam->bpp * 2 / 8);
-    while (!feof(fp)) {
-        bytes += fread(tmp, 1, cam->width * cam->height * cam->bpp / 8, fp);
-    }
-    fclose(fp);
-
-    time(&t);
-    tm = localtime(&t);
-    len = strftime(timenow, sizeof(timenow) - 1, "%Y%m%d-%H:%M:%S", tm);
-    if (len < 0)
-        timenow[0] = '\0';
-
-    if (cam->rtimefn == TRUE) {
-        output_uri_string = g_strdup_printf("%s/%s-%s-%03d.%s", cam->uri,
-                                            cam->capturefile,
-                                            timenow,
-                                            g_atomic_int_get(&cam->frame_number) % 1000,
-                                            ext);
-    } else {
-        output_uri_string = g_strdup_printf("%s/%s.%s", cam->uri,
-                                            cam->capturefile, ext);
-    }
-
-    uri_1 = g_file_new_for_uri(output_uri_string);
-    if (!uri_1) {
-        error_message = g_strdup_printf(_("An error occurred opening %s."),
-                                        output_uri_string);
-        error_dialog(error_message);
-        g_free(error_message);
-        g_thread_exit(NULL);
-    }
-
-    fout = g_file_replace(uri_1, NULL, FALSE,
-                          G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error);
-    if (error) {
-        error_message =
-            g_strdup_printf(_("An error occurred opening %s for write: %s."),
-                            output_uri_string, error->message);
-        error_dialog(error_message);
-        g_free(error_message);
-        g_thread_exit(NULL);
-    }
-
-    /*  write the data */
-    ret = g_output_stream_write(G_OUTPUT_STREAM(fout), tmp, bytes, NULL, &error);
-    if (ret < 0) {
-        g_output_stream_close(G_OUTPUT_STREAM(fout), NULL, &error);
-        error_message = g_strdup_printf(_("An error occurred writing to %s: %s."),
-                                        output_uri_string, error->message);
-        error_dialog(error_message);
-        g_free(error_message);
-    }
-    if (!g_output_stream_close(G_OUTPUT_STREAM(fout), NULL, &error)) {
-        error_message = g_strdup_printf(_("An error occurred closing %s: %s."),
-                                        output_uri_string, error->message);
-        error_dialog(error_message);
-        g_free(error_message);
-    }
-
-    g_object_unref(uri_1);
-    free(tmp);
-    g_thread_exit(NULL);
-
-    return NULL;
 }
 
 int local_save(cam_t *cam)
