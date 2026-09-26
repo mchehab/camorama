@@ -85,8 +85,10 @@ conf.set('HAVE_AUDIO', enable_audio)
 conf.set('HAVE_LIBV4L2', libv4l2_dep.found())
 conf.set('HAVE_FFMPEG', enable_ffmpeg)
 conf.set('HAVE_LIBCAMERA', libcamera_dep.found())
-conf.set_quoted('FFMPEG_BIN', ffmpeg.full_path())
-conf.set_quoted('PNG_FILE', png_file)
+if enable_ffmpeg
+  conf.set_quoted('FFMPEG_BIN', ffmpeg.full_path())
+  conf.set_quoted('PNG_FILE', png_file)
+endif
 conf.set_quoted('PACKAGE', meson.project_name())
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE_VERSION', meson.project_version())
