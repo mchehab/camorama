@@ -21,13 +21,13 @@ sources = [
   'src/v4l.c',
 ]
 
-gtk4 = get_option('gtk4')
-if gtk4
-  gtk_dep = dependency('gtk4', version: '>=4.0')
-  camorama_ui = 'camorama-gtk4.ui'
-else
+gtk3 = get_option('gtk3')
+if gtk3
   gtk_dep = dependency('gtk+-3.0', version: '>=3.22')
   camorama_ui = 'camorama-gtk3.ui'
+else
+  gtk_dep = dependency('gtk4', version: '>=4.0')
+  camorama_ui = 'camorama-gtk4.ui'
 endif
 
 libv4l2_dep = dependency('libv4l2', required: get_option('libv4l2'))
@@ -114,7 +114,9 @@ if libcamera_dep.found()
   dependencies += dependency('camorama-libcamera')
 endif
 
-if gtk4
+if gtk3
+  sources += 'src/gtk3_callbacks.c'
+else
   gnome = import('gnome')
   sources += gnome.compile_resources(
     'camorama-icons',
@@ -123,8 +125,6 @@ if gtk4
     c_name: 'camorama_icons',
   )
   sources += 'src/gtk4_callbacks.c'
-else
-  sources += 'src/gtk3_callbacks.c'
 endif
 
 #
@@ -176,7 +176,7 @@ install_man('camorama.1')
 
 summary(
     {
-        'GTK interface': gtk4 ? 'GTK 4' : 'GTK 3',
+        'GTK interface': gtk3 ? 'GTK 3' : 'GTK 4',
         'Audio routing': enable_audio,
         'libv4l2': libv4l2_dep.found(),
         'FFmpeg': enable_ffmpeg,

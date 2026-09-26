@@ -1,5 +1,5 @@
-option('gtk4', type: 'boolean', value: false,
-       description: 'Build against GTK 4 instead of GTK 3')
+option('gtk3', type: 'boolean', value: false,
+       description: 'Build against GTK 3 instead of GTK 4')
 option('audio', type: 'feature', value: 'auto',
        description: 'Enable audio routing from camera to pulseaudio playback')
 option('libv4l2', type: 'feature', value: 'auto',
