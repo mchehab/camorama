@@ -270,7 +270,9 @@ static int apply_remote_pref(cam_t *cam)
             g_free(host);
             g_free(proto);
             g_free(rdir);
-            g_free(rfile);
+            g_free(cam->rcapturefile);
+            cam->rcapturefile = rfile;
+            g_settings_set_string(cam->gc, CAM_SETTINGS_REMOTE_SAVE_FILE, rfile);
             g_free(uri);
 
             return 0;
