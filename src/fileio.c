@@ -71,6 +71,9 @@ add_rgb_text(guchar *image, int width, int height, char *cstring,
     int total;
     gchar *image_label;
 
+    if (!image || width < 4 + CHAR_WIDTH || height < CHAR_HEIGHT + 2)
+        return 0;
+
     if (str == TRUE && date == TRUE) {
         image_label = g_strdup_printf("%s - %s", cstring, format);
     } else if (str == TRUE && date == FALSE) {
@@ -92,14 +95,16 @@ add_rgb_text(guchar *image, int width, int height, char *cstring,
 #pragma GCC diagnostic pop
     g_free(image_label);
 
+    len = MIN(len, (width - 4) / CHAR_WIDTH);
+
     for (y = 0; y < CHAR_HEIGHT; y++) {
         /* locate text in lower left corner of image */
-        ptr = image + 3 * width * (height - CHAR_HEIGHT - 2 + y) + 12;
+        ptr = image + (size_t)3 * width * (height - CHAR_HEIGHT - 2 + y) + 12;
 
         /* loop for each character in the string */
         for (x = 0; x < len; x++) {
             /* locate the character in the fontdata array */
-            f = fontdata[line[x] * CHAR_HEIGHT + y];
+            f = fontdata[(guchar)line[x] * CHAR_HEIGHT + y];
 
             /* loop for each column of font data */
         for (i = CHAR_WIDTH - 1; i >= 0; i--) {
