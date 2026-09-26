@@ -163,7 +163,7 @@ static GOptionEntry options[] = {
     {"height", 'y', 0, G_OPTION_ARG_INT, &y,
      N_("capture height"), NULL},
     {"format", 0, 0, G_OPTION_ARG_STRING, &pixel_format,
-     N_("force a four-character V4L2 pixel format (for example GRBG)"), "FOURCC"},
+     N_("force a V4L2 pixel format (for example GRBG or GREY)"), "FOURCC"},
     {"max", 'M', 0, G_OPTION_ARG_NONE, &max,
      N_("maximum capture size"), NULL},
     {"min", 'm', 0, G_OPTION_ARG_NONE, &min,
@@ -257,6 +257,7 @@ static void activate(GtkApplication *app)
     cam_t *cam = g_new0(cam_t, 1);
     GtkWidget *widget, *window;
     unsigned int i;
+    char fourcc[4];
 
     /* set non-zero default values */
     cam->size = PICHALF;
@@ -287,15 +288,20 @@ static void activate(GtkApplication *app)
 
     cam->debug = debug;
     if (pixel_format) {
-        if (strlen(pixel_format) == 4) {
-            cam->requested_pixformat =
-                v4l2_fourcc(pixel_format[0], pixel_format[1],
-                            pixel_format[2], pixel_format[3]);
-            cam->force_pixformat = TRUE;
-        } else {
-            g_warning("Ignoring invalid pixel format '%s': expected four characters",
-                      pixel_format);
+        if (strlen(pixel_format) > 4) {
+            g_printerr("Invalid pixformat: '%s'\n", pixel_format);
+            exit(1);
         }
+        for (i = 0; i < strlen(pixel_format); i++)
+            fourcc[i] = pixel_format[i];
+
+        for (; i < 4; i++)
+            fourcc[i] = ' ';
+
+        cam->requested_pixformat = v4l2_fourcc(fourcc[0], fourcc[1],
+                                               fourcc[2], fourcc[3]);
+        cam->force_pixformat = TRUE;
+        dont_use_libv4l = TRUE;
     }
 
     if (ver) {
@@ -311,7 +317,7 @@ static void activate(GtkApplication *app)
     if (half)
         cam->size = PICHALF;
 
-    if (!dont_use_libv4l && cam->force_pixformat)
+    if (!dont_use_libv4l)
         cam->use_libv4l = TRUE;
 
     if (use_read) {

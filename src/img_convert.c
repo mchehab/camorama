@@ -9,6 +9,13 @@
 #include "img_ffmpeg.h"
 #include "camera-backend.h"
 
+#ifndef V4L2_PIX_FMT_YUVA32
+#define V4L2_PIX_FMT_YUVA32 v4l2_fourcc('Y', 'U', 'V', 'A')
+#endif
+#ifndef V4L2_PIX_FMT_YUVX32
+#define V4L2_PIX_FMT_YUVX32 v4l2_fourcc('Y', 'U', 'V', 'X')
+#endif
+
 #define BYTE_CLAMP(a) CLAMP(a, 0, 255)
 
 /*
@@ -36,15 +43,58 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_ARGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
     { V4L2_PIX_FMT_XRGB32,  32, -1, -1,  IMG_COLORMAP_RGB },
 
-    /* YUV 16-bit formats */
+    { V4L2_PIX_FMT_RGBA32,  32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGBX32,  32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRA32,  32, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRX32,  32, -1, -1,  IMG_COLORMAP_RGB },
+
+    /* YUV formats up to 16 bits per pixel */
+    { V4L2_PIX_FMT_YUV32,   32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_AYUV32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_XYUV32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_VUYA32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_VUYX32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUVA32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUVX32,  32, -1, -1,  IMG_COLORMAP_YCBCR },
+
+    { V4L2_PIX_FMT_YUV24,   24, -1, -1,  IMG_COLORMAP_YCBCR },
+
     { V4L2_PIX_FMT_YUYV,    16, -1, -1,  IMG_COLORMAP_YCBCR },
     { V4L2_PIX_FMT_UYVY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
     { V4L2_PIX_FMT_YVYU,    16, -1, -1,  IMG_COLORMAP_YCBCR },
     { V4L2_PIX_FMT_VYUY,    16, -1, -1,  IMG_COLORMAP_YCBCR },
 
+    { V4L2_PIX_FMT_YUV565,  16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV555,  16, -1, -1,  IMG_COLORMAP_YCBCR },
+    { V4L2_PIX_FMT_YUV444,  16, -1, -1,  IMG_COLORMAP_YCBCR },
+
 #ifdef HAVE_FFMPEG
     { V4L2_PIX_FMT_MJPEG,    0, -1, -1 , IMG_COLORMAP_JPEG },
 #endif
+
+    /* lossy decoding RGB Formats */
+    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB555,  16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ARGB555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XRGB555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGBA555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGBX555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ABGR555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XBGR555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRA555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRX555, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB555X, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB444,  16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ARGB444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XRGB444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGBA444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGBX444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_ABGR444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_XBGR444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRA444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_BGRX444, 16, -1, -1,  IMG_COLORMAP_RGB },
+    { V4L2_PIX_FMT_RGB332,   8, -1, -1,  IMG_COLORMAP_RGB },
 
     /* Semi-planar YUV formats (12-bits average) */
     { V4L2_PIX_FMT_NV12,     8,  1, -1,  IMG_COLORMAP_YCBCR },
@@ -55,18 +105,24 @@ static const struct img_format supported_formats[] = {
     { V4L2_PIX_FMT_YVU420,   8,  1,  1,  IMG_COLORMAP_YCBCR },
     { V4L2_PIX_FMT_YUV422P,  8,  0,  1,  IMG_COLORMAP_YCBCR },
 
-    /* lossy decoding RGB Formats */
-    { V4L2_PIX_FMT_RGB565,  16, -1, -1,  IMG_COLORMAP_RGB },
-    { V4L2_PIX_FMT_RGB565X, 16, -1, -1,  IMG_COLORMAP_RGB },
-
     /* Bayer formats */
     { V4L2_PIX_FMT_SBGGR8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SGBRG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SGRBG8,   8, -1, -1,  IMG_COLORMAP_OTHER },
     { V4L2_PIX_FMT_SRGGB8,   8, -1, -1,  IMG_COLORMAP_OTHER },
+
 #ifdef HAVE_FFMPEG
     { V4L2_PIX_FMT_H264,     0, -1, -1,  IMG_COLORMAP_YCBCR },
 #endif
+
+    /*
+     * Grey formats - lowest priority as those usually require forcing it
+     */
+    { V4L2_PIX_FMT_GREY,     8, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_Y10,     16, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_Y12,     16, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_Y16,     16, -1, -1,  IMG_COLORMAP_OTHER },
+    { V4L2_PIX_FMT_Y16_BE,  16, -1, -1,  IMG_COLORMAP_OTHER },
 
 };
 
@@ -155,6 +211,134 @@ static void copy_two_pixels(cam_t *cam,
     int i;
 
     switch (cam->pixformat) {
+    case V4L2_PIX_FMT_RGB332:
+        for (i = 0; i < 2; i++) {
+            unsigned char p = plane0[i];
+
+            *(*dst)++ = ((p >> 5) & 0x07) * 255 / 7;
+            *(*dst)++ = ((p >> 2) & 0x07) * 255 / 7;
+            *(*dst)++ = (p & 0x03) * 255 / 3;
+        }
+        break;
+    case V4L2_PIX_FMT_RGB444:
+    case V4L2_PIX_FMT_ARGB444:
+    case V4L2_PIX_FMT_XRGB444:
+    case V4L2_PIX_FMT_RGBA444:
+    case V4L2_PIX_FMT_RGBX444:
+    case V4L2_PIX_FMT_ABGR444:
+    case V4L2_PIX_FMT_XBGR444:
+    case V4L2_PIX_FMT_BGRA444:
+    case V4L2_PIX_FMT_BGRX444:
+        for (i = 0; i < 2; i++) {
+            unsigned int r, g, b;
+
+            pix = plane0[0] | (plane0[1] << 8);
+            switch (cam->pixformat) {
+            case V4L2_PIX_FMT_RGB444:
+            case V4L2_PIX_FMT_ARGB444:
+            case V4L2_PIX_FMT_XRGB444:
+                r = (pix >> 8) & 0xf;
+                g = (pix >> 4) & 0xf;
+                b = pix & 0xf;
+                break;
+            case V4L2_PIX_FMT_RGBA444:
+            case V4L2_PIX_FMT_RGBX444:
+                r = (pix >> 12) & 0xf;
+                g = (pix >> 8) & 0xf;
+                b = (pix >> 4) & 0xf;
+                break;
+            case V4L2_PIX_FMT_ABGR444:
+            case V4L2_PIX_FMT_XBGR444:
+                r = pix & 0xf;
+                g = (pix >> 4) & 0xf;
+                b = (pix >> 8) & 0xf;
+                break;
+            default:
+                r = (pix >> 4) & 0xf;
+                g = (pix >> 8) & 0xf;
+                b = (pix >> 12) & 0xf;
+                break;
+            }
+            *(*dst)++ = r * 17;
+            *(*dst)++ = g * 17;
+            *(*dst)++ = b * 17;
+            plane0 += 2;
+        }
+        break;
+    case V4L2_PIX_FMT_RGB555:
+    case V4L2_PIX_FMT_ARGB555:
+    case V4L2_PIX_FMT_XRGB555:
+    case V4L2_PIX_FMT_RGBA555:
+    case V4L2_PIX_FMT_RGBX555:
+    case V4L2_PIX_FMT_ABGR555:
+    case V4L2_PIX_FMT_XBGR555:
+    case V4L2_PIX_FMT_BGRA555:
+    case V4L2_PIX_FMT_BGRX555:
+    case V4L2_PIX_FMT_RGB555X:
+        for (i = 0; i < 2; i++) {
+            unsigned int r, g, b;
+
+            pix = (cam->pixformat == V4L2_PIX_FMT_RGB555X) ?
+                  (plane0[0] << 8) | plane0[1] : plane0[0] | (plane0[1] << 8);
+            switch (cam->pixformat) {
+            case V4L2_PIX_FMT_RGB555:
+            case V4L2_PIX_FMT_ARGB555:
+            case V4L2_PIX_FMT_XRGB555:
+            case V4L2_PIX_FMT_RGB555X:
+                r = (pix >> 10) & 0x1f;
+                g = (pix >> 5) & 0x1f;
+                b = pix & 0x1f;
+                break;
+            case V4L2_PIX_FMT_RGBA555:
+            case V4L2_PIX_FMT_RGBX555:
+                r = (pix >> 11) & 0x1f;
+                g = (pix >> 6) & 0x1f;
+                b = (pix >> 1) & 0x1f;
+                break;
+            case V4L2_PIX_FMT_ABGR555:
+            case V4L2_PIX_FMT_XBGR555:
+                r = pix & 0x1f;
+                g = (pix >> 5) & 0x1f;
+                b = (pix >> 10) & 0x1f;
+                break;
+            default:
+                r = (pix >> 1) & 0x1f;
+                g = (pix >> 6) & 0x1f;
+                b = (pix >> 11) & 0x1f;
+                break;
+            }
+            *(*dst)++ = (r << 3) | (r >> 2);
+            *(*dst)++ = (g << 3) | (g >> 2);
+            *(*dst)++ = (b << 3) | (b >> 2);
+            plane0 += 2;
+        }
+        break;
+    case V4L2_PIX_FMT_GREY:
+    case V4L2_PIX_FMT_Y10:
+    case V4L2_PIX_FMT_Y12:
+    case V4L2_PIX_FMT_Y16:
+    case V4L2_PIX_FMT_Y16_BE:
+        for (i = 0; i < 2; i++) {
+            unsigned int y;
+
+            if (cam->pixformat == V4L2_PIX_FMT_GREY)
+                y = plane0[0];
+            else {
+                pix = cam->pixformat == V4L2_PIX_FMT_Y16_BE ?
+                      (plane0[0] << 8) | plane0[1] : plane0[0] | (plane0[1] << 8);
+                if (cam->pixformat == V4L2_PIX_FMT_Y10)
+                    y = pix >> 2;
+                else if (cam->pixformat == V4L2_PIX_FMT_Y12)
+                    y = pix >> 4;
+                else
+                    y = pix >> 8;
+            }
+            *(*dst)++ = y;
+            *(*dst)++ = y;
+            *(*dst)++ = y;
+            plane0 += cam->pixformat == V4L2_PIX_FMT_GREY ? 1 : 2;
+        }
+        break;
     case V4L2_PIX_FMT_RGB565X: /* rrrrrggg gggbbbbb */
         for (i = 0; i < 2; i++) {
             pix = (plane0[0] << 8) + plane0[1];
@@ -209,6 +393,58 @@ static void copy_two_pixels(cam_t *cam,
             convert_yuv(c, plane0[i], u, v, dst);
 
         break;
+    case V4L2_PIX_FMT_YUV444:
+    case V4L2_PIX_FMT_YUV555:
+    case V4L2_PIX_FMT_YUV565:
+        for (i = 0; i < 2; i++) {
+            int32_t y, u, v;
+
+            pix = plane0[0] | (plane0[1] << 8);
+            if (cam->pixformat == V4L2_PIX_FMT_YUV444) {
+                y = ((pix >> 8) & 0x0f) * 17;
+                u = ((pix >> 4) & 0x0f) * 17;
+                v = (pix & 0x0f) * 17;
+            } else if (cam->pixformat == V4L2_PIX_FMT_YUV555) {
+                y = ((pix >> 10) & 0x1f) * 255 / 31;
+                u = ((pix >> 5) & 0x1f) * 255 / 31;
+                v = (pix & 0x1f) * 255 / 31;
+            } else {
+                y = ((pix >> 11) & 0x1f) * 255 / 31;
+                u = ((pix >> 5) & 0x3f) * 255 / 63;
+                v = (pix & 0x1f) * 255 / 31;
+            }
+            convert_yuv(c, y, u, v, dst);
+            plane0 += 2;
+        }
+        break;
+    case V4L2_PIX_FMT_YUV24:
+        for (i = 0; i < 2; i++) {
+            convert_yuv(c, plane0[0], plane0[1], plane0[2], dst);
+            plane0 += 3;
+        }
+        break;
+    case V4L2_PIX_FMT_YUV32:
+    case V4L2_PIX_FMT_AYUV32:
+    case V4L2_PIX_FMT_XYUV32:
+        for (i = 0; i < 2; i++) {
+            convert_yuv(c, plane0[1], plane0[2], plane0[3], dst);
+            plane0 += 4;
+        }
+        break;
+    case V4L2_PIX_FMT_VUYA32:
+    case V4L2_PIX_FMT_VUYX32:
+        for (i = 0; i < 2; i++) {
+            convert_yuv(c, plane0[2], plane0[1], plane0[0], dst);
+            plane0 += 4;
+        }
+        break;
+    case V4L2_PIX_FMT_YUVA32:
+    case V4L2_PIX_FMT_YUVX32:
+        for (i = 0; i < 2; i++) {
+            convert_yuv(c, plane0[0], plane0[1], plane0[2], dst);
+            plane0 += 4;
+        }
+        break;
     case V4L2_PIX_FMT_YUV420:
     case V4L2_PIX_FMT_YUV422P:
         u = plane1[0];
@@ -234,6 +470,24 @@ static void copy_two_pixels(cam_t *cam,
             *(*dst)++ = plane0[2];
             *(*dst)++ = plane0[3];
 
+            plane0 += 4;
+        }
+        break;
+    case V4L2_PIX_FMT_RGBA32:
+    case V4L2_PIX_FMT_RGBX32:
+        for (i = 0; i < 2; i++) {
+            *(*dst)++ = plane0[0];
+            *(*dst)++ = plane0[1];
+            *(*dst)++ = plane0[2];
+            plane0 += 4;
+        }
+        break;
+    case V4L2_PIX_FMT_BGRA32:
+    case V4L2_PIX_FMT_BGRX32:
+        for (i = 0; i < 2; i++) {
+            *(*dst)++ = plane0[3];
+            *(*dst)++ = plane0[2];
+            *(*dst)++ = plane0[1];
             plane0 += 4;
         }
         break;
