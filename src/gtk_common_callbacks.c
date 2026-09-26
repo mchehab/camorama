@@ -48,10 +48,23 @@ extern GtkWidget *host_entry, *protocol, *rdir_entry, *filename_entry;
  * pref callbacks
  */
 
+static void enable_default_timestamp(cam_t *cam)
+{
+    GtkWidget *draw_date;
+
+    if (cam->usestring || cam->usedate)
+        return;
+
+    draw_date = GTK_WIDGET(gtk_builder_get_object(cam->xml, "tscb"));
+    gtk_common_set_toggle_active(draw_date, TRUE);
+}
+
 void ts_func(GtkWidget *rb, cam_t *cam)
 {
     cam->timestamp = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_TIMESTAMP, cam->timestamp);
+    if (cam->timestamp)
+        enable_default_timestamp(cam);
 }
 
 void customstring_func(GtkWidget *rb, cam_t *cam)
@@ -214,6 +227,8 @@ void rts_func(GtkWidget *rb, cam_t *cam)
     cam->rtimestamp = gtk_common_get_toggle_active(rb);
     g_settings_set_boolean(cam->gc, CAM_SETTINGS_REMOTE_TIMESTAMP,
                            cam->rtimestamp);
+    if (cam->rtimestamp)
+        enable_default_timestamp(cam);
 }
 
 static int apply_remote_pref(cam_t *cam)
