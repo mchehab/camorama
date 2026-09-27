@@ -14,14 +14,51 @@ managed platform.
 
 The build dependencies vary along distributions.
 
-On Fedora:
+On Fedora with gtk4:
 
 ```
-sudo dnf install gcc meson ninja-build gettext libv4l-devel gtk3-devel \
-	gdk-pixbuf2-devel pulseaudio-libs-devel alsa-lib-devel
+sudo dnf install meson ninja-build gcc g++ desktop-file-utils \
+                 make libappstream-glib gettext-devel cairo-devel \
+                 gnome-common gdk-pixbuf2-devel gnome-common \
+                 gtk4-devel
 ```
 
-For libcamera support, add `libcamera-devel`.
+For gtk3, replace `gtk4-devel` with `gtk3-devel`.
+
+For libv4l2:
+```
+sudo dnf install libv4l-devel
+```
+
+for audio playback:
+```
+sudo dnf install pulseaudio-libs-devel alsa-lib-devel
+```
+
+For MPEG support using Fedora's free packages:
+
+```
+sudo dnf install libavcodec-free-devel libavutil-free-devel \
+                 libswscale-free-devel
+```
+
+Or, alternatively, if RPMfusion repository is enabled:
+
+```
+sudo dnf install ffmpeg-devel
+```
+
+For libcamera (experimental support):
+```
+sudo dnf install libcamera-devel
+```
+
+To be able to run unit tests (for developers only):
+```
+sudo dnf install libcmocka libcmocka-devel \
+                 ffmpeg-free  # or ffmpeg, when RPMfusion is used
+
+```
 
 On Ubuntu/Debian:
 
