@@ -957,16 +957,25 @@ static void v4l_get_supported_resolutions(cam_t *cam,
 
     if (cam->debug == TRUE) {
         for (i = 0; i < cam->n_res; i++) {
-            printf("Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps, %d depth)\n",
-            i,
-                cam->res[i].pixformat & 0xff,
-            (cam->res[i].pixformat >> 8) & 0xff,
-            (cam->res[i].pixformat >> 16) & 0xff,
-                cam->res[i].pixformat >> 24,
-            cam->res[i].x,
-            cam->res[i].y,
-            (double)cam->res[i].max_fps,
-            cam->res[i].depth);
+            if (cam->res[i].depth)
+                printf("Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps, %d depth)\n",
+                       i,
+                       cam->res[i].pixformat & 0xff,
+                       (cam->res[i].pixformat >> 8) & 0xff,
+                       (cam->res[i].pixformat >> 16) & 0xff,
+                       cam->res[i].pixformat >> 24,
+                       cam->res[i].x, cam->res[i].y,
+                       (double)cam->res[i].max_fps,
+                       cam->res[i].depth);
+            else
+                printf("Resolution #%d: FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
+                       i,
+                       cam->res[i].pixformat & 0xff,
+                       (cam->res[i].pixformat >> 8) & 0xff,
+                       (cam->res[i].pixformat >> 16) & 0xff,
+                       cam->res[i].pixformat >> 24,
+                       cam->res[i].x, cam->res[i].y,
+                       (double)cam->res[i].max_fps);
         }
     }
 }
