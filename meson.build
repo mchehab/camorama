@@ -69,7 +69,7 @@ if enable_ffmpeg
     sources += 'src/img_ffmpeg.c'
 
     # ffmeg binary is needed for img_convert unittests
-    ffmpeg = find_program('ffmpeg')
+    ffmpeg = find_program('ffmpeg', required: false)
     png_file = 'smpte_color_bars.png'
 endif
 
@@ -85,8 +85,10 @@ conf.set('HAVE_AUDIO', enable_audio)
 conf.set('HAVE_LIBV4L2', libv4l2_dep.found())
 conf.set('HAVE_FFMPEG', enable_ffmpeg)
 conf.set('HAVE_LIBCAMERA', libcamera_dep.found())
-if enable_ffmpeg
+if ffmpeg.found()
   conf.set_quoted('FFMPEG_BIN', ffmpeg.full_path())
+endif
+if enable_ffmpeg
   conf.set_quoted('PNG_FILE', png_file)
 endif
 conf.set_quoted('PACKAGE', meson.project_name())

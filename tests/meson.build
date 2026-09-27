@@ -8,7 +8,7 @@ unittest_sources += ['test_streaming.c']
 unittest_sources += ['test_filter_chain.c', 'test_image_bounds.c']
 enable_unittest = true
 
-if enable_ffmpeg
+if enable_ffmpeg and ffmpeg.found()
     configure_file(input: png_file, output: png_file, copy: true)
 
     unittest_sources += ['test_utils.c', 'test_img_convert.c',
