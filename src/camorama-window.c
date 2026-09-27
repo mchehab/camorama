@@ -61,6 +61,7 @@ static void frame_rate_changed(GtkWidget *widget, gpointer data)
         else
             stop_streaming(cam);
     }
+    cam_audio_stop(cam);
     if (!cam_set_frame_interval(cam,
                                 &g_array_index(intervals,
                                                struct v4l2_fract, selected)) &&
@@ -72,6 +73,8 @@ static void frame_rate_changed(GtkWidget *widget, gpointer data)
         else
             start_streaming(cam);
     }
+    if (cam->audio_enabled && cam->audio_available && !cam_audio_start(cam))
+        g_warning("Could not restart audio bridge after frame-rate change");
     cam_stream_start(cam);
 }
 

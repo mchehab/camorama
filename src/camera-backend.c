@@ -211,10 +211,34 @@ int print_cam(cam_t *cam)
 int start_streaming(cam_t *cam)
 {
     const struct camera_backend *backend = camera_backend_get(cam);
+    struct v4l2_fract interval;
+    float fps;
 
     if (!backend->start_streaming)
         return -ENOTSUP;
     backend->start_streaming(cam);
+
+    if (cam->debug == TRUE) {
+        if (cam_get_frame_interval(cam, &interval)) {
+            fps = ((float)interval.denominator)/interval.numerator;
+
+            printf("Start streaming with FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
+                   cam->pixformat & 0xff,
+                   (cam->pixformat >> 8) & 0xff,
+                   (cam->pixformat >> 16) & 0xff,
+                   cam->pixformat >> 24,
+                   cam->width, cam->height,
+                   fps);
+    } else {
+            printf("Start streaming with FOURCC: '%c%c%c%c'(%dx%d) \n",
+                   cam->pixformat & 0xff,
+                   (cam->pixformat >> 8) & 0xff,
+                   (cam->pixformat >> 16) & 0xff,
+                   cam->pixformat >> 24,
+                   cam->width, cam->height);
+       }
+    }
+
     return 0;
 }
 
@@ -231,10 +255,34 @@ int stop_streaming(cam_t *cam)
 int start_streaming_userptr(cam_t *cam)
 {
     const struct camera_backend *backend = camera_backend_get(cam);
+    struct v4l2_fract interval;
+    float fps;
 
     if (!backend->start_streaming_userptr)
         return -ENOTSUP;
     backend->start_streaming_userptr(cam);
+
+    if (cam->debug == TRUE) {
+        if (cam_get_frame_interval(cam, &interval)) {
+            fps = ((float)interval.denominator)/interval.numerator;
+
+            printf("Start streaming with FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
+                   cam->pixformat & 0xff,
+                   (cam->pixformat >> 8) & 0xff,
+                   (cam->pixformat >> 16) & 0xff,
+                   cam->pixformat >> 24,
+                   cam->width, cam->height,
+                   fps);
+    } else {
+            printf("Start streaming with FOURCC: '%c%c%c%c'(%dx%d) \n",
+                   cam->pixformat & 0xff,
+                   (cam->pixformat >> 8) & 0xff,
+                   (cam->pixformat >> 16) & 0xff,
+                   cam->pixformat >> 24,
+                   cam->width, cam->height);
+       }
+    }
+
     return 0;
 }
 

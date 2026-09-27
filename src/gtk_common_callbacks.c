@@ -12,6 +12,8 @@
 
 #include "camorama-window.h"
 
+#include "audio.h"
+
 #include <assert.h>
 #include <ftw.h>
 #include <glib/gi18n.h>
@@ -520,26 +522,19 @@ void cam_change_size(cam_t *cam, const gchar *name)
         }
     }
 
-    try_set_win_info(cam, pixformat, &width, &height);
-
-    /* Nothing to do, so just return */
-    if (width == cam->width && height == cam->height)
-        return;
-
     cam_stream_stop(cam);
-
-    cam->width = width;
-    cam->height = height;
-
-    if (cam->debug == TRUE)
-        printf("name = %s\n", name);
-
+    cam_audio_stop(cam);
     if (cam->read == FALSE) {
         if (cam->userptr)
             stop_streaming_userptr(cam);
         else if (cam->read == FALSE)
             stop_streaming(cam);
     }
+
+    /* Run try to properly adjust width/height */
+    try_set_win_info(cam, pixformat, &width, &height);
+    cam->width = width;
+    cam->height = height;
 
     set_win_info(cam);
     if (cam->read || camera_backend_is_libcamera(cam))
@@ -555,6 +550,8 @@ void cam_change_size(cam_t *cam, const gchar *name)
     }
     if (cam_stream_configure(cam))
         cam_stream_start(cam);
+    if (cam->audio_enabled && cam->audio_available && !cam_audio_start(cam))
+        g_warning("Could not restart audio bridge after resolution change");
     set_image_scale(cam);
 }
 
