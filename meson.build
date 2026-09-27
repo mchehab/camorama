@@ -40,11 +40,8 @@ dependencies = [
 ]
 
 libpulse_dep = dependency('libpulse', required: get_option('audio'))
-libpulse_simple_dep = dependency('libpulse-simple', required: get_option('audio'))
-
-if libpulse_dep.found() and libpulse_simple_dep.found()
+if libpulse_dep.found()
     dependencies += libpulse_dep
-    dependencies += libpulse_simple_dep
 
     sources += 'src/audio.c'
 

@@ -8,20 +8,31 @@
 #include <pulse/introspect.h>
 #include <pulse/mainloop.h>
 #include <pulse/proplist.h>
-#include <pulse/simple.h>
+#include <pulse/stream.h>
+#include <string.h>
 #include <stdlib.h>
 
+/* Scratch buffer: only a copy space for pa_stream_peek(). The actual
+ * latency is set by the per-stream buffer attributes below. */
+#define AUDIO_BUFFER_FRAMES 4096
+
 struct cam_audio {
-    pa_simple *capture;
-    pa_simple *playback;
+    pa_mainloop *mainloop;
+    pa_context *context;
+    pa_stream *capture;
+    pa_stream *playback;
     GThread *thread;
     GMutex lock;
     gboolean stop;
+    gboolean capture_ready;
+    gboolean playback_ready;
     gboolean debug;
     gdouble volume;
     guint64 bytes;
     gint peak;
     gint64 last_report;
+    int16_t *buffer;
+    guint channels;
 };
 
 static gint get_audio_card(const gchar *video_dev, gboolean debug)
@@ -202,75 +213,159 @@ gboolean cam_audio_available(cam_t *cam)
     return TRUE;
 }
 
-static gpointer capture_audio(gpointer user_data)
+static void stream_state_cb(pa_stream *s, void *userdata)
 {
-    struct cam_audio *audio = user_data;
-    int16_t buffer[2048];
+    struct cam_audio *audio = userdata;
+    pa_stream_state_t state = pa_stream_get_state(s);
 
-    while (TRUE) {
-        gdouble volume;
-        int error;
-
+    switch (state) {
+    case PA_STREAM_READY:
+        if (s == audio->capture)
+            audio->capture_ready = TRUE;
+        else
+            audio->playback_ready = TRUE;
+        break;
+    case PA_STREAM_FAILED:
         g_mutex_lock(&audio->lock);
-        if (audio->stop) {
-            g_mutex_unlock(&audio->lock);
-            break;
-        }
-        volume = audio->volume;
+        audio->stop = TRUE;
         g_mutex_unlock(&audio->lock);
+        break;
+    default:
+        break;
+    }
+}
 
-        if (pa_simple_read(audio->capture, buffer, sizeof(buffer), &error) < 0) {
-            gboolean stop;
+static void stream_suspended_cb(pa_stream *s, void *userdata)
+{
+    struct cam_audio *audio = userdata;
 
-            g_mutex_lock(&audio->lock);
-            stop = audio->stop;
-            g_mutex_unlock(&audio->lock);
-            if (!stop)
-                g_warning("PulseAudio read failed: %s", pa_strerror(error));
+    /* libpulse reports device suspension not as a state but via this
+     * callback; keep the ready flags in sync. */
+    if (s == audio->capture)
+        audio->capture_ready = !pa_stream_is_suspended(s);
+    else
+        audio->playback_ready = !pa_stream_is_suspended(s);
+}
+
+static void capture_read_cb(pa_stream *s, size_t nbytes, void *userdata)
+{
+    struct cam_audio *audio = userdata;
+    const void *data;
+    size_t frag, total = 0;
+    uint32_t framesize = audio->channels * (uint32_t)sizeof(int16_t);
+    size_t limit = (size_t)AUDIO_BUFFER_FRAMES * framesize;
+    gdouble volume;
+    int error;
+
+    g_mutex_lock(&audio->lock);
+    if (audio->stop) {
+        g_mutex_unlock(&audio->lock);
+        return;
+    }
+    volume = audio->volume;
+    g_mutex_unlock(&audio->lock);
+
+    /* Consume every fragment the server asked for (pa_stream_peek
+     * only returns a single fragment, so loop until the request is
+     * fulfilled). Holes (data == NULL with frag > 0) must be dropped
+     * too, to advance the read index. */
+    while (nbytes > 0) {
+        if (pa_stream_peek(s, &data, &frag) < 0 || frag == 0)
+            break;
+        if (frag > nbytes) {
+            /* Fragments cannot be partially consumed: discard the
+             * whole fragment and stop processing this request. */
+            pa_stream_drop(s);
             break;
         }
-
-        if (audio->debug) {
-            guint i;
-
-            for (i = 0; i < G_N_ELEMENTS(buffer); i++)
-                audio->peak = MAX(audio->peak, ABS((int)buffer[i]));
-        }
-
-        if (volume != 1.) {
-            guint i;
-
-            for (i = 0; i < G_N_ELEMENTS(buffer); i++)
-                buffer[i] = CLAMP(buffer[i] * volume, INT16_MIN, INT16_MAX);
-        }
-
-        if (pa_simple_write(audio->playback, buffer, sizeof(buffer),
-                            &error) < 0) {
-            gboolean stop;
-
+        if (!data) {
+            /* Hole. */
+            pa_stream_drop(s);
+        } else if (total + frag <= limit) {
             g_mutex_lock(&audio->lock);
-            stop = audio->stop;
+            memcpy(audio->buffer + total, data, frag);
             g_mutex_unlock(&audio->lock);
-            if (!stop)
-                g_warning("PulseAudio write failed: %s", pa_strerror(error));
-        } else if (audio->debug) {
-            gint64 now = g_get_monotonic_time();
+            pa_stream_drop(s);
+            total += frag;
+        } else {
+            /* No scratch space left: discard it. */
+            pa_stream_drop(s);
+        }
+        nbytes -= frag;
+    }
+    if (total == 0)
+        return;
 
-            audio->bytes += sizeof(buffer);
-            if (now - audio->last_report >= G_USEC_PER_SEC) {
-                printf("PulseAudio: audio bridge: %.1f KiB/s, peak %.1f%%\n",
+    if (audio->debug) {
+        guint i;
+        for (i = 0; i < total / framesize * audio->channels; i++)
+            audio->peak = MAX(audio->peak, ABS((int)audio->buffer[i]));
+    }
+
+    if (volume != 1.) {
+        guint i;
+        for (i = 0; i < total / framesize * audio->channels; i++)
+            audio->buffer[i] = (int16_t)CLAMP(audio->buffer[i] * volume,
+                                              INT16_MIN, INT16_MAX);
+    }
+
+    /* If the sink is suspended (e.g. unplugged), just drop the chunk. */
+    if (!audio->playback_ready)
+        return;
+
+    error = pa_stream_write(audio->playback, audio->buffer, total, NULL, 0,
+                            PA_SEEK_RELATIVE);
+    if (error < 0) {
+        g_mutex_lock(&audio->lock);
+        if (!audio->stop)
+            g_warning("PulseAudio write failed: %s", pa_strerror(error));
+        g_mutex_unlock(&audio->lock);
+    } else if (audio->debug) {
+        gint64 now = g_get_monotonic_time();
+        pa_usec_t latency;
+        int negative;
+
+        audio->bytes += total;
+        if (now - audio->last_report >= G_USEC_PER_SEC) {
+            if (pa_stream_get_latency(audio->playback, &latency, &negative) >= 0)
+                printf("PulseAudio: audio bridge: %.1f KiB/s, peak %.1f%%, "
+                       "latency %.0f ms\n",
                        audio->bytes * G_USEC_PER_SEC /
                        (1024. * (now - audio->last_report)),
-                       audio->peak * 100. / INT16_MAX);
-                audio->bytes = 0;
-                audio->peak = 0;
-                audio->last_report = now;
-            }
+                       audio->peak * 100. / INT16_MAX,
+                       (double)latency / 1000.);
+            audio->bytes = 0;
+            audio->peak = 0;
+            audio->last_report = now;
         }
     }
+}
+
+/*
+ * The worker thread only drives the PA mainloop; all data movement
+ * happens in the read callback, so nothing blocks waiting on the sink.
+ */
+static gpointer audio_thread(gpointer user_data)
+{
+    struct cam_audio *audio = user_data;
+    int ret;
+
+    while (!audio->stop &&
+           pa_mainloop_iterate(audio->mainloop, TRUE, &ret) >= 0)
+        ;
 
     return NULL;
 }
+
+static const pa_buffer_attr low_latency_attr = {
+    .tlength    = 0,
+    .fragsize   = 10 * 1024,
+    .minreq     = 0,
+
+    /* Confine latency inside a limit considering 30 fps */
+    .prebuf     = 48000 * 4 / 30,
+    .maxlength  = 48000 * 4 / 15,
+};
 
 gboolean cam_audio_start(cam_t *cam)
 {
@@ -280,10 +375,13 @@ gboolean cam_audio_start(cam_t *cam)
         .rate = 48000,
         .channels = 2,
     };
-    gchar *source;
-    gchar *sink;
+    pa_mainloop *mainloop;
+    pa_context *context;
+    pa_stream *capture, *playback;
+    pa_context_state_t state;
+    gchar *source, *sink;
     gint card;
-    int error;
+    int ret;
 
     if (cam->audio)
         return TRUE;
@@ -293,7 +391,6 @@ gboolean cam_audio_start(cam_t *cam)
         g_warning("No audio device is associated with %s", cam->video_dev);
         return FALSE;
     }
-
     source = get_audio_source(card, cam->debug);
     if (!source) {
         g_warning("No PulseAudio source is associated with %s", cam->video_dev);
@@ -306,38 +403,99 @@ gboolean cam_audio_start(cam_t *cam)
         return FALSE;
     }
 
-    audio = g_new0(struct cam_audio, 1);
-    audio->capture = pa_simple_new(NULL, "Camorama", PA_STREAM_RECORD,
-                                   source, "Webcam audio", &sample_spec,
-                                   NULL, NULL, &error);
-    g_free(source);
-    if (!audio->capture) {
-        g_warning("Could not record from PulseAudio: %s", pa_strerror(error));
+    mainloop = pa_mainloop_new();
+    if (!mainloop) {
+        g_free(source);
         g_free(sink);
-        g_free(audio);
         return FALSE;
+    }
+    context = pa_context_new(pa_mainloop_get_api(mainloop), "Camorama");
+    if (!context)
+        goto free_mainloop;
+    if (pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
+        goto free_context;
+
+    do {
+        if (pa_mainloop_iterate(mainloop, TRUE, &ret) < 0)
+            goto disconnect;
+        state = pa_context_get_state(context);
+    } while (state != PA_CONTEXT_READY &&
+             state != PA_CONTEXT_FAILED && state != PA_CONTEXT_TERMINATED);
+    if (state != PA_CONTEXT_READY)
+        goto disconnect;
+
+    capture = pa_stream_new(context, "Camorama capture", &sample_spec, NULL);
+    if (!capture)
+        goto disconnect;
+    playback = pa_stream_new(context, "Camorama playback", &sample_spec, NULL);
+    if (!playback) {
+        pa_stream_unref(capture);
+        goto disconnect;
     }
 
-    audio->playback = pa_simple_new(NULL, "Camorama", PA_STREAM_PLAYBACK,
-                                    sink, "Webcam audio", &sample_spec,
-                                    NULL, NULL, &error);
-    g_free(sink);
-    if (!audio->playback) {
-        g_warning("Could not connect to PulseAudio: %s", pa_strerror(error));
-        pa_simple_free(audio->capture);
+    audio = g_new0(struct cam_audio, 1);
+    audio->mainloop = mainloop;
+    audio->context = context;
+    audio->channels = sample_spec.channels;
+    audio->buffer = g_malloc((gsize)AUDIO_BUFFER_FRAMES *
+                            sample_spec.channels * sizeof(int16_t));
+    if (!audio->buffer) {
+        pa_stream_unref(playback);
+        pa_stream_unref(capture);
         g_free(audio);
-        return FALSE;
+        goto disconnect;
     }
+    audio->capture = capture;
+    audio->playback = playback;
 
     g_mutex_init(&audio->lock);
     audio->debug = cam->debug;
     audio->volume = cam->audio_volume;
     audio->last_report = g_get_monotonic_time();
     if (audio->debug)
-        printf("PulseAudio: starting audio bridge\n");
-    audio->thread = g_thread_new("camorama-audio", capture_audio, audio);
+        printf("PulseAudio: starting audio bridge (low latency)\n");
+
+    pa_stream_set_state_callback(capture, stream_state_cb, audio);
+    pa_stream_set_state_callback(playback, stream_state_cb, audio);
+    pa_stream_set_suspended_callback(capture, stream_suspended_cb, audio);
+    pa_stream_set_suspended_callback(playback, stream_suspended_cb, audio);
+    pa_stream_set_read_callback(capture, capture_read_cb, audio);
+
+    ret = pa_stream_connect_playback(playback, sink, &low_latency_attr,
+                                     PA_STREAM_AUTO_TIMING_UPDATE |
+                                     PA_STREAM_INTERPOLATE_TIMING,
+                                     NULL, NULL);
+    if (ret < 0) {
+        g_warning("Could not play to PulseAudio: %s", pa_strerror(ret));
+        goto cleanup;
+    }
+    ret = pa_stream_connect_record(capture, source, &low_latency_attr, 0);
+    if (ret < 0) {
+        g_warning("Could not record from PulseAudio: %s", pa_strerror(ret));
+        goto cleanup;
+    }
+
+    g_free(source);
+    g_free(sink);
+
+    audio->thread = g_thread_new("camorama-audio", audio_thread, audio);
     cam->audio = audio;
     return TRUE;
+
+cleanup:
+    g_free(source);
+    g_free(sink);
+    pa_stream_unref(playback);
+    pa_stream_unref(capture);
+    g_free(audio->buffer);
+    g_free(audio);
+disconnect:
+    pa_context_disconnect(context);
+free_context:
+    pa_context_unref(context);
+free_mainloop:
+    pa_mainloop_free(mainloop);
+    return FALSE;
 }
 
 void cam_audio_stop(cam_t *cam)
@@ -349,15 +507,26 @@ void cam_audio_stop(cam_t *cam)
 
     if (audio->debug)
         printf("PulseAudio: stopping audio bridge\n");
+
     g_mutex_lock(&audio->lock);
     audio->stop = TRUE;
     g_mutex_unlock(&audio->lock);
+
+    /* Drop whatever is still queued so nothing plays after stop. */
+    pa_stream_flush(audio->capture, NULL, NULL);
+    pa_stream_flush(audio->playback, NULL, NULL);
+
+    pa_mainloop_quit(audio->mainloop, 0);
     g_thread_join(audio->thread);
-    pa_simple_free(audio->capture);
-    pa_simple_free(audio->playback);
-    g_mutex_clear(&audio->lock);
-    if (audio->debug)
-        printf("PulseAudio: audio bridge stopped\n");
+
+    pa_stream_disconnect(audio->capture);
+    pa_stream_unref(audio->capture);
+    pa_stream_disconnect(audio->playback);
+    pa_stream_unref(audio->playback);
+    pa_context_disconnect(audio->context);
+    pa_context_unref(audio->context);
+    pa_mainloop_free(audio->mainloop);
+    g_free(audio->buffer);
     g_free(audio);
     cam->audio = NULL;
 }
