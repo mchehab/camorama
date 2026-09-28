@@ -799,13 +799,292 @@ msgstr "Teorainn ama agus tú ag fanacht le frámaí (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "theip ar stopadh ag sruthú (%s), ag scor...."
 
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Ainm comhad"
+#: cpp/libcamera.cpp:688
+msgid "Brightness"
+msgstr "Gile"
 
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Roghnachais"
+#: cpp/libcamera.cpp:690
+msgid "Contrast"
+msgstr "Codarsnacht"
+
+#: cpp/libcamera.cpp:692
+msgid "Saturation"
+msgstr "Dath"
+
+#: cpp/libcamera.cpp:694
+msgid "Sharpness"
+msgstr "Géire"
+
+#: cpp/libcamera.cpp:696
+msgid "Hue"
+msgstr "Lí"
+
+#: cpp/libcamera.cpp:698
+msgid "Gamma"
+msgstr "Gáma"
+
+#: cpp/libcamera.cpp:700
+msgid "Exposure"
+msgstr "Nochtadh"
+
+#: cpp/libcamera.cpp:702
+msgid "Gain, Automatic"
+msgstr "Gnóthachan uathoibríoch"
+
+#: cpp/libcamera.cpp:704
+msgid "Gain"
+msgstr "Gnóthachan"
+
+#: cpp/libcamera.cpp:706
+msgid "Auto Exposure"
+msgstr "Nochtadh uathoibríoch"
+
+#: cpp/libcamera.cpp:708
+msgid "Exposure Time, Absolute"
+msgstr "Am nochta, absalóideach"
+
+#: cpp/libcamera.cpp:710
+msgid "Exposure, Dynamic Framerate"
+msgstr "Nochtadh, ráta frámaí dinimiciúil"
+
+#: cpp/libcamera.cpp:1227
+msgid "Auto"
+msgstr "Uathoibríoch"
+
+#: cpp/libcamera.cpp:1229
+msgid "Manual"
+msgstr "Láimhe"
+
+#: cpp/libcamera.cpp:247 cpp/libcamera.cpp:973
+msgid "failed to start camera manager"
+msgstr "Theip ar bhainisteoir ceamara a thosú"
+
+#: cpp/libcamera.cpp:254
+msgid "no cameras were found"
+msgstr "Ní bhfuarthas aon cheamara"
+
+#: cpp/libcamera.cpp:271
+msgid "camera '%s' was not found"
+msgstr "Ní bhfuarthas ceamara ‘%s’"
+
+#: cpp/libcamera.cpp:283
+msgid "failed to acquire camera"
+msgstr "Theip ar an gceamara a chur in áirithe"
+
+#: cpp/libcamera.cpp:290 cpp/libcamera.cpp:430
+msgid "camera has no viewfinder stream"
+msgstr "Níl sruth amhairc aimsitheora ag an gceamara"
+
+#: cpp/libcamera.cpp:345
+msgid "camera cannot provide a supported viewfinder stream"
+msgstr ""
+"Ní féidir leis an gceamara sruth amhairc aimsitheora tacaithe a chur ar fáil"
+
+#: cpp/libcamera.cpp:372
+msgid "camera has no supported viewfinder resolutions"
+msgstr "Níl aon taifeach amhairc aimsitheora tacaithe ag an gceamara"
+
+#: cpp/libcamera.cpp:378
+msgid "camera has no supported format for its resolutions"
+msgstr "Níl formáid thacaithe ag an gceamara dá thaifigh"
+
+#: cpp/libcamera.cpp:437
+msgid "camera has no supported format for the selected resolution"
+msgstr "Níl formáid thacaithe ag an gceamara don taifeach roghnaithe"
+
+#: cpp/libcamera.cpp:447
+msgid "requested stream configuration is invalid"
+msgstr "Tá cumraíocht an tsrutha iarrtha neamhbhailí"
+
+#: cpp/libcamera.cpp:451
+msgid "camera adjusted the stream to a non-RGB format"
+msgstr "D’athraigh an ceamara an sruth go formáid nach RGB í"
+
+#: cpp/libcamera.cpp:457
+msgid "failed to configure camera"
+msgstr "Theip ar an gceamara a chumrú"
+
+#: cpp/libcamera.cpp:479
+msgid "camera is not configured"
+msgstr "Níl an ceamara cumraithe"
+
+#: cpp/libcamera.cpp:489
+msgid "failed to allocate capture buffers"
+msgstr "Theip ar mhaoláin gabhála a leithdháileadh"
+
+#: cpp/libcamera.cpp:502
+msgid "failed to map capture buffer"
+msgstr "Theip ar mhaolán gabhála a mhapáil"
+
+#: cpp/libcamera.cpp:508
+msgid "capture buffer is smaller than the configured image"
+msgstr "Tá an maolán gabhála níos lú ná an íomhá chumraithe"
+
+#: cpp/libcamera.cpp:521
+msgid "failed to create capture request"
+msgstr "Theip ar iarratas gabhála a chruthú"
+
+#: cpp/libcamera.cpp:528
+msgid "failed to attach capture buffer"
+msgstr "Theip ar mhaolán gabhála a cheangal"
+
+#: cpp/libcamera.cpp:550
+msgid "failed to start capture"
+msgstr "Theip ar ghabháil a thosú"
+
+#: cpp/libcamera.cpp:559
+msgid "failed to queue capture request"
+msgstr "Theip ar iarratas gabhála a chur sa chiú"
+
+#: cpp/libcamera.cpp:613
+msgid "timed out waiting for a frame"
+msgstr "Chuaigh an t-am istigh agus fráma á fheitheamh"
+
+#: cpp/libcamera.cpp:617
+msgid "capture stopped while waiting for a frame"
+msgstr "Stopadh an ghabháil agus fráma á fheitheamh"
+
+#: cpp/libcamera.cpp:621
+msgid "output buffer is too small"
+msgstr "Tá an maolán aschuir róbheag"
+
+#: cpp/libcamera.cpp:1211
+msgid "Image processing controls"
+msgstr "Rialuithe próiseála íomhá"
+
+#: cpp/libcamera.cpp:1237
+msgid "libcamera: %s: %s"
+msgstr "libcamera: %s: %s"
+
+#: cpp/libcamera.cpp:1238 src/main.c:372
+msgid "unknown error"
+msgstr "Earráid anaithnid"
+
+#: cpp/libcamera.cpp:1252
+msgid "could not open camera"
+msgstr "Níorbh fhéidir an ceamara a oscailt"
+
+#: cpp/libcamera.cpp:1352
+msgid "could not query camera formats"
+msgstr "Níorbh fhéidir formáidí an cheamara a fhiosrú"
+
+#: cpp/libcamera.cpp:1396
+msgid "could not configure camera"
+msgstr "Níorbh fhéidir an ceamara a chumrú"
+
+#: cpp/libcamera.cpp:1480
+msgid "could not start camera"
+msgstr "Níorbh fhéidir an ceamara a thosú"
+
+#: data/camorama-gtk3.ui:73 data/camorama-gtk4.ui:70
+msgid "_Quit"
+msgstr "_Scoir"
+
+#: data/camorama-gtk3.ui:92 data/camorama-gtk4.ui:87
+msgid "_Preferences"
+msgstr "_Sainroghanna"
+
+#: data/camorama-gtk3.ui:142 data/camorama-gtk4.ui:133
+msgid "_About"
+msgstr "_Maidir"
+
+#: data/camorama-gtk3.ui:168 data/camorama-gtk4.ui:149
+msgid "_File"
+msgstr "_Comhad"
+
+#: data/camorama-gtk3.ui:181 data/camorama-gtk4.ui:156
+msgid "_Edit"
+msgstr "_Eagar"
+
+#: data/camorama-gtk3.ui:207 data/camorama-gtk3.ui:803
+#: data/camorama-gtk4.ui:170 data/camorama-gtk4.ui:1282
+msgid "_Help"
+msgstr "_Cabhair"
+
+#: data/camorama-gtk3.ui:772 data/camorama-gtk4.ui:584
+msgid "Resolution:"
+msgstr "Taifeach:"
+
+#: data/camorama-gtk3.ui:774 data/camorama-gtk4.ui:586
+msgid "FPS:"
+msgstr "FPS:"
+
+#: data/camorama-gtk3.ui:817 data/camorama-gtk4.ui:1289
+#: src/gtk4_callbacks.c:592
+msgid "_Close"
+msgstr "_Dún"
+
+#: data/camorama-gtk4.ui:1331
+msgid "_OK"
+msgstr "_OK"
+
+#: src/camorama-window.c:84
+msgid "%.2f fps"
+msgstr "%.2f fps"
+
+#: src/camorama-window.c:292
+msgid "<No effect>"
+msgstr "<Gan éifeacht>"
+
+#: src/camorama-window.c:293
+msgid "<Disable>"
+msgstr "<Díchumasaigh>"
+
+#: src/camorama-window.c:639
+msgid "_Audio"
+msgstr "_Fuaim"
+
+#: src/camorama-window.c:645
+msgid "Volume"
+msgstr "Toirt"
+
+#: src/gtk4_callbacks.c:170 src/gtk4_callbacks.c:219
+msgid "_Select"
+msgstr "_Roghnaigh"
+
+#: src/gtk4_callbacks.c:220
+msgid "_Cancel"
+msgstr "_Cealaigh"
+
+#: src/gtk_common_callbacks.c:966
+msgid "Camera controls"
+msgstr "Rialuithe ceamara"
+
+#: src/gtk_common_callbacks.c:1062
+msgid "Reset to default"
+msgstr "Athshocraigh go dtí an réamhshocrú"
+
+#: src/main.c:163
+msgid "camera device or libcamera camera ID to use"
+msgstr "gléas ceamara nó aitheantas ceamara libcamera le húsáid"
+
+#: src/main.c:165
+msgid "use libcamera instead of Video4Linux"
+msgstr "úsáid libcamera in ionad Video4Linux"
+
+#: src/main.c:173
+msgid "force a V4L2 pixel format (for example GRBG or GREY)"
+msgstr "cuir formáid picteilín V4L2 i bhfeidhm (mar shampla GRBG nó GREY)"
+
+#: src/main.c:187
+msgid "use libv4l2 for Video4Linux devices"
+msgstr "úsáid libv4l2 le gléasanna Video4Linux"
+
+#: src/main.c:265
+msgid "--libcamera and --libv4l2 cannot be used together.\n"
+msgstr "ní féidir --libcamera agus --libv4l2 a úsáid le chéile.\n"
+
+#: src/main.c:279
+msgid "This build has no libcamera support.\n"
+msgstr "Níl tacaíocht libcamera sa leagan seo.\n"
+
+#: src/main.c:371
+msgid "Couldn't load builder file: %s"
+msgstr "Níorbh fhéidir comhad an tógálaí a luchtú: %s"
+
+#: src/main.c:509
+msgid "Capturing video"
+msgstr "Físeán á ghabháil"
 
 #~ msgid "Preferences"
 #~ msgstr "Roghnachais"

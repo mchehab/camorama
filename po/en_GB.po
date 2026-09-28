@@ -793,13 +793,291 @@ msgstr "Timeout while waiting for frames (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "failed to stop streaming (%s), exiting...."
 
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Filename"
+#: cpp/libcamera.cpp:247 cpp/libcamera.cpp:973
+msgid "failed to start camera manager"
+msgstr "failed to start camera manager"
 
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Preferences"
+#: cpp/libcamera.cpp:254
+msgid "no cameras were found"
+msgstr "no cameras were found"
+
+#: cpp/libcamera.cpp:271
+msgid "camera '%s' was not found"
+msgstr "camera '%s' was not found"
+
+#: cpp/libcamera.cpp:283
+msgid "failed to acquire camera"
+msgstr "failed to acquire camera"
+
+#: cpp/libcamera.cpp:290 cpp/libcamera.cpp:430
+msgid "camera has no viewfinder stream"
+msgstr "camera has no viewfinder stream"
+
+#: cpp/libcamera.cpp:345
+msgid "camera cannot provide a supported viewfinder stream"
+msgstr "camera cannot provide a supported viewfinder stream"
+
+#: cpp/libcamera.cpp:372
+msgid "camera has no supported viewfinder resolutions"
+msgstr "camera has no supported viewfinder resolutions"
+
+#: cpp/libcamera.cpp:378
+msgid "camera has no supported format for its resolutions"
+msgstr "camera has no supported format for its resolutions"
+
+#: cpp/libcamera.cpp:437
+msgid "camera has no supported format for the selected resolution"
+msgstr "camera has no supported format for the selected resolution"
+
+#: cpp/libcamera.cpp:447
+msgid "requested stream configuration is invalid"
+msgstr "requested stream configuration is invalid"
+
+#: cpp/libcamera.cpp:451
+msgid "camera adjusted the stream to a non-RGB format"
+msgstr "camera adjusted the stream to a non-RGB format"
+
+#: cpp/libcamera.cpp:457
+msgid "failed to configure camera"
+msgstr "failed to configure camera"
+
+#: cpp/libcamera.cpp:479
+msgid "camera is not configured"
+msgstr "camera is not configured"
+
+#: cpp/libcamera.cpp:489
+msgid "failed to allocate capture buffers"
+msgstr "failed to allocate capture buffers"
+
+#: cpp/libcamera.cpp:502
+msgid "failed to map capture buffer"
+msgstr "failed to map capture buffer"
+
+#: cpp/libcamera.cpp:508
+msgid "capture buffer is smaller than the configured image"
+msgstr "capture buffer is smaller than the configured image"
+
+#: cpp/libcamera.cpp:521
+msgid "failed to create capture request"
+msgstr "failed to create capture request"
+
+#: cpp/libcamera.cpp:528
+msgid "failed to attach capture buffer"
+msgstr "failed to attach capture buffer"
+
+#: cpp/libcamera.cpp:550
+msgid "failed to start capture"
+msgstr "failed to start capture"
+
+#: cpp/libcamera.cpp:559
+msgid "failed to queue capture request"
+msgstr "failed to queue capture request"
+
+#: cpp/libcamera.cpp:613
+msgid "timed out waiting for a frame"
+msgstr "timed out waiting for a frame"
+
+#: cpp/libcamera.cpp:617
+msgid "capture stopped while waiting for a frame"
+msgstr "capture stopped while waiting for a frame"
+
+#: cpp/libcamera.cpp:621
+msgid "output buffer is too small"
+msgstr "output buffer is too small"
+
+#: cpp/libcamera.cpp:688
+msgid "Brightness"
+msgstr "Brightness"
+
+#: cpp/libcamera.cpp:690
+msgid "Contrast"
+msgstr "Contrast"
+
+#: cpp/libcamera.cpp:692
+msgid "Saturation"
+msgstr "Saturation"
+
+#: cpp/libcamera.cpp:694
+msgid "Sharpness"
+msgstr "Sharpness"
+
+#: cpp/libcamera.cpp:696
+msgid "Hue"
+msgstr "Hue"
+
+#: cpp/libcamera.cpp:698
+msgid "Gamma"
+msgstr "Gamma"
+
+#: cpp/libcamera.cpp:700
+msgid "Exposure"
+msgstr "Exposure"
+
+#: cpp/libcamera.cpp:702
+msgid "Gain, Automatic"
+msgstr "Gain, Automatic"
+
+#: cpp/libcamera.cpp:704
+msgid "Gain"
+msgstr "Gain"
+
+#: cpp/libcamera.cpp:706
+msgid "Auto Exposure"
+msgstr "Auto Exposure"
+
+#: cpp/libcamera.cpp:708
+msgid "Exposure Time, Absolute"
+msgstr "Exposure Time, Absolute"
+
+#: cpp/libcamera.cpp:710
+msgid "Exposure, Dynamic Framerate"
+msgstr "Exposure, Dynamic Framerate"
+
+#: cpp/libcamera.cpp:1211
+msgid "Image processing controls"
+msgstr "Image processing controls"
+
+#: cpp/libcamera.cpp:1227
+msgid "Auto"
+msgstr "Auto"
+
+#: cpp/libcamera.cpp:1229
+msgid "Manual"
+msgstr "Manual"
+
+#: cpp/libcamera.cpp:1237
+msgid "libcamera: %s: %s"
+msgstr "libcamera: %s: %s"
+
+#: cpp/libcamera.cpp:1238 src/main.c:372
+msgid "unknown error"
+msgstr "unknown error"
+
+#: cpp/libcamera.cpp:1252
+msgid "could not open camera"
+msgstr "could not open camera"
+
+#: cpp/libcamera.cpp:1352
+msgid "could not query camera formats"
+msgstr "could not query camera formats"
+
+#: cpp/libcamera.cpp:1396
+msgid "could not configure camera"
+msgstr "could not configure camera"
+
+#: cpp/libcamera.cpp:1480
+msgid "could not start camera"
+msgstr "could not start camera"
+
+#: data/camorama-gtk3.ui:73 data/camorama-gtk4.ui:70
+msgid "_Quit"
+msgstr "_Quit"
+
+#: data/camorama-gtk3.ui:92 data/camorama-gtk4.ui:87
+msgid "_Preferences"
+msgstr "_Preferences"
+
+#: data/camorama-gtk3.ui:142 data/camorama-gtk4.ui:133
+msgid "_About"
+msgstr "_About"
+
+#: data/camorama-gtk3.ui:168 data/camorama-gtk4.ui:149
+msgid "_File"
+msgstr "_File"
+
+#: data/camorama-gtk3.ui:181 data/camorama-gtk4.ui:156
+msgid "_Edit"
+msgstr "_Edit"
+
+#: data/camorama-gtk3.ui:207 data/camorama-gtk3.ui:803
+#: data/camorama-gtk4.ui:170 data/camorama-gtk4.ui:1282
+msgid "_Help"
+msgstr "_Help"
+
+#: data/camorama-gtk3.ui:772 data/camorama-gtk4.ui:584
+msgid "Resolution:"
+msgstr "Resolution:"
+
+#: data/camorama-gtk3.ui:774 data/camorama-gtk4.ui:586
+msgid "FPS:"
+msgstr "FPS:"
+
+#: data/camorama-gtk3.ui:817 data/camorama-gtk4.ui:1289
+#: src/gtk4_callbacks.c:592
+msgid "_Close"
+msgstr "_Close"
+
+#: data/camorama-gtk4.ui:1331
+msgid "_OK"
+msgstr "_OK"
+
+#: src/camorama-window.c:84
+msgid "%.2f fps"
+msgstr "%.2f fps"
+
+#: src/camorama-window.c:292
+msgid "<No effect>"
+msgstr "<No effect>"
+
+#: src/camorama-window.c:293
+msgid "<Disable>"
+msgstr "<Disable>"
+
+#: src/camorama-window.c:639
+msgid "_Audio"
+msgstr "_Audio"
+
+#: src/camorama-window.c:645
+msgid "Volume"
+msgstr "Volume"
+
+#: src/gtk4_callbacks.c:170 src/gtk4_callbacks.c:219
+msgid "_Select"
+msgstr "_Select"
+
+#: src/gtk4_callbacks.c:220
+msgid "_Cancel"
+msgstr "_Cancel"
+
+#: src/gtk_common_callbacks.c:966
+msgid "Camera controls"
+msgstr "Camera controls"
+
+#: src/gtk_common_callbacks.c:1062
+msgid "Reset to default"
+msgstr "Reset to default"
+
+#: src/main.c:163
+msgid "camera device or libcamera camera ID to use"
+msgstr "camera device or libcamera camera ID to use"
+
+#: src/main.c:165
+msgid "use libcamera instead of Video4Linux"
+msgstr "use libcamera instead of Video4Linux"
+
+#: src/main.c:173
+msgid "force a V4L2 pixel format (for example GRBG or GREY)"
+msgstr "force a V4L2 pixel format (for example GRBG or GREY)"
+
+#: src/main.c:187
+msgid "use libv4l2 for Video4Linux devices"
+msgstr "use libv4l2 for Video4Linux devices"
+
+#: src/main.c:265
+msgid "--libcamera and --libv4l2 cannot be used together.\n"
+msgstr "--libcamera and --libv4l2 cannot be used together.\n"
+
+#: src/main.c:279
+msgid "This build has no libcamera support.\n"
+msgstr "This build has no libcamera support.\n"
+
+#: src/main.c:371
+msgid "Couldn't load builder file: %s"
+msgstr "Couldn't load builder file: %s"
+
+#: src/main.c:509
+msgid "Capturing video"
+msgstr "Capturing video"
 
 #~ msgid "Preferences"
 #~ msgstr "Preferences"
