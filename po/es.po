@@ -16,8 +16,7 @@ msgstr ""
 "POT-Creation-Date: 2022-03-24 15:31+0100\n"
 "PO-Revision-Date: 2022-12-30 18:20+0000\n"
 "Last-Translator: Emilio Herrera <ehespinosa57@gmail.com>\n"
-"Language-Team: Spanish <https://translate.fedoraproject.org/projects/"
-"camorama/master/es/>\n"
+"Language-Team: Spanish <https://translate.fedoraproject.org/projects/camorama/master/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -294,7 +293,8 @@ msgid "Video device"
 msgstr "Dispositivo de vídeo"
 
 #: data/org.gnome.camorama.gschema.xml.in:22
-msgid "The unix file system path to the device that's assigned to your camera."
+msgid ""
+"The unix file system path to the device that's assigned to your camera."
 msgstr ""
 "La ruta del sistema de archivos unix al dispositivo que está asignado a su "
 "cámara."
@@ -345,7 +345,8 @@ msgid ""
 "capture, this key toggles the saving of pictures locally."
 msgstr ""
 "Al capturar imágenes por medio del botón «Tomar fotografía», o con la "
-"captura automática, esta clave activa el guardado de las imágenes localmente."
+"captura automática, esta clave activa el guardado de las imágenes "
+"localmente."
 
 #: data/org.gnome.camorama.gschema.xml.in:51
 msgid "Protocol to use for remote access"
@@ -356,16 +357,21 @@ msgid ""
 "The URI name of the protocol that will be used to connect to a remote "
 "server. Can be ftp, sftp or smb"
 msgstr ""
+"Nombre URI del protocolo que se usará para conectarse a un servidor remoto. "
+"Puede ser ftp, sftp o smb"
 
 #: data/org.gnome.camorama.gschema.xml.in:56
 msgid "Complete URI used to store image snapshots remotely"
 msgstr ""
+"URI completa utilizada para almacenar capturas de imágenes de forma remota"
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
-"The complete URI of the last successful access to a remote server, including "
-"protocol, host and remote directory"
+"The complete URI of the last successful access to a remote server, including"
+" protocol, host and remote directory"
 msgstr ""
+"URI completa del último acceso correcto a un servidor remoto, incluidos el "
+"protocolo, el host y el directorio remoto"
 
 #: data/org.gnome.camorama.gschema.xml.in:61
 msgid "Append timestamp to remote filename"
@@ -494,6 +500,7 @@ msgstr "ancho de la captura"
 #: data/org.gnome.camorama.gschema.xml.in:127
 msgid "Image width used by the camera. Zero means autoselect"
 msgstr ""
+"Ancho de imagen utilizado por la cámara. Cero significa selección automática"
 
 #: src/callbacks.c:531
 msgid "translator_credits"
@@ -502,25 +509,25 @@ msgstr "Pablo Gonzalo del Campo <pablodc@bigfoot.com>, 2003"
 #: src/callbacks.c:644
 #, c-format
 msgid "%.2f fps - current     %.2f fps - average"
-msgstr ""
+msgstr "%.2f fps - actual     %.2f fps - promedio"
 
 #: src/callbacks.c:1241
 msgid "Can't allocate memory to store devices"
-msgstr ""
+msgstr "No se puede asignar memoria para almacenar los dispositivos"
 
 #: src/callbacks.c:1353
 msgid "Didn't find any camera"
-msgstr ""
+msgstr "No se encontró ninguna cámara"
 
 #: src/callbacks.c:1449
 #, c-format
 msgid "%dx%d (max %.1f fps)"
-msgstr ""
+msgstr "%dx%d (máx. %.1f fps)"
 
 #: src/callbacks.c:1453
 #, c-format
 msgid "%dx%d"
-msgstr ""
+msgstr "%dx%d"
 
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
@@ -534,7 +541,7 @@ msgstr "Espejo"
 #. TRANSLATORS: This is a noun
 #: src/camorama-filter-reichardt.c:274
 msgid "Reichardt"
-msgstr ""
+msgstr "Reichardt"
 
 #: src/camorama-window.c:116
 msgid "_Add Filter"
@@ -683,7 +690,7 @@ msgstr "usar read() en vez de  mmap()"
 
 #: src/main.c:49
 msgid "disable video scaler"
-msgstr ""
+msgstr "desactivar el escalador de vídeo"
 
 #: src/main.c:51 src/main.c:53
 #, fuzzy
@@ -718,12 +725,12 @@ msgstr "No se ha podido encontrar el archivo de pixmap: %s"
 #: src/main.c:180
 #, c-format
 msgid "%s not found. Falling back to %s"
-msgstr ""
+msgstr "No se encontró %s. Se usará %s en su lugar"
 
 #: src/main.c:183
 #, c-format
 msgid "%s not found."
-msgstr ""
+msgstr "No se encontró %s."
 
 #: src/v4l.c:1087
 #, fuzzy, c-format
@@ -737,7 +744,7 @@ msgstr ""
 #: src/v4l.c:1096
 #, c-format
 msgid "Device %s is not a video capture device."
-msgstr ""
+msgstr "El dispositivo %s no es un dispositivo de captura de vídeo."
 
 #: src/v4l.c:1270 src/v4l.c:1340
 #, c-format
@@ -750,7 +757,7 @@ msgstr ""
 
 #: src/v4l.c:1348
 msgid "Device video formats are incompatible with camorama."
-msgstr ""
+msgstr "Los formatos de vídeo del dispositivo son incompatibles con Camorama."
 
 #: src/v4l.c:1364
 #, fuzzy, c-format
@@ -768,55 +775,60 @@ msgstr ""
 #, c-format
 msgid "Could not set format to %c%c%c%c on video device (%s)."
 msgstr ""
+"No se pudo establecer el formato %c%c%c%c en el dispositivo de vídeo (%s)."
 
 #: src/v4l.c:1404
 #, c-format
 msgid "Returned width is zero on video device (%s)!"
-msgstr ""
+msgstr "¡El ancho devuelto por el dispositivo de vídeo (%s) es cero!"
 
 #: src/v4l.c:1428 src/v4l.c:1511
 #, c-format
 msgid "VIDIOC_REQBUFS  --  could not request buffers (%s), exiting...."
 msgstr ""
+"VIDIOC_REQBUFS  --  no se pudieron solicitar búferes (%s); saliendo...."
 
 #: src/v4l.c:1437 src/v4l.c:1520 src/v4l.c:1535
 msgid "could not allocate memory for video buffers, exiting...."
-msgstr ""
+msgstr "no se pudo asignar memoria para los búferes de vídeo; saliendo...."
 
 #: src/v4l.c:1453
 #, c-format
 msgid "VIDIOC_QUERYBUF  --  could not query buffers (%s), exiting...."
 msgstr ""
+"VIDIOC_QUERYBUF  --  no se pudieron consultar los búferes (%s); saliendo...."
 
 #: src/v4l.c:1468
 #, c-format
 msgid "failed to memory map buffers (%s), exiting...."
-msgstr ""
+msgstr "no se pudieron asignar los búferes en memoria (%s); saliendo...."
 
 #: src/v4l.c:1482
 #, c-format
 msgid "VIDIOC_QBUF  --  could not enqueue buffers (%s), exiting...."
 msgstr ""
+"VIDIOC_QBUF  --  no se pudieron poner en cola los búferes (%s); saliendo...."
 
 #: src/v4l.c:1492 src/v4l.c:1559
 #, c-format
 msgid "failed to start streaming (%s), exiting...."
-msgstr ""
+msgstr "no se pudo iniciar la transmisión (%s); saliendo...."
 
 #: src/v4l.c:1548
 #, c-format
 msgid "VIDIOC_QBUF  --  could not query buffers (%s), exiting...."
 msgstr ""
+"VIDIOC_QBUF  --  no se pudieron consultar los búferes (%s); saliendo...."
 
 #: src/v4l.c:1589 src/v4l.c:1640
 #, c-format
 msgid "Timeout while waiting for frames (%s)"
-msgstr ""
+msgstr "Se agotó el tiempo de espera de los fotogramas (%s)"
 
 #: src/v4l.c:1703 src/v4l.c:1762
 #, c-format
 msgid "failed to stop streaming (%s), exiting...."
-msgstr ""
+msgstr "no se pudo detener la transmisión (%s); saliendo...."
 
 #~ msgid "_File"
 #~ msgstr "_Archivo"

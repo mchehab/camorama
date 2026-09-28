@@ -619,7 +619,7 @@ msgstr ""
 #. TRANSLATORS: http://en.wikipedia.org/wiki/Sobel
 #: src/filter.c:592
 msgid "Sobel"
-msgstr ""
+msgstr "Sobel"
 
 #: src/main.c:31
 msgid "show version and exit"

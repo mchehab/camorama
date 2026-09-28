@@ -80,11 +80,11 @@ msgstr "Piccolo"
 
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
-msgstr ""
+msgstr "Mostra i controlli"
 
 #: data/camorama-gtk3.ui:396 data/camorama-gtk4.ui:381
 msgid "Full Screen"
-msgstr ""
+msgstr "Schermo intero"
 
 #: data/camorama-gtk3.ui:441 data/camorama-gtk4.ui:428
 msgid "Take Picture"
@@ -112,7 +112,7 @@ msgstr "Bilanciamento del bianco:"
 
 #: data/camorama-gtk3.ui:666 data/camorama-gtk4.ui:653
 msgid "Zoom:"
-msgstr ""
+msgstr "Zoom:"
 
 #: data/camorama-gtk3.ui:714
 #, fuzzy
@@ -122,7 +122,7 @@ msgstr "Soglia (ComplessivA)"
 
 #: data/camorama-gtk3.ui:748
 msgid "Channel Threshold:"
-msgstr ""
+msgstr "Soglia per canale:"
 
 #: data/camorama-gtk3.ui:865 data/camorama-gtk4.ui:784
 msgid "<span weight=\"bold\">General</span>"
@@ -290,7 +290,8 @@ msgid "Video device"
 msgstr "Dispositivo video"
 
 #: data/org.gnome.camorama.gschema.xml.in:22
-msgid "The unix file system path to the device that's assigned to your camera."
+msgid ""
+"The unix file system path to the device that's assigned to your camera."
 msgstr ""
 "Il percorso del file system unix del dispositivo assegnato alla fotocamera."
 
@@ -362,8 +363,8 @@ msgstr ""
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
-"The complete URI of the last successful access to a remote server, including "
-"protocol, host and remote directory"
+"The complete URI of the last successful access to a remote server, including"
+" protocol, host and remote directory"
 msgstr ""
 "L'URI completo dell'ultimo accesso riuscito a un server remoto, "
 "inclusoprotocollo, host e directory remota"
@@ -515,12 +516,12 @@ msgstr "Nessuna fotocamera trovata"
 #: src/callbacks.c:1449
 #, c-format
 msgid "%dx%d (max %.1f fps)"
-msgstr ""
+msgstr "%dx%d (max %.1f fps)"
 
 #: src/callbacks.c:1453
 #, c-format
 msgid "%dx%d"
-msgstr ""
+msgstr "%dx%d"
 
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
@@ -534,7 +535,7 @@ msgstr "Specchio"
 #. TRANSLATORS: This is a noun
 #: src/camorama-filter-reichardt.c:274
 msgid "Reichardt"
-msgstr ""
+msgstr "Reichardt"
 
 #: src/camorama-window.c:116
 msgid "_Add Filter"
@@ -685,7 +686,7 @@ msgstr "usare read() piuttosto che mmap()"
 
 #: src/main.c:49
 msgid "disable video scaler"
-msgstr ""
+msgstr "disattiva lo scaler video"
 
 #: src/main.c:51 src/main.c:53
 #, fuzzy
@@ -732,7 +733,7 @@ msgid ""
 "Could not connect to video device (%s).\n"
 "Please check connection. Error: %d"
 msgstr ""
-"Impossibile connettersi al dispositivo video (% s).\n"
+"Impossibile connettersi al dispositivo video (%s).\n"
 "Controlla la connessione. Errore: %d"
 
 #: src/v4l.c:1096
@@ -751,7 +752,7 @@ msgstr ""
 
 #: src/v4l.c:1348
 msgid "Device video formats are incompatible with camorama."
-msgstr ""
+msgstr "I formati video del dispositivo non sono compatibili con camorama."
 
 #: src/v4l.c:1364
 #, fuzzy, c-format
@@ -768,12 +769,12 @@ msgstr ""
 #: src/v4l.c:1385
 #, c-format
 msgid "Could not set format to %c%c%c%c on video device (%s)."
-msgstr ""
+msgstr "Impossibile impostare il formato %c%c%c%c sul dispositivo video (%s)."
 
 #: src/v4l.c:1404
 #, c-format
 msgid "Returned width is zero on video device (%s)!"
-msgstr ""
+msgstr "La larghezza restituita dal dispositivo video (%s) è zero!"
 
 #: src/v4l.c:1428 src/v4l.c:1511
 #, c-format
@@ -789,7 +790,8 @@ msgstr "impossibile memorizzare i buffer della mappa (%s), chiusura...."
 #: src/v4l.c:1453
 #, c-format
 msgid "VIDIOC_QUERYBUF  --  could not query buffers (%s), exiting...."
-msgstr "VIDIOC_QUERYBUF -- impossibile interrogare i buffer (%s), chiusura...."
+msgstr ""
+"VIDIOC_QUERYBUF -- impossibile interrogare i buffer (%s), chiusura...."
 
 #: src/v4l.c:1468
 #, c-format
@@ -808,9 +810,11 @@ msgstr "impossibile avviare lo streaming (%s), chiusura...."
 
 #: src/v4l.c:1548
 #, fuzzy, c-format
-#| msgid "VIDIOC_QUERYBUF  --  could not query buffers (%s), exiting...."
+#| msgid ""
+#| "VIDIOC_QUERYBUF  --  could not query buffers (%s), exiting...."
 msgid "VIDIOC_QBUF  --  could not query buffers (%s), exiting...."
-msgstr "VIDIOC_QUERYBUF -- impossibile interrogare i buffer (%s), chiusura...."
+msgstr ""
+"VIDIOC_QUERYBUF -- impossibile interrogare i buffer (%s), chiusura...."
 
 #: src/v4l.c:1589 src/v4l.c:1640
 #, c-format

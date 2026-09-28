@@ -529,7 +529,7 @@ msgstr "ངོ་འཆར་"
 #. TRANSLATORS: This is a noun
 #: src/camorama-filter-reichardt.c:274
 msgid "Reichardt"
-msgstr ""
+msgstr "Reichardt"
 
 #: src/camorama-window.c:116
 msgid "_Add Filter"

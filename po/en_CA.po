@@ -674,13 +674,13 @@ msgstr ""
 #, fuzzy
 #| msgid "use read() rather than mmap()"
 msgid "use userptr pointer rather than mmap()"
-msgstr "use read() rather than mmap()"
+msgstr "use userptr pointer rather than mmap()"
 
 #: src/main.c:55
 #, fuzzy
 #| msgid "v4l device to use"
 msgid "v4l device input to use"
-msgstr "v4l device to use"
+msgstr "v4l device input to use"
 
 #: src/main.c:117
 #, c-format
