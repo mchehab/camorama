@@ -8,11 +8,8 @@
 #include "support.h"
 #include "camera-backend.h"
 #include "filter.h"
-#include "streaming.h"
 
 #include "camorama-window.h"
-
-#include "audio.h"
 
 #include <assert.h>
 #include <ftw.h>
@@ -522,14 +519,7 @@ void cam_change_size(cam_t *cam, const gchar *name)
         }
     }
 
-    cam_stream_stop(cam);
-    cam_audio_stop(cam);
-    if (cam->read == FALSE) {
-        if (cam->userptr)
-            stop_streaming_userptr(cam);
-        else if (cam->read == FALSE)
-            stop_streaming(cam);
-    }
+    stop_streaming(cam);
 
     /* Run try to properly adjust width/height */
     try_set_win_info(cam, pixformat, &width, &height);
@@ -542,16 +532,7 @@ void cam_change_size(cam_t *cam, const gchar *name)
     cam_set_max_fps(cam);
     frames = frames2 = seconds = 0;
 
-    if (cam->read == FALSE) {
-        if (cam->userptr)
-            start_streaming_userptr(cam);
-        else if (cam->read == FALSE)
-            start_streaming(cam);
-    }
-    if (cam_stream_configure(cam))
-        cam_stream_start(cam);
-    if (cam->audio_enabled && cam->audio_available && !cam_audio_start(cam))
-        g_warning("Could not restart audio bridge after resolution change");
+    start_streaming(cam);
     set_image_scale(cam);
 }
 
@@ -1618,16 +1599,10 @@ void start_camera(cam_t *cam)
 
     /* First step: free used resources, if any */
 
-    cam_stream_stop(cam);
     cam->idle_id = 0;
 
     if (cam->dev >= 0) {
-        if (cam->read == FALSE) {
-            if (cam->userptr)
-                stop_streaming_userptr(cam);
-            else if (cam->read == FALSE)
-                stop_streaming(cam);
-        }
+        stop_streaming(cam);
 
         g_clear_object(&cam->pb);
 
@@ -1674,26 +1649,16 @@ void start_camera(cam_t *cam)
     g_settings_set_string(cam->gc, CAM_SETTINGS_DEVICE, cam->video_dev);
 
     if (cam->read || camera_backend_is_libcamera(cam)) {
-	cam->capture_input = malloc(cam->sizeimage);
-	if (!cam->capture_input) {
-	    printf("Failed to allocate memory for read buffer\n");
-	    exit(0);
-	}
+        cam->capture_input = malloc(cam->sizeimage);
+        if (!cam->capture_input) {
+            printf("Failed to allocate memory for read buffer\n");
+            exit(0);
+        }
     }
-
-    if (cam->read)
-        printf("using read()\n");
-    else if (cam->userptr)
-        start_streaming_userptr(cam);
-    else if (cam->read == FALSE)
-        start_streaming(cam);
-
-    if (cam_stream_configure(cam))
-        cam_stream_start(cam);
 
     if (cam->debug == TRUE)
         print_cam(cam);
 
-    /* Adjust image scale */
+    start_streaming(cam);
     set_image_scale(cam);
 }

@@ -228,8 +228,6 @@ int set_win_info(cam_t *cam);
 int get_supported_resolutions(cam_t *cam, gboolean all_supported);
 int start_streaming(cam_t *cam);
 int stop_streaming(cam_t *cam);
-int start_streaming_userptr(cam_t *cam);
-int stop_streaming_userptr(cam_t *cam);
 
 struct camera_backend {
     const char *name;

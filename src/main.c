@@ -202,16 +202,8 @@ static gboolean close_app(GtkWidget *, cam_t *cam)
     if (cam->idle_id)
         g_source_remove(cam->idle_id);
     cam->idle_id = 0;
-    cam_stream_stop(cam);
 
-    if (cam->read == FALSE) {
-        if (cam->userptr)
-            stop_streaming_userptr(cam);
-        else if (cam->read == FALSE)
-            stop_streaming(cam);
-    }
-
-    cam_audio_stop(cam);
+    stop_streaming(cam);
 
     if (cam->screensaver_inhibit_cookie)
         gtk_application_uninhibit(cam->app,

@@ -2,8 +2,11 @@
 #include <config.h>
 #include <errno.h>
 
-#include "v4l.h"
+#include "audio.h"
 #include "camera-backend.h"
+#include "img_ffmpeg.h"
+#include "v4l.h"
+#include "streaming.h"
 
 static const struct camera_backend *camera_backend_get(const cam_t *cam)
 {
@@ -212,17 +215,29 @@ int start_streaming(cam_t *cam)
 {
     const struct camera_backend *backend = camera_backend_get(cam);
     struct v4l2_fract interval;
+    char *stream_method = "";
     float fps;
 
-    if (!backend->start_streaming)
-        return -ENOTSUP;
-    backend->start_streaming(cam);
+    if (!cam->read) {
+        if (cam->userptr && backend->start_streaming_userptr) {
+            stream_method = "userptr";
+            backend->start_streaming_userptr(cam);
+        } else if (backend->start_streaming) {
+            stream_method = "mmap";
+            backend->start_streaming(cam);
+        } else {
+            return -ENOTSUP;
+        }
+    } else {
+        stream_method = "read";
+    }
 
     if (cam->debug == TRUE) {
         if (cam_get_frame_interval(cam, &interval)) {
             fps = ((float)interval.denominator)/interval.numerator;
 
-            printf("Start streaming with FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
+            printf("Start streaming (%s) with FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
+                   stream_method,
                    cam->pixformat & 0xff,
                    (cam->pixformat >> 8) & 0xff,
                    (cam->pixformat >> 16) & 0xff,
@@ -230,7 +245,8 @@ int start_streaming(cam_t *cam)
                    cam->width, cam->height,
                    fps);
     } else {
-            printf("Start streaming with FOURCC: '%c%c%c%c'(%dx%d) \n",
+            printf("Start streaming (%s) with FOURCC: '%c%c%c%c'(%dx%d) \n",
+                   stream_method,
                    cam->pixformat & 0xff,
                    (cam->pixformat >> 8) & 0xff,
                    (cam->pixformat >> 16) & 0xff,
@@ -238,6 +254,12 @@ int start_streaming(cam_t *cam)
                    cam->width, cam->height);
        }
     }
+
+    if (cam->audio_enabled && cam->audio_available && !cam_audio_start(cam))
+        g_warning("Could not restart audio bridge");
+
+    if (cam_stream_configure(cam))
+        cam_stream_start(cam);
 
     return 0;
 }
@@ -246,53 +268,18 @@ int stop_streaming(cam_t *cam)
 {
     const struct camera_backend *backend = camera_backend_get(cam);
 
-    if (!backend->stop_streaming)
-        return -ENOTSUP;
-    backend->stop_streaming(cam);
-    return 0;
-}
+    cam_audio_stop(cam);
+    cam_stream_stop(cam);
 
-int start_streaming_userptr(cam_t *cam)
-{
-    const struct camera_backend *backend = camera_backend_get(cam);
-    struct v4l2_fract interval;
-    float fps;
-
-    if (!backend->start_streaming_userptr)
-        return -ENOTSUP;
-    backend->start_streaming_userptr(cam);
-
-    if (cam->debug == TRUE) {
-        if (cam_get_frame_interval(cam, &interval)) {
-            fps = ((float)interval.denominator)/interval.numerator;
-
-            printf("Start streaming with FOURCC: '%c%c%c%c' (%dx%d %.2f fps)\n",
-                   cam->pixformat & 0xff,
-                   (cam->pixformat >> 8) & 0xff,
-                   (cam->pixformat >> 16) & 0xff,
-                   cam->pixformat >> 24,
-                   cam->width, cam->height,
-                   fps);
-    } else {
-            printf("Start streaming with FOURCC: '%c%c%c%c'(%dx%d) \n",
-                   cam->pixformat & 0xff,
-                   (cam->pixformat >> 8) & 0xff,
-                   (cam->pixformat >> 16) & 0xff,
-                   cam->pixformat >> 24,
-                   cam->width, cam->height);
-       }
+    if (!cam->read) {
+        if (cam->userptr && backend->stop_streaming_userptr)
+                backend->stop_streaming_userptr(cam);
+        else if (backend->stop_streaming)
+                backend->stop_streaming(cam);
     }
 
-    return 0;
-}
+    img_ffmpeg_free_converter(&cam->converter);
 
-int stop_streaming_userptr(cam_t *cam)
-{
-    const struct camera_backend *backend = camera_backend_get(cam);
-
-    if (!backend->stop_streaming_userptr)
-        return -ENOTSUP;
-    backend->stop_streaming_userptr(cam);
     return 0;
 }
 
