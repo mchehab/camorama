@@ -1086,6 +1086,45 @@ msgstr "Níorbh fhéidir comhad an tógálaí a luchtú: %s"
 msgid "Capturing video"
 msgstr "Físeán á ghabháil"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Seinn fuaim ceamara gréasáin"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Gabhann fuaim ón gceamara agus seinneann í tríd an aschur PulseAudio reatha."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Toirt fuaime ceamara gréasáin"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Socraíonn sé toirt athsheinm fhuaim an cheamara gréasáin."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Leithead na príomhfhuinneoige"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Leithead na príomhfhuinneoige. Ciallaíonn nialas an méid réamhshocraithe a "
+"úsáid."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Airde na príomhfhuinneoige"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Airde na príomhfhuinneoige. Ciallaíonn nialas an méid réamhshocraithe a "
+"úsáid."
+
 #~ msgid "Preferences"
 #~ msgstr "Roghnachais"
 

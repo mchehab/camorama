@@ -322,6 +322,7 @@ msgstr "cao bắt"
 #: data/org.gnome.camorama.gschema.xml.in:37
 msgid "Image height used by the camera. Zero means autoselect"
 msgstr ""
+"Chiều cao hình ảnh do máy ảnh sử dụng. Số không có nghĩa là tự động chọn."
 
 #: data/org.gnome.camorama.gschema.xml.in:41
 #, fuzzy
@@ -355,16 +356,20 @@ msgid ""
 "The URI name of the protocol that will be used to connect to a remote "
 "server. Can be ftp, sftp or smb"
 msgstr ""
+"Tên URI của giao thức dùng để kết nối với máy chủ từ xa. Có thể là ftp, sftp"
+" hoặc smb."
 
 #: data/org.gnome.camorama.gschema.xml.in:56
 msgid "Complete URI used to store image snapshots remotely"
-msgstr ""
+msgstr "URI đầy đủ dùng để lưu ảnh chụp từ xa"
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
 "The complete URI of the last successful access to a remote server, including "
 "protocol, host and remote directory"
 msgstr ""
+"URI đầy đủ của lần truy cập thành công gần nhất đến máy chủ từ xa, bao gồm "
+"giao thức, máy chủ và thư mục từ xa"
 
 #: data/org.gnome.camorama.gschema.xml.in:61
 msgid "Append timestamp to remote filename"
@@ -480,9 +485,10 @@ msgstr "Bật/tắt dùng cái nút để điều chỉnh bộ lọc ảnh độ
 msgid "Image width"
 msgstr "rộng bắt"
 
-#: data/org.gnome.camorama.gschema.xml.in:127
+#: data/org.gnome.camorama.gschema.xml.in:137
 msgid "Image width used by the camera. Zero means autoselect"
 msgstr ""
+"Chiều rộng hình ảnh do máy ảnh sử dụng. Số không có nghĩa là tự động chọn."
 
 #: src/callbacks.c:531
 msgid "translator_credits"
@@ -806,6 +812,43 @@ msgstr ""
 #, c-format
 msgid "failed to stop streaming (%s), exiting...."
 msgstr ""
+
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Phát âm thanh webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "Thu âm thanh từ máy ảnh và phát qua đầu ra PulseAudio hiện tại."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Âm lượng âm thanh webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Đặt âm lượng phát lại âm thanh webcam."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Chiều rộng cửa sổ chính"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Chiều rộng cửa sổ chính. Giá trị không có nghĩa là dùng kích thước mặc định."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Chiều cao cửa sổ chính"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Chiều cao cửa sổ chính. Giá trị không có nghĩa là dùng kích thước mặc định."
+
 
 #, fuzzy
 #~ msgid "_File"

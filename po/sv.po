@@ -1086,6 +1086,41 @@ msgstr "Det gick inte att läsa in builder-filen: %s"
 msgid "Capturing video"
 msgstr "Spelar in video"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Spela upp webbkameraudio"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Fångar ljud från kameran och spelar upp det genom aktuell PulseAudio-utgång."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Webbkameraudio-volym"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Ställer in uppspelningsvolymen för webbkameraaudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Huvudfönstrets bredd"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Huvudfönstrets bredd. Noll betyder att standardstorleken används."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Huvudfönstrets höjd"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Huvudfönstrets höjd. Noll betyder att standardstorleken används."
+
 #~ msgid "Preferences"
 #~ msgstr "Inställningar"
 

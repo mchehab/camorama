@@ -807,6 +807,42 @@ msgstr "Timeout mens der blev ventet på billeder (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "kunne ikke stoppe strømning (%s), afslutter ...."
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Afspil webcamlyd"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Optager lyd fra kameraet og afspiller den gennem det aktuelle PulseAudio-"
+"output."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Lydstyrke for webcamlyd"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Angiver afspilningslydstyrken for webcamlyd."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Hovedvinduets bredde"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Hovedvinduets bredde. Nul betyder, at standardstørrelsen bruges."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Hovedvinduets højde"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Hovedvinduets højde. Nul betyder, at standardstørrelsen bruges."
+
 #~ msgid "_File"
 #~ msgstr "_Fil"
 

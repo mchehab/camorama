@@ -1080,6 +1080,41 @@ msgstr "Nepodařilo se načíst soubor builderu: %s"
 msgid "Capturing video"
 msgstr "Probíhá snímání videa"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Přehrávat zvuk webové kamery"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Zachytává zvuk z kamery a přehrává ho přes aktuální výstup PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Hlasitost zvuku webové kamery"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Nastavuje hlasitost přehrávání zvuku webové kamery."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Šířka hlavního okna"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Šířka hlavního okna. Nula znamená použít výchozí velikost."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Výška hlavního okna"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Výška hlavního okna. Nula znamená použít výchozí velikost."
+
 #~ msgid "Preferences"
 #~ msgstr "Nastavení"
 

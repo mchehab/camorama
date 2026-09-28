@@ -830,6 +830,46 @@ msgstr "Se agotó el tiempo de espera de los fotogramas (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "no se pudo detener la transmisión (%s); saliendo...."
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Reproducir el audio de la cámara web"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Captura el audio de la cámara y lo reproduce mediante la salida actual de "
+"PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Volumen del audio de la cámara web"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Establece el volumen de reproducción del audio de la cámara web."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Anchura de la ventana principal"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Anchura de la ventana principal. Cero significa usar el tamaño "
+"predeterminado."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Altura de la ventana principal"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Altura de la ventana principal. Cero significa usar el tamaño "
+"predeterminado."
+
 #~ msgid "_File"
 #~ msgstr "_Archivo"
 

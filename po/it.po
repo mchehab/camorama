@@ -826,6 +826,46 @@ msgstr "Timeout durante l'attesa dei frame (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "interruzione dello streaming (%s) non riuscita, chiusura in corso...."
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Riproduci l’audio della webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Acquisisce l’audio dalla videocamera e lo riproduce attraverso l’uscita "
+"PulseAudio corrente."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Volume audio della webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Imposta il volume di riproduzione dell’audio della webcam."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Larghezza della finestra principale"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Larghezza della finestra principale. Zero indica di usare la dimensione "
+"predefinita."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Altezza della finestra principale"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Altezza della finestra principale. Zero indica di usare la dimensione "
+"predefinita."
+
 #~ msgid "_File"
 #~ msgstr "File"
 

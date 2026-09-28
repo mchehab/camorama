@@ -1089,6 +1089,44 @@ msgstr "Oluşturucu dosyası yüklenemedi: %s"
 msgid "Capturing video"
 msgstr "Video yakalanıyor"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Web kamerası sesini çal"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "Kameradan ses yakalar ve mevcut PulseAudio çıkışı üzerinden çalar."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Web kamerası ses düzeyi"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Web kamerası sesinin çalma düzeyini ayarlar."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Ana pencere genişliği"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Ana pencerenin genişliği. Sıfır, öntanımlı boyutun kullanılması anlamına "
+"gelir."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Ana pencere yüksekliği"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Ana pencerenin yüksekliği. Sıfır, öntanımlı boyutun kullanılması anlamına "
+"gelir."
+
 #~ msgid "Preferences"
 #~ msgstr "Tercihler"
 

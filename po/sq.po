@@ -287,11 +287,11 @@ msgstr "Përcakton intervalin për marrjen automatike të figurave."
 
 #: data/org.gnome.camorama.gschema.xml.in:21
 msgid "Video device"
-msgstr ""
+msgstr "Pajisje video"
 
 #: data/org.gnome.camorama.gschema.xml.in:22
 msgid "The unix file system path to the device that's assigned to your camera."
-msgstr ""
+msgstr "Shtegu në sistemin e skedarëve UNIX te pajisja e caktuar për kamerën."
 
 #: data/org.gnome.camorama.gschema.xml.in:26
 msgid "Toggles the datestamp in captures"
@@ -317,6 +317,8 @@ msgstr "lartësia e marrjes"
 #: data/org.gnome.camorama.gschema.xml.in:37
 msgid "Image height used by the camera. Zero means autoselect"
 msgstr ""
+"Lartësia e figurës që përdor kamera. Zero do të thotë përzgjedhje "
+"automatike."
 
 #: data/org.gnome.camorama.gschema.xml.in:41
 #, fuzzy
@@ -350,16 +352,20 @@ msgid ""
 "The URI name of the protocol that will be used to connect to a remote "
 "server. Can be ftp, sftp or smb"
 msgstr ""
+"Emri URI i protokollit që do të përdoret për t’u lidhur me një server të "
+"largët. Mund të jetë ftp, sftp ose smb."
 
 #: data/org.gnome.camorama.gschema.xml.in:56
 msgid "Complete URI used to store image snapshots remotely"
-msgstr ""
+msgstr "URI i plotë që përdoret për të ruajtur imazhet në distancë"
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
 "The complete URI of the last successful access to a remote server, including "
 "protocol, host and remote directory"
 msgstr ""
+"URI i plotë i qasjes së fundit të suksesshme te një server i largët, "
+"përfshirë protokollin, hostin dhe dosjen e largët"
 
 #: data/org.gnome.camorama.gschema.xml.in:61
 msgid "Append timestamp to remote filename"
@@ -476,9 +482,11 @@ msgstr "Aktivon përdorimin e pulsantëve për rregullimin e filtrave video"
 msgid "Image width"
 msgstr "gjerësia e marrjes"
 
-#: data/org.gnome.camorama.gschema.xml.in:127
+#: data/org.gnome.camorama.gschema.xml.in:137
 msgid "Image width used by the camera. Zero means autoselect"
 msgstr ""
+"Gjerësia e figurës që përdor kamera. Zero do të thotë përzgjedhje "
+"automatike."
 
 #: src/callbacks.c:531
 msgid "translator_credits"
@@ -807,6 +815,46 @@ msgstr ""
 #, c-format
 msgid "failed to stop streaming (%s), exiting...."
 msgstr ""
+
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Luaj audion e kamerës së internetit"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Regjistron audion nga kamera dhe e luan përmes daljes aktuale PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Volumi i audios së kamerës së internetit"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Cakton volumin e luajtjes së audios së kamerës së internetit."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Gjerësia e dritares kryesore"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Gjerësia e dritares kryesore. Zero do të thotë të përdoret madhësia e "
+"parazgjedhur."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Lartësia e dritares kryesore"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Lartësia e dritares kryesore. Zero do të thotë të përdoret madhësia e "
+"parazgjedhur."
+
 
 #, fuzzy
 #~ msgid "_File"

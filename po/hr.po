@@ -1079,6 +1079,41 @@ msgstr "Nije moguće učitati datoteku graditelja: %s"
 msgid "Capturing video"
 msgstr "Snimanje videozapisa"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Reproduciraj zvuk web-kamere"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Snimanje zvuk s kamere i reproducira ga putem trenutnog PulseAudio izlaza."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Glasnoća zvuka web-kamere"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Postavlja glasnoću reprodukcije zvuka web-kamere."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Širina glavnog prozora"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Širina glavnog prozora. Nula znači koristiti zadanu veličinu."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Visina glavnog prozora"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Visina glavnog prozora. Nula znači koristiti zadanu veličinu."
+
 #~ msgid "Preferences"
 #~ msgstr "Osobitosti"
 

@@ -298,11 +298,11 @@ msgstr "Rəsmlərin avtomatik çəkilməsi üçün vaxt aralığını müəyyən
 
 #: data/org.gnome.camorama.gschema.xml.in:21
 msgid "Video device"
-msgstr ""
+msgstr "Video cihazı"
 
 #: data/org.gnome.camorama.gschema.xml.in:22
 msgid "The unix file system path to the device that's assigned to your camera."
-msgstr ""
+msgstr "Kameraya təyin edilmiş cihazın UNIX fayl sistemindəki yolu."
 
 #: data/org.gnome.camorama.gschema.xml.in:26
 msgid "Toggles the datestamp in captures"
@@ -330,6 +330,8 @@ msgstr "çəkim hündürlüyü"
 #: data/org.gnome.camorama.gschema.xml.in:37
 msgid "Image height used by the camera. Zero means autoselect"
 msgstr ""
+"Kameranın istifadə etdiyi təsvirin hündürlüyü. Sıfır avtomatik seçim "
+"deməkdir."
 
 #: data/org.gnome.camorama.gschema.xml.in:41
 #, fuzzy
@@ -363,16 +365,20 @@ msgid ""
 "The URI name of the protocol that will be used to connect to a remote "
 "server. Can be ftp, sftp or smb"
 msgstr ""
+"Uzaq serverə qoşulmaq üçün istifadə ediləcək protokolun URI adı. ftp, sftp "
+"və ya smb ola bilər."
 
 #: data/org.gnome.camorama.gschema.xml.in:56
 msgid "Complete URI used to store image snapshots remotely"
-msgstr ""
+msgstr "Təsvirləri uzaqda saxlamaq üçün istifadə edilən tam URI"
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
 "The complete URI of the last successful access to a remote server, including "
 "protocol, host and remote directory"
 msgstr ""
+"Uzaq serverə son uğurlu girişin protokol, host və uzaq kataloq daxil olmaqla"
+" tam URI-si"
 
 #: data/org.gnome.camorama.gschema.xml.in:61
 msgid "Append timestamp to remote filename"
@@ -488,9 +494,10 @@ msgstr "Video filtrlərini sazlamaq üçün düymələri fəallaşdırır"
 msgid "Image width"
 msgstr "çəkim eni"
 
-#: data/org.gnome.camorama.gschema.xml.in:127
+#: data/org.gnome.camorama.gschema.xml.in:137
 msgid "Image width used by the camera. Zero means autoselect"
 msgstr ""
+"Kameranın istifadə etdiyi təsvirin eni. Sıfır avtomatik seçim deməkdir."
 
 #: src/callbacks.c:531
 msgid "translator_credits"
@@ -819,6 +826,41 @@ msgstr ""
 #, c-format
 msgid "failed to stop streaming (%s), exiting...."
 msgstr ""
+
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Veb-kamera səsini oxut"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "Kameradan səsi tutur və cari PulseAudio çıxışından səsləndirir."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Veb-kamera səsinin səviyyəsi"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Veb-kamera səsinin oxutma səviyyəsini təyin edir."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Əsas pəncərənin eni"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Əsas pəncərənin eni. Sıfır standart ölçüdən istifadə edir."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Əsas pəncərənin hündürlüyü"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Əsas pəncərənin hündürlüyü. Sıfır standart ölçüdən istifadə edir."
+
 
 #, fuzzy
 #~ msgid "_File"

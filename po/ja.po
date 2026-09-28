@@ -787,6 +787,40 @@ msgstr "フレーム (%s) の待機中にタイムアウト"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "ストリーミング (%s) を停止できませんでした、終了しています...."
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "ウェブカメラの音声を再生"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "カメラから音声を取り込み、現在の PulseAudio 出力で再生します。"
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "ウェブカメラの音量"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "ウェブカメラの音声再生音量を設定します。"
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "メインウィンドウの幅"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "メインウィンドウの幅です。0 の場合は既定のサイズを使用します。"
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "メインウィンドウの高さ"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "メインウィンドウの高さです。0 の場合は既定のサイズを使用します。"
+
 #~ msgid "_File"
 #~ msgstr "ファイル(_F)"
 

@@ -1111,6 +1111,42 @@ msgstr "Não foi possível carregar o ficheiro builder: %s"
 msgid "Capturing video"
 msgstr "A capturar vídeo"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Reproduzir áudio da webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "Captura o áudio da câmara e reproduz-o pela saída PulseAudio atual."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Volume do áudio da webcam"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Define o volume de reprodução do áudio da webcam."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Largura da janela principal"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Largura da janela principal. Zero significa usar o tamanho predefinido."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Altura da janela principal"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Altura da janela principal. Zero significa usar o tamanho predefinido."
+
 #~ msgid "Preferences"
 #~ msgstr "Preferências"
 

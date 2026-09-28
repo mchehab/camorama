@@ -1087,6 +1087,41 @@ msgstr "Datoteke gradnika ni bilo mogoče naložiti: %s"
 msgid "Capturing video"
 msgstr "Zajemanje videa"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Predvajaj zvok spletne kamere"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Zajame zvok iz kamere in ga predvaja prek trenutnega izhoda PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Glasnost zvoka spletne kamere"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Nastavi glasnost predvajanja zvoka spletne kamere."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Širina glavnega okna"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Širina glavnega okna. Nič pomeni uporabo privzete velikosti."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Višina glavnega okna"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Višina glavnega okna. Nič pomeni uporabo privzete velikosti."
+
 #~ msgid "Preferences"
 #~ msgstr "Lastnosti"
 

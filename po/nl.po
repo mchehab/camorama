@@ -1095,6 +1095,44 @@ msgstr "Builderbestand laden is mislukt: %s"
 msgid "Capturing video"
 msgstr "Video opnemen"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Webcamgeluid afspelen"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Neemt audio op van de camera en speelt deze af via de huidige PulseAudio-"
+"uitvoer."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Webcamgeluidsvolume"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Stelt het afspeelvolume van webcamgeluid in."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Breedte van hoofdvenster"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Breedte van het hoofdvenster. Nul betekent de standaardgrootte gebruiken."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Hoogte van hoofdvenster"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Hoogte van het hoofdvenster. Nul betekent de standaardgrootte gebruiken."
+
 #~ msgid "Preferences"
 #~ msgstr "Voorkeuren"
 

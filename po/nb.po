@@ -831,6 +831,42 @@ msgstr "Tidsavbrudd under avventing av rammer (%s)"
 msgid "failed to stop streaming (%s), exiting...."
 msgstr "Klarte ikke å stoppe strømming (%s) avslutter…"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Spill av lyd fra webkamera"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Tar opp lyd fra kameraet og spiller den av gjennom gjeldende PulseAudio-"
+"utgang."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Lydvolum for webkamera"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Angir avspillingsvolumet for webkameralyden."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Hovedvinduets bredde"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Hovedvinduets bredde. Null betyr at standardstørrelsen brukes."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Hovedvinduets høyde"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Hovedvinduets høyde. Null betyr at standardstørrelsen brukes."
+
 #, fuzzy
 #~ msgid "_File"
 #~ msgstr "Filnavn"

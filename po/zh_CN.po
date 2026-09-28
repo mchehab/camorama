@@ -1190,6 +1190,40 @@ msgstr "无法加载构建器文件：%s"
 msgid "Capturing video"
 msgstr "正在抓取视频"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "播放网络摄像头音频"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr "从相机捕获音频，并通过当前 PulseAudio 输出播放。"
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "网络摄像头音量"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "设置网络摄像头音频的播放音量。"
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "主窗口宽度"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "主窗口的宽度。零表示使用默认大小。"
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "主窗口高度"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "主窗口的高度。零表示使用默认大小。"
+
 #~ msgid "webcam-capture"
 #~ msgstr "webcam-capture"
 

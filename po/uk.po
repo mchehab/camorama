@@ -1097,6 +1097,41 @@ msgstr "Не вдалося завантажити файл інтерфейсу
 msgid "Capturing video"
 msgstr "Триває захоплення відео"
 
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Відтворювати звук вебкамери"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Захоплює звук із камери і відтворює його через поточний вихід PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Гучність звуку вебкамери"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Встановлює гучність відтворення звуку вебкамери."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Ширина головного вікна"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr "Ширина головного вікна. Нуль означає використання типового розміру."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Висота головного вікна"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr "Висота головного вікна. Нуль означає використання типового розміру."
+
 #~ msgid "Preferences"
 #~ msgstr "Вподобання"
 

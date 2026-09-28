@@ -318,6 +318,8 @@ msgstr "височина на снимка"
 #: data/org.gnome.camorama.gschema.xml.in:37
 msgid "Image height used by the camera. Zero means autoselect"
 msgstr ""
+"Височина на изображението, използвана от камерата. Нула означава автоматичен"
+" избор."
 
 #: data/org.gnome.camorama.gschema.xml.in:41
 #, fuzzy
@@ -351,16 +353,20 @@ msgid ""
 "The URI name of the protocol that will be used to connect to a remote "
 "server. Can be ftp, sftp or smb"
 msgstr ""
+"URI името на протокола за свързване с отдалечен сървър. Може да бъде ftp, "
+"sftp или smb."
 
 #: data/org.gnome.camorama.gschema.xml.in:56
 msgid "Complete URI used to store image snapshots remotely"
-msgstr ""
+msgstr "Пълният URI, използван за отдалечено съхраняване на изображения"
 
 #: data/org.gnome.camorama.gschema.xml.in:57
 msgid ""
 "The complete URI of the last successful access to a remote server, including "
 "protocol, host and remote directory"
 msgstr ""
+"Пълният URI на последния успешен достъп до отдалечен сървър, включително "
+"протокол, хост и отдалечена папка"
 
 #: data/org.gnome.camorama.gschema.xml.in:61
 msgid "Append timestamp to remote filename"
@@ -478,9 +484,11 @@ msgstr ""
 msgid "Image width"
 msgstr "широчина на снимка"
 
-#: data/org.gnome.camorama.gschema.xml.in:127
+#: data/org.gnome.camorama.gschema.xml.in:137
 msgid "Image width used by the camera. Zero means autoselect"
 msgstr ""
+"Ширина на изображението, използвана от камерата. Нула означава автоматичен "
+"избор."
 
 #: src/callbacks.c:531
 msgid "translator_credits"
@@ -813,6 +821,47 @@ msgstr ""
 #, c-format
 msgid "failed to stop streaming (%s), exiting...."
 msgstr ""
+
+#: data/org.gnome.camorama.gschema.xml.in:126
+msgid "Play webcam audio"
+msgstr "Възпроизвеждане на звук от уеб камерата"
+
+#: data/org.gnome.camorama.gschema.xml.in:127
+msgid ""
+"Captures audio from the camera and plays it through the current PulseAudio "
+"output."
+msgstr ""
+"Записва звук от камерата и го възпроизвежда през текущия изход на "
+"PulseAudio."
+
+#: data/org.gnome.camorama.gschema.xml.in:131
+msgid "Webcam audio volume"
+msgstr "Сила на звука от уеб камерата"
+
+#: data/org.gnome.camorama.gschema.xml.in:132
+msgid "Sets the playback volume for webcam audio."
+msgstr "Задава силата на възпроизвеждане на звука от уеб камерата."
+
+#: data/org.gnome.camorama.gschema.xml.in:141
+msgid "Main window width"
+msgstr "Ширина на основния прозорец"
+
+#: data/org.gnome.camorama.gschema.xml.in:142
+msgid "Width of the main window. Zero means use the default size"
+msgstr ""
+"Ширина на основния прозорец. Нула означава използване на размера по "
+"подразбиране."
+
+#: data/org.gnome.camorama.gschema.xml.in:146
+msgid "Main window height"
+msgstr "Височина на основния прозорец"
+
+#: data/org.gnome.camorama.gschema.xml.in:147
+msgid "Height of the main window. Zero means use the default size"
+msgstr ""
+"Височина на основния прозорец. Нула означава използване на размера по "
+"подразбиране."
+
 
 #, fuzzy
 #~ msgid "_File"
