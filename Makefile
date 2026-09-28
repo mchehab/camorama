@@ -34,6 +34,8 @@ distclean:
 
 tests: all
 	build/tests/unittest
+	ninja -C build camorama-pot
+	ninja -C build translation-report
 
 dist:
 	meson dist -C build --no-tests $(if $(DRY_RUN),--allow-dirty)

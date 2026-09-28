@@ -3,6 +3,12 @@ tests_c_flags = []
 test_deps = []
 enable_unittest = false
 
+python3 = import('python').find_installation('python3', modules: ['polib'])
+run_target(
+    'translation-report',
+    command: [python3, files('check_translations.py')[0]],
+)
+
 unittest_sources += ['test_v4l.c', 'mock_v4l.c']
 unittest_sources += ['test_streaming.c']
 unittest_sources += ['test_filter_chain.c', 'test_image_bounds.c']

@@ -55,8 +55,8 @@ sudo dnf install libcamera-devel
 
 To be able to run unit tests (for developers only):
 ```
-sudo dnf install libcmocka libcmocka-devel \
-                 ffmpeg-free  # or ffmpeg, when RPMfusion is used
+sudo dnf install libcmocka libcmocka-devel python3-polib \
+                 ffmpeg-free  # or ffmpeg with RPMfusion
 
 ```
 
@@ -65,6 +65,11 @@ On Ubuntu/Debian:
 ```
 sudo apt-get install gcc meson ninja-build gettext libv4l-dev libgtk-3-dev \
 	libgdk-pixbuf2.0-dev libpulse-dev libasound2-dev
+```
+
+For unit tests and the translation report:
+```
+sudo apt-get install libcmocka-dev python3-polib
 ```
 
 For libcamera support, add `libcamera-dev`.
@@ -77,6 +82,11 @@ meson setup build
 meson compile -C build
 sudo meson install -C build
 ```
+
+Run the unit tests and translation report with `make tests`. The translation
+report shows completeness separately for Camorama UI and GSettings messages,
+and lists obsolete entries that are not in the template. Use `--verbose` to
+see message details. Install the `python3-polib` package to enable it.
 
 GTK 3 is the default. To build the GTK 4 interface, configure a separate
 build directory with `meson setup build-gtk4 -Dgtk4=true`.
