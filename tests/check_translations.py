@@ -5,6 +5,8 @@ import argparse
 import glob
 import json
 import os
+import subprocess
+import sys
 from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
@@ -13,6 +15,8 @@ except ImportError as exc:
     raise SystemExit("check_translations.py requires python3-polib") from exc
 
 
+COMPLETENESS_THRESHOLD = 58
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PO_DIR = os.path.join(ROOT, "po")
 TEMPLATE = os.path.join(PO_DIR, "camorama.pot")
@@ -20,9 +24,7 @@ GSETTINGS_SOURCES = ["data/org.gnome.camorama.gschema.xml.in"]
 
 
 class AsciiTable:
-    def __init__(self, headers: Sequence[str],
-                 rows: Sequence[Sequence[str]]) -> None:
-
+    def __init__(self, headers: Sequence[str], rows: Sequence[Sequence[str]]) -> None:
         self.headers = list(headers)
         self.rows = [list(row) for row in rows]
         if any(len(row) != len(self.headers) for row in self.rows):
@@ -101,6 +103,11 @@ def main() -> int:
         description="List current gettext messages and obsolete catalog entries."
     )
     parser.add_argument(
+        "-s", "--summary",
+        action="store_true",
+        help="print only the aggregate translation summary",
+    )
+    parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="list each current message and obsolete catalog entry",
@@ -112,6 +119,22 @@ def main() -> int:
         help="limit output to one or more locales (for example -l pt zh_CN)",
     )
     args = parser.parse_args()
+
+    build_dir = os.environ.get("CAMORAMA_BUILD_DIR")
+    if not build_dir:
+        candidate = os.path.join(ROOT, "build")
+        if os.path.exists(os.path.join(candidate, "build.ninja")):
+            build_dir = candidate
+    if build_dir:
+        result = subprocess.run(
+            ["ninja", "-C", build_dir, "camorama-pot"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if result.returncode:
+            sys.stderr.write(result.stdout)
+            raise SystemExit(result.returncode)
 
     if not os.path.exists(TEMPLATE):
         raise SystemExit(f"Missing gettext template: {TEMPLATE}; run `ninja -C build camorama-pot` first")
@@ -138,6 +161,8 @@ def main() -> int:
         )
         print("Statuses: TRANSLATED, FUZZY, UNTRANSLATED, MISSING")
     summary_rows = []
+    ui_over_threshold_count = 0
+    gsettings_over_threshold_count = 0
 
     for path in locales:
         locale = os.path.splitext(os.path.basename(path))[0]
@@ -165,6 +190,20 @@ def main() -> int:
                 for status in ("TRANSLATED", "FUZZY", "UNTRANSLATED", "MISSING")
             }
             group_counts[group] = counts
+        ui_counts = group_counts["Camorama UI"]
+        ui_total = len(grouped_entries["Camorama UI"])
+        ui_percent = 100 * ui_counts["TRANSLATED"] / ui_total if ui_total else 100
+        if ui_percent > COMPLETENESS_THRESHOLD:
+            ui_over_threshold_count += 1
+        gsettings_counts = group_counts["GSettings"]
+        gsettings_total = len(grouped_entries["GSettings"])
+        gsettings_percent = (
+            100 * gsettings_counts["TRANSLATED"] / gsettings_total
+            if gsettings_total
+            else 100
+        )
+        if gsettings_percent > COMPLETENESS_THRESHOLD:
+            gsettings_over_threshold_count += 1
 
         if not args.verbose:
             ui = group_summary(
@@ -216,8 +255,18 @@ def main() -> int:
                     f"    {json.dumps(entry.msgid, ensure_ascii=False)}"
                     + (f" -> {json.dumps(translation_text(entry), ensure_ascii=False)}" if translation_text(entry) else " (empty)")
                 )
-    if not args.verbose:
+    if not args.verbose and not args.summary:
         print(format_table(("Language", "UI", "Gsettings"), summary_rows))
+    language_count = len(locales)
+    ui_over_threshold_percent = 100 * ui_over_threshold_count / language_count if language_count else 0
+    gsettings_over_threshold_percent = (
+        100 * gsettings_over_threshold_count / language_count if language_count else 0
+    )
+    print(
+        f"Languages: {language_count}; UI >{COMPLETENESS_THRESHOLD}%: {ui_over_threshold_count} "
+        f"({ui_over_threshold_percent:.0f}%); GSettings >{COMPLETENESS_THRESHOLD}%: {gsettings_over_threshold_count} "
+        f"({gsettings_over_threshold_percent:.0f}%)"
+    )
     return 0
 
 

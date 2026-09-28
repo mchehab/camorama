@@ -4,6 +4,13 @@ test_deps = []
 enable_unittest = false
 
 python3 = import('python').find_installation('python3', modules: ['polib'])
+test(
+    'translation-report',
+    python3,
+    args: [files('check_translations.py')[0]],
+    env: ['CAMORAMA_BUILD_DIR=' + join_paths(meson.current_build_dir(), '..')],
+    suite: 'hermetic_test_groups',
+)
 run_target(
     'translation-report',
     command: [python3, files('check_translations.py')[0]],
@@ -41,6 +48,12 @@ if enable_unittest
             include_directories: inc,
             dependencies: dependencies + test_deps,
             c_args: ['-g'] + c_flags + tests_c_flags,
+        )
+
+        test(
+            'unit-tests',
+            unittest_exe,
+            suite: 'hermetic_test_groups',
         )
     endif
 endif

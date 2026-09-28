@@ -38,4 +38,5 @@ tests: all
 	ninja -C build translation-report
 
 dist:
-	meson dist -C build --no-tests $(if $(DRY_RUN),--allow-dirty)
+	meson dist -C build $(if $(DRY_RUN),--allow-dirty --no-tests)
+	python3 tests/check_translations.py --summary
