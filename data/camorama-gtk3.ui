@@ -178,7 +178,7 @@
             <child>
               <object class="GtkMenuButton" id="menuitem3">
                 <property name="visible">True</property>
-                <property name="label">_Edit</property>
+                <property name="label" translatable="yes">_Edit</property>
                 <property name="use-underline">True</property>
                 <property name="popover">menuitem3_menu</property>
               </object>
@@ -800,7 +800,7 @@
             <property name="layout-style">end</property>
             <child>
               <object class="GtkButton" id="helpbutton1">
-                <property name="label">_Help</property>
+                <property name="label" translatable="yes">_Help</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="can-default">True</property>
@@ -814,7 +814,7 @@
             </child>
             <child>
               <object class="GtkButton" id="okbutton1">
-                <property name="label">_Close</property>
+                <property name="label" translatable="yes">_Close</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="can-default">True</property>

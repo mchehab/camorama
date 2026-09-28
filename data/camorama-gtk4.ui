@@ -153,7 +153,7 @@
             </child>
             <child>
               <object class="GtkMenuButton" id="menuitem3">
-                <property name="label">_Edit</property>
+                <property name="label" translatable="yes">_Edit</property>
                 <property name="use-underline">True</property>
                 <property name="popover">menuitem3_menu</property>
               </object>

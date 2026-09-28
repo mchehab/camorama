@@ -963,7 +963,7 @@ void show_controls(GtkWidget *, cam_t *cam)
 #else
     window = gtk4_create_controls_window(vbox, cam);
 #endif
-    gtk_window_set_title(GTK_WINDOW(window), "Camera controls");
+    gtk_window_set_title(GTK_WINDOW(window), _("Camera controls"));
     gtk_window_set_default_size(GTK_WINDOW(window), 80, 60);
 
     if (!g_signal_lookup("control_update", GTK_TYPE_WIDGET))
@@ -1059,7 +1059,7 @@ void show_controls(GtkWidget *, cam_t *cam)
     }
     #pragma GCC diagnostic pop
 
-    btn = gtk_button_new_with_label("Reset to default");
+    btn = gtk_button_new_with_label(_("Reset to default"));
     gtk_common_box_append(GTK_BOX(vbox), btn);
     g_signal_connect(btn, "clicked", G_CALLBACK(reset_ctrls), cam);
 
