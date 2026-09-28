@@ -848,25 +848,3 @@ msgstr "Chiều cao cửa sổ chính"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Chiều cao cửa sổ chính. Giá trị không có nghĩa là dùng kích thước mặc định."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Tên tập tin"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Tùy thích"
-
-#~ msgid "Preferences"
-#~ msgstr "Tùy thích"
-
-# Name: don't translate/Tên: đừng dịch
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "bắt ảnh Mạng"
-
-#~ msgid "Color Correction"
-#~ msgstr "Sửa màu sắc"

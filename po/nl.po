@@ -74,10 +74,6 @@ msgstr "Effecten weergeven"
 msgid "_Change Camera"
 msgstr "_Verander camera"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-msgid "Small"
-msgstr "Klein"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "Bediening tonen"
@@ -510,16 +506,6 @@ msgstr "Kan geen geheugen toewijzen om apparaten op te slaan"
 msgid "Didn't find any camera"
 msgstr "Geen camera gevonden"
 
-#: src/callbacks.c:1449
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%dx%d (max %.1f fps)"
-
-#: src/callbacks.c:1453
-#, c-format
-msgid "%dx%d"
-msgstr "%dx%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "Laplace (4 buren)"
@@ -534,32 +520,10 @@ msgstr "Spiegelen"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116
-msgid "_Add Filter"
-msgstr "Filter toe_voegen"
-
-#: src/camorama-window.c:203
-msgid "Effects"
-msgstr "Effecten"
-
-#: src/fileio.c:115 src/fileio.c:282
-msgid "Could save temporary image file in /tmp."
-msgstr "Kan geen tijdelijk afbeeldingsbestand opslaan in /tmp."
-
-#: src/fileio.c:132
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "De afbeelding '%s' kan niet worden aangemaakt."
-
 #: src/fileio.c:143 src/fileio.c:440
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "Kan afbeelding '%s/%s' niet opslaan."
-
-#: src/fileio.c:154
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "Kan geen thread maken om afbeelding '%s/%s' op te slaan."
 
 #: src/fileio.c:195
 #, c-format
@@ -571,44 +535,10 @@ msgstr "Er is een fout opgetreden bij het aankoppelen van %s:%s."
 msgid "An error occurred accessing %s."
 msgstr "Er is een fout opgetreden bij de toegang tot %s."
 
-#: src/fileio.c:288
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"Het tijdelijke afbeeldingsbestand '%s' kan niet worden geopend.\n"
-"Het uploaden van de afbeelding is niet mogelijk."
-
-#: src/fileio.c:320
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "Er is een fout opgetreden bij het openen van %s."
-
-#: src/fileio.c:331
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "Er is een fout opgetreden bij het openen van %s voor schrijven: %s."
-
-#: src/fileio.c:342
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "Er is een fout opgetreden bij het schrijven naar %s: %s."
-
-#: src/fileio.c:348
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "Er is een fout opgetreden bij het sluiten van %s: %s."
-
 #: src/fileio.c:411
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "Kan map '%s' niet aanmaken."
-
-#: src/fileio.c:420
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "De map '%s' kan niet geopend worden."
 
 #: src/filter.c:96
 msgid "Invert"
@@ -646,10 +576,6 @@ msgstr "Sobel"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "Versie weergeven en afsluiten"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "v4l-apparaat dat gebruikt dient te worden"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -703,10 +629,6 @@ msgstr ""
 "\n"
 "Camorama versie %s\n"
 "\n"
-
-#: src/main.c:151
-msgid "Couldn't load builder file"
-msgstr "Kan het bouw-bestand niet laden"
 
 #: src/main.c:180
 #, c-format
@@ -1132,23 +1054,3 @@ msgstr "Hoogte van hoofdvenster"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Hoogte van het hoofdvenster. Nul betekent de standaardgrootte gebruiken."
-
-#~ msgid "Preferences"
-#~ msgstr "Voorkeuren"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#, c-format
-#~ msgid ""
-#~ "Invalid argument\n"
-#~ "Run '%s --help'\n"
-#~ msgstr ""
-#~ "Ongeldig argument\n"
-#~ "Voer '%s --help' uit\n"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webcam-opname"
-
-#~ msgid "Color Correction"
-#~ msgstr "Kleurcorrectie"

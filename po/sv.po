@@ -77,10 +77,6 @@ msgstr "Visa effekter"
 msgid "_Change Camera"
 msgstr "_Ändra kamera"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-msgid "Small"
-msgstr "Liten"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "Visa kontroller"
@@ -502,16 +498,6 @@ msgstr "Kan inte allokera minne för att lagra enheter"
 msgid "Didn't find any camera"
 msgstr "Hittade inte någon kamera"
 
-#: src/callbacks.c:1449
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%d×%d (max %.1f b/s)"
-
-#: src/callbacks.c:1453
-#, c-format
-msgid "%dx%d"
-msgstr "%d×%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "Laplace (4 grannar)"
@@ -526,32 +512,10 @@ msgstr "Spegel"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116
-msgid "_Add Filter"
-msgstr "_Lägg till filter"
-
-#: src/camorama-window.c:203
-msgid "Effects"
-msgstr "Effekter"
-
-#: src/fileio.c:115 src/fileio.c:282
-msgid "Could save temporary image file in /tmp."
-msgstr "Kunde inte spara temporära bildfiler i /tmp."
-
-#: src/fileio.c:132
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "Kan inte skapa bild \"%s\"."
-
 #: src/fileio.c:143 src/fileio.c:440
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "Kunde inte spara bilden \"%s/%s\"."
-
-#: src/fileio.c:154
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "Kunde inte skapa en tråd för att spara bilden \"%s/%s\"."
 
 #: src/fileio.c:195
 #, c-format
@@ -563,44 +527,10 @@ msgstr "Ett fel uppstod vid öppnande av %s:%s."
 msgid "An error occurred accessing %s."
 msgstr "Ett fel uppstod vid åtkomst av %s."
 
-#: src/fileio.c:288
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"Kan inte öppna temporär bildfil \"%s\".\n"
-"Kan inte lämna bild."
-
-#: src/fileio.c:320
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "Ett fel uppstod vid öppnande av %s."
-
-#: src/fileio.c:331
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "Ett fel uppstod vid öppnande av %s för skrivning: %s."
-
-#: src/fileio.c:342
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "Ett fel uppstod vid skrivning till %s: %s."
-
-#: src/fileio.c:348
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "Ett fel uppstod när %s stängdes: %s."
-
 #: src/fileio.c:411
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "Kunde inte skapa katalogen \"%s\"."
-
-#: src/fileio.c:420
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "Kunde inte byta till katalogen \"%s\"."
 
 #: src/filter.c:96
 msgid "Invert"
@@ -638,10 +568,6 @@ msgstr "Sobel"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "visa versionsnummer och avsluta"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "v4l-enhet att använda"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -695,10 +621,6 @@ msgstr ""
 "\n"
 "Camorama version %s\n"
 "\n"
-
-#: src/main.c:151
-msgid "Couldn't load builder file"
-msgstr "Kunde inte läsa in en byggfil"
 
 #: src/main.c:180
 #, c-format
@@ -1120,23 +1042,3 @@ msgstr "Huvudfönstrets höjd"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Huvudfönstrets höjd. Noll betyder att standardstorleken används."
-
-#~ msgid "Preferences"
-#~ msgstr "Inställningar"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#, c-format
-#~ msgid ""
-#~ "Invalid argument\n"
-#~ "Run '%s --help'\n"
-#~ msgstr ""
-#~ "Felaktigt argument\n"
-#~ "Kör ”%s --help”\n"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webbkameratagning"
-
-#~ msgid "Color Correction"
-#~ msgstr "Färgkorrigering"

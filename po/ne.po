@@ -848,21 +848,3 @@ msgstr "मुख्य सञ्झ्यालको उचाइ"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "मुख्य सञ्झ्यालको उचाइ। शून्यको अर्थ पूर्वनिर्धारित आकार प्रयोग गर्नु हो।"
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "फाइलनाम"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "प्राथमिकताहरू"
-
-#~ msgid "Preferences"
-#~ msgstr "प्राथमिकताहरू"
-
-#~ msgid "camorama"
-#~ msgstr "कामोरामा"
-
-#~ msgid "webcam-capture"
-#~ msgstr "वेबक्याम-क्याप्चर"

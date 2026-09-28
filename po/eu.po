@@ -857,24 +857,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Leiho nagusiaren altuera. Zero balioak tamaina lehenetsia erabiltzea "
 "adierazten du."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Fitxategi-izena"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Hobespenak"
-
-#~ msgid "Preferences"
-#~ msgstr "Hobespenak"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "Web kamerarekin eskuratu"
-
-#~ msgid "Color Correction"
-#~ msgstr "Kolore-zuzenketa"

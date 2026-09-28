@@ -73,10 +73,6 @@ msgstr "Prikaži efekte"
 msgid "_Change Camera"
 msgstr "_Promijeni kameru"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-msgid "Small"
-msgstr "Malen"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "Prikaži upravljanja"
@@ -494,16 +490,6 @@ msgstr "Nemoguće premještanje memorije u uređaj pohrane"
 msgid "Didn't find any camera"
 msgstr "Kamera nije pronađena"
 
-#: src/callbacks.c:1449
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%dx%d (maks %.1f sl/sek)"
-
-#: src/callbacks.c:1453
-#, c-format
-msgid "%dx%d"
-msgstr "%dx%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "Susjedstvo (4 susjeda)"
@@ -518,32 +504,10 @@ msgstr "Zrcalo"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116
-msgid "_Add Filter"
-msgstr "_Dodaj filter"
-
-#: src/camorama-window.c:203
-msgid "Effects"
-msgstr "Efekti"
-
-#: src/fileio.c:115 src/fileio.c:282
-msgid "Could save temporary image file in /tmp."
-msgstr "Moguće spremanje privremene slike u /tmp."
-
-#: src/fileio.c:132
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "Nemoguće stvaranje slike '%s'."
-
 #: src/fileio.c:143 src/fileio.c:440
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "Nemoguće spremanje slike '%s/%s'."
-
-#: src/fileio.c:154
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "Nemoguće stvaranje niti za spremanje slike '%s/%s'."
 
 #: src/fileio.c:195
 #, c-format
@@ -555,44 +519,10 @@ msgstr "Dogodila se greška pri montiranju %s:%s."
 msgid "An error occurred accessing %s."
 msgstr "Dogodila se greška pri pristupu %s."
 
-#: src/fileio.c:288
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"Nemoguće otvaranje datoteke privremene slike '%s'.\n"
-"Nemoguće slanje slike."
-
-#: src/fileio.c:320
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "Dogodila se greška pri otvaranju %s."
-
-#: src/fileio.c:331
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "Dogodila se greška pri otvaranju %s za zapisivanje: %s."
-
-#: src/fileio.c:342
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "Dogodila se greška pri zapisivanju u %s: %s."
-
-#: src/fileio.c:348
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "Dogodila se greška pri zatvaranju %s: %s."
-
 #: src/fileio.c:411
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "Nemoguće stvaranje direktorija '%s'."
-
-#: src/fileio.c:420
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "Nemoguće promjena direktorija '%s'."
 
 #: src/filter.c:96
 msgid "Invert"
@@ -630,10 +560,6 @@ msgstr "Sobel"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "prikaži inačicu i zatvori"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "v4l device koji se koristi"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -687,10 +613,6 @@ msgstr ""
 "\n"
 "Camorama inačica %s\n"
 "\n"
-
-#: src/main.c:151
-msgid "Couldn't load builder file"
-msgstr "Nemoguće učitavanje datoteke izgraditelja"
 
 #: src/main.c:180
 #, c-format
@@ -1113,23 +1035,3 @@ msgstr "Visina glavnog prozora"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Visina glavnog prozora. Nula znači koristiti zadanu veličinu."
-
-#~ msgid "Preferences"
-#~ msgstr "Osobitosti"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#, c-format
-#~ msgid ""
-#~ "Invalid argument\n"
-#~ "Run '%s --help'\n"
-#~ msgstr ""
-#~ "Nevaljani argument\n"
-#~ "Pokrenite '%s --help'\n"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webkam-slikanje"
-
-#~ msgid "Color Correction"
-#~ msgstr "Ispravljanje boja"

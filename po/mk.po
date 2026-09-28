@@ -863,25 +863,3 @@ msgstr "Висина на главниот прозорец"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Висина на главниот прозорец. Нула значи да се користи стандардната големина."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Име на датотека"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Параметри"
-
-#~ msgid "Preferences"
-#~ msgstr "Параметри"
-
-#~ msgid "camorama"
-#~ msgstr "каморама"
-
-#~ msgid "webcam-capture"
-#~ msgstr "Преземање од webcam"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Корекција на би"

@@ -844,21 +844,3 @@ msgstr "Galvenā loga augstums"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Galvenā loga augstums. Nulle nozīmē izmantot noklusēto izmēru."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Faila nosaukums"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Uzstādījumi"
-
-#~ msgid "Preferences"
-#~ msgstr "Uzstādījumi"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "web kameras-tveršana"

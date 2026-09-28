@@ -869,28 +869,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Altura de la ventana principal. Cero significa usar el tamaño "
 "predeterminado."
-
-#~ msgid "_File"
-#~ msgstr "_Archivo"
-
-#~ msgid "_Edit"
-#~ msgstr "_Editar"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Preferencias"
-
-#~ msgid "_Help"
-#~ msgstr "_Ayuda"
-
-#~ msgid "Preferences"
-#~ msgstr "Preferencias"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "Captura con cámara web"
-
-#~ msgid "Color Correction"
-#~ msgstr "Corrección de color"

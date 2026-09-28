@@ -851,25 +851,3 @@ msgstr "Visina glavnog prozora"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Visina glavnog prozora. Nula znači koristiti zadanu veličinu."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Ime datoteke"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Parametri"
-
-#~ msgid "Preferences"
-#~ msgstr "Parametri"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webkamera-prijenos"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Korekcija Boje"

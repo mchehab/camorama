@@ -848,25 +848,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "முதன்மை சாளரத்தின் உயரம். பூஜ்ஜியம் இயல்புநிலை அளவைப் பயன்படுத்துவதைக் "
 "குறிக்கிறது."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "கோப்பு பெயர்"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "முன்னுருமை"
-
-#~ msgid "Preferences"
-#~ msgstr "முன்னுருமை"
-
-#~ msgid "camorama"
-#~ msgstr "கமொராமா"
-
-#~ msgid "webcam-capture"
-#~ msgstr "Å¨ÄôÀ¼ì¸ÕÅ¢-கைப்பற்றல்"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "நிறத்-தை சரிசெய்"

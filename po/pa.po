@@ -850,25 +850,3 @@ msgstr "ਮੁੱਖ ਵਿੰਡੋ ਦੀ ਉਚਾਈ"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "ਮੁੱਖ ਵਿੰਡੋ ਦੀ ਉਚਾਈ। ਸਿਫ਼ਰ ਦਾ ਮਤਲਬ ਮੂਲ ਆਕਾਰ ਵਰਤਣਾ ਹੈ।"
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "ਫਾਈਲ ਨਾਉਂ"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "ਪਸੰਦ"
-
-#~ msgid "Preferences"
-#~ msgstr "ਪਸੰਦਾਂ"
-
-#~ msgid "camorama"
-#~ msgstr "ਕੈਮੋਰਾਮਾ"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webcam-ਪ੍ਾਪਤੀ"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "ਰੰਗ ਠੀਕ ਕਰਨਾ"

@@ -74,10 +74,6 @@ msgstr "Mostrar Efeitos"
 msgid "_Change Camera"
 msgstr "_Alterar Câmara"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-msgid "Small"
-msgstr "Pequeno"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "Mostrar Controlos"
@@ -511,16 +507,6 @@ msgstr "Não é possível alocar memória para guardar os dispositivos"
 msgid "Didn't find any camera"
 msgstr "Não encontrei qualquer câmara"
 
-#: src/callbacks.c:1449
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%dx%d (máx. %.1f fps)"
-
-#: src/callbacks.c:1453
-#, c-format
-msgid "%dx%d"
-msgstr "%dx%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "Laplace (4 Vizinhos)"
@@ -535,32 +521,10 @@ msgstr "Espelho"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116
-msgid "_Add Filter"
-msgstr "_Adicionar Filtro"
-
-#: src/camorama-window.c:203
-msgid "Effects"
-msgstr "Efeitos"
-
-#: src/fileio.c:115 src/fileio.c:282
-msgid "Could save temporary image file in /tmp."
-msgstr "Não foi possível guardar o ficheiro de imagem temporário em /tmp."
-
-#: src/fileio.c:132
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "Não é possível criar a imagem '%s'."
-
 #: src/fileio.c:143 src/fileio.c:440
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "Não é possível guardar a imagem '%s/%s'."
-
-#: src/fileio.c:154
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "Não foi possível criar um tópico para guardar a imagem '%s/%s'."
 
 #: src/fileio.c:195
 #, c-format
@@ -572,44 +536,10 @@ msgstr "Ocorreu um erro ao montar %s:%s."
 msgid "An error occurred accessing %s."
 msgstr "Ocorreu um erro ao aceder %s."
 
-#: src/fileio.c:288
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"Não é possível abrir o ficheiro de imagem temporário '%s'.\n"
-"Não é possível enviar a imagem."
-
-#: src/fileio.c:320
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "Ocorreu um erro ao abrir %s."
-
-#: src/fileio.c:331
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "Ocorreu um erro ao abrir %s para gravar %s."
-
-#: src/fileio.c:342
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "Ocorreu um erro ao escrever em %s: %s."
-
-#: src/fileio.c:348
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "Ocorreu um erro ao fechar %s: %s."
-
 #: src/fileio.c:411
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "Não é possível criar o diretório '%s'."
-
-#: src/fileio.c:420
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "Não foi possível alterar o diretório '%s'."
 
 #: src/filter.c:96
 msgid "Invert"
@@ -647,10 +577,6 @@ msgstr "Realçar"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "mostrar versão e fechar"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "Dispositivo v4l a utilizar"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -706,10 +632,6 @@ msgstr ""
 "\n"
 "Versão do Camorama %s\n"
 "\n"
-
-#: src/main.c:151
-msgid "Couldn't load builder file"
-msgstr "Não foi possível carregar o ficheiro de criação"
 
 #: src/main.c:180
 #, c-format
@@ -1146,23 +1068,3 @@ msgstr "Altura da janela principal"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Altura da janela principal. Zero significa usar o tamanho predefinido."
-
-#~ msgid "Preferences"
-#~ msgstr "Preferências"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#, c-format
-#~ msgid ""
-#~ "Invalid argument\n"
-#~ "Run '%s --help'\n"
-#~ msgstr ""
-#~ "Argumento inválido\n"
-#~ "Executar '%s --help'\n"
-
-#~ msgid "webcam-capture"
-#~ msgstr "captura-câmara da Web"
-
-#~ msgid "Color Correction"
-#~ msgstr "Correção de Cor"

@@ -73,10 +73,6 @@ msgstr "Zobrazit efekty"
 msgid "_Change Camera"
 msgstr "_Změna kamery"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-msgid "Small"
-msgstr "Malý"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "Zobrazit ovládací prvky"
@@ -493,16 +489,6 @@ msgstr "Nelze přidělit paměť pro ukládání zařízení"
 msgid "Didn't find any camera"
 msgstr "Nebyl nalezen žádný fotoaparát"
 
-#: src/callbacks.c:1449
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%dx%d (max. %.1f fps)"
-
-#: src/callbacks.c:1453
-#, c-format
-msgid "%dx%d"
-msgstr "%dx%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "Laplace (4 sousedé)"
@@ -517,32 +503,10 @@ msgstr "Zrcadlo"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116
-msgid "_Add Filter"
-msgstr "_Přidat filtr"
-
-#: src/camorama-window.c:203
-msgid "Effects"
-msgstr "Efekty"
-
-#: src/fileio.c:115 src/fileio.c:282
-msgid "Could save temporary image file in /tmp."
-msgstr "Dočasný obrázek uložen do souboru v /tmp."
-
-#: src/fileio.c:132
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "Nelze vytvořit obrázek '%s'."
-
 #: src/fileio.c:143 src/fileio.c:440
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "Nelze uložit obrázek '%s/%s'."
-
-#: src/fileio.c:154
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "Nelze vytvořit vlákno pro uložení obrázku '%s/%s'."
 
 #: src/fileio.c:195
 #, c-format
@@ -554,44 +518,10 @@ msgstr "Došlo k chybě při montáži %s:%s."
 msgid "An error occurred accessing %s."
 msgstr "Při přístupu k %s došlo k chybě."
 
-#: src/fileio.c:288
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"Nelze otevřít dočasný soubor obrázku '%s'.\n"
-"Nelze přenést obrázek."
-
-#: src/fileio.c:320
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "Při otevírání %s došlo k chybě."
-
-#: src/fileio.c:331
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "Při otevírání %s pro zápis došlo k chybě: %s."
-
-#: src/fileio.c:342
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "Došlo k chybě při zápisu do %s: %s."
-
-#: src/fileio.c:348
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "Při uzavírání %s došlo k chybě: %s."
-
 #: src/fileio.c:411
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "Nelze vytvořit adresář '%s'."
-
-#: src/fileio.c:420
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "Nelze se přepnout do adresáře '%s'."
 
 #: src/filter.c:96
 msgid "Invert"
@@ -629,10 +559,6 @@ msgstr "Sobel"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "zobrazit verzi a skončit"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "zařízení v4l, které se má použít"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -686,10 +612,6 @@ msgstr ""
 "\n"
 "Camorama verze %s\n"
 "\n"
-
-#: src/main.c:151
-msgid "Couldn't load builder file"
-msgstr "Nelze načíst soubor sestavení"
 
 #: src/main.c:180
 #, c-format
@@ -1114,16 +1036,3 @@ msgstr "Výška hlavního okna"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Výška hlavního okna. Nula znamená použít výchozí velikost."
-
-#~ msgid "Preferences"
-#~ msgstr "Nastavení"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webcam-capture"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Oprava barev"

@@ -863,24 +863,3 @@ msgstr "Altura da xanela principal"
 msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Altura da xanela principal. Cero significa usar o tamaño predeterminado."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Nome do ficheiro"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Preferencias"
-
-#~ msgid "Preferences"
-#~ msgstr "Preferencias"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "captura da cámara web"
-
-#~ msgid "Color Correction"
-#~ msgstr "Corrección de cor"

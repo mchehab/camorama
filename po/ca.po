@@ -866,25 +866,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Alçada de la finestra principal. Zero indica que s’utilitza la mida "
 "predeterminada."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Nom de fitxer"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Preferències"
-
-#~ msgid "Preferences"
-#~ msgstr "Preferències"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "captura de càmera web"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Correcció del color"

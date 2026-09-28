@@ -854,25 +854,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Lartësia e dritares kryesore. Zero do të thotë të përdoret madhësia e "
 "parazgjedhur."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Emri i file"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Preferimet"
-
-#~ msgid "Preferences"
-#~ msgstr "Preferimet"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "marrja-webcam"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Rregullimi i ngjyrës"

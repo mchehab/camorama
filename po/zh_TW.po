@@ -850,37 +850,3 @@ msgstr "主視窗高度"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "主視窗的高度。零表示使用預設大小。"
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "檔案名稱"
-
-#~ msgid "_Quit"
-#~ msgstr "退出(_Q)"
-
-#~ msgid "_Edit"
-#~ msgstr "編輯(_E)"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "偏好設定"
-
-#~ msgid "_Help"
-#~ msgstr "幫助(_H)"
-
-#~ msgid "_About"
-#~ msgstr "關於(_A)"
-
-#~ msgid "Preferences"
-#~ msgstr "偏好設定"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "網路攝影機-擷取"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "色彩校正"

@@ -861,25 +861,3 @@ msgid "Height of the main window. Zero means use the default size"
 msgstr ""
 "Височина на основния прозорец. Нула означава използване на размера по "
 "подразбиране."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Име на файла"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Настройки"
-
-#~ msgid "Preferences"
-#~ msgstr "Настройки"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "снимка_от_camorama"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Цветова корекция"

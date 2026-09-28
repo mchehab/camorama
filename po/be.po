@@ -846,25 +846,3 @@ msgstr "Вышыня галоўнага акна"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "Вышыня галоўнага акна. Нуль азначае выкарыстанне стандартнага памеру."
-
-
-#, fuzzy
-#~ msgid "_File"
-#~ msgstr "Назва файла"
-
-#, fuzzy
-#~ msgid "_Preferences"
-#~ msgstr "Перавагі"
-
-#~ msgid "Preferences"
-#~ msgstr "Перавагі"
-
-#~ msgid "camorama"
-#~ msgstr "camorama"
-
-#~ msgid "webcam-capture"
-#~ msgstr "захоп з web-камэры"
-
-#, fuzzy
-#~ msgid "Color Correction"
-#~ msgstr "Карэктаваньне колера"

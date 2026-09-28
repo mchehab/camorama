@@ -82,12 +82,6 @@ msgstr "显示特效"
 msgid "_Change Camera"
 msgstr "变更摄像头 (_C)"
 
-#: data/camorama-gtk3.ui:192 data/camorama-gtk4.ui:184
-#: data/camorama-gtk3.ui:187 data/camorama-gtk4.ui:151
-#: data/camorama-gtk2.ui:1329
-msgid "Small"
-msgstr "小"
-
 #: data/camorama-gtk3.ui:357
 msgid "Show Controls"
 msgstr "显示控制"
@@ -588,16 +582,6 @@ msgstr "无法为存储设备分配内存"
 msgid "Didn't find any camera"
 msgstr "未找到任何摄像头"
 
-#: src/callbacks.c:1449 src/callbacks.c:1168
-#, c-format
-msgid "%dx%d (max %.1f fps)"
-msgstr "%dx%d (最大 %.1f fps)"
-
-#: src/callbacks.c:1453 src/callbacks.c:1172
-#, c-format
-msgid "%dx%d"
-msgstr "%dx%d"
-
 #: src/camorama-filter-laplace.c:134
 msgid "Laplace (4 Neighbours)"
 msgstr "拉普拉斯（4近邻）"
@@ -612,32 +596,10 @@ msgstr "镜像"
 msgid "Reichardt"
 msgstr "Reichardt"
 
-#: src/camorama-window.c:116 src/camorama-window.c:124
-msgid "_Add Filter"
-msgstr "添加滤镜 (_A)"
-
-#: src/camorama-window.c:203 src/camorama-window.c:221
-msgid "Effects"
-msgstr "特效"
-
-#: src/fileio.c:115 src/fileio.c:282 src/fileio.c:112 src/fileio.c:266
-msgid "Could save temporary image file in /tmp."
-msgstr "可以将临时图像文件保存到 /tmp。"
-
-#: src/fileio.c:132 src/fileio.c:123
-#, c-format
-msgid "Unable to create image '%s'."
-msgstr "无法创建图像“%s”。"
-
 #: src/fileio.c:143 src/fileio.c:440 src/fileio.c:134 src/fileio.c:415
 #, c-format
 msgid "Could not save image '%s/%s'."
 msgstr "无法保存图像“%s/%s”。"
-
-#: src/fileio.c:154 src/fileio.c:145
-#, c-format
-msgid "Could not create a thread to save image '%s/%s'."
-msgstr "无法创建线程以保存图像“%s/%s”。"
 
 #: src/fileio.c:195 src/fileio.c:180
 #, c-format
@@ -649,44 +611,10 @@ msgstr "挂载 %s 时候发生了错误：%s。"
 msgid "An error occurred accessing %s."
 msgstr "访问 %s 时发生了错误。"
 
-#: src/fileio.c:288 src/fileio.c:272
-#, c-format
-msgid ""
-"Unable to open temporary image file '%s'.\n"
-"Cannot upload image."
-msgstr ""
-"无法打开临时图像文件“%s”。\n"
-"无法上传图像。"
-
-#: src/fileio.c:320 src/fileio.c:301
-#, c-format
-msgid "An error occurred opening %s."
-msgstr "打开 %s 时发生了错误。"
-
-#: src/fileio.c:331 src/fileio.c:312
-#, c-format
-msgid "An error occurred opening %s for write: %s."
-msgstr "打开 %s 以写入时发生了错误：%s。"
-
-#: src/fileio.c:342 src/fileio.c:322
-#, c-format
-msgid "An error occurred writing to %s: %s."
-msgstr "向 %s 写入时发生了错误：%s。"
-
-#: src/fileio.c:348 src/fileio.c:328
-#, c-format
-msgid "An error occurred closing %s: %s."
-msgstr "关闭 %s 时发生了错误：%s。"
-
 #: src/fileio.c:411 src/fileio.c:393
 #, c-format
 msgid "Could not create directory '%s'."
 msgstr "无法创建目录“%s”。"
-
-#: src/fileio.c:420 src/fileio.c:402
-#, c-format
-msgid "Could not change to directory '%s'."
-msgstr "无法更改至目录“%s”。"
 
 #: src/filter.c:96 src/filter.c:70
 msgid "Invert"
@@ -724,10 +652,6 @@ msgstr "Sobel 描边"
 #: src/main.c:31
 msgid "show version and exit"
 msgstr "显示版本并退出"
-
-#: src/main.c:33
-msgid "v4l device to use"
-msgstr "要使用的 v4l 设备"
 
 #: src/main.c:35
 msgid "enable debugging code"
@@ -781,10 +705,6 @@ msgstr ""
 "\n"
 "Camorama 版本 %s\n"
 "\n"
-
-#: src/main.c:151 src/main.c:167
-msgid "Couldn't load builder file"
-msgstr "无法加载构建文件"
 
 #: src/main.c:180 src/main.c:196
 #, c-format
@@ -911,23 +831,6 @@ msgstr "帮助 (_H)"
 #: data/camorama-gtk4.ui:173
 msgid "_About"
 msgstr "关于(_A)"
-
-#: data/camorama-gtk4.ui:596 data/camorama-gtk2.ui:39
-msgid "Preferences"
-msgstr "首选项"
-
-#: src/main.c:306
-msgid "camorama"
-msgstr "camorama"
-
-#: src/main.c:308
-#, c-format
-msgid ""
-"Invalid argument\n"
-"Run '%s --help'\n"
-msgstr ""
-"无效参数\n"
-"执行 '%s --help'\n"
 
 #: cpp/libcamera.cpp:688
 msgid "Brightness"
@@ -1223,9 +1126,3 @@ msgstr "主窗口高度"
 #: data/org.gnome.camorama.gschema.xml.in:147
 msgid "Height of the main window. Zero means use the default size"
 msgstr "主窗口的高度。零表示使用默认大小。"
-
-#~ msgid "webcam-capture"
-#~ msgstr "webcam-capture"
-
-#~ msgid "Color Correction"
-#~ msgstr "颜色校正"
