@@ -105,6 +105,7 @@ devenv.set('CAMORAMA_DATA_DIR', join_paths(meson.current_build_dir(),
 devenv.set('CAMORAMA_ICON_FILE', join_paths(meson.current_source_dir(),
                                             'pixmaps',
                                             'camorama-128.png'))
+devenv.set('TEXTDOMAINDIR', join_paths(meson.current_build_dir(), 'po'))
 meson.add_devenv(devenv)
 
 inc = include_directories('.', 'src')

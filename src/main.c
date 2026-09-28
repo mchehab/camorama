@@ -561,7 +561,8 @@ int main(int argc, char *argv[])
     GtkApplication *app;
     gint status;
 
-    bindtextdomain(PACKAGE_NAME, PACKAGE_LOCALE_DIR);
+    const char *locale_dir = g_getenv("TEXTDOMAINDIR");
+    bindtextdomain(PACKAGE_NAME, locale_dir ? locale_dir : PACKAGE_LOCALE_DIR);
     bind_textdomain_codeset(PACKAGE_NAME, "UTF-8");
     textdomain(PACKAGE_NAME);
 
