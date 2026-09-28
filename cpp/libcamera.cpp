@@ -1582,6 +1582,4 @@ extern "C" const struct camera_backend libcamera_camera_backend = {
     .print_cam = libcamera_print_cam,
     .start_streaming = libcamera_start_streaming,
     .stop_streaming = libcamera_stop_streaming,
-    .start_streaming_userptr = nullptr,
-    .stop_streaming_userptr = nullptr,
 };

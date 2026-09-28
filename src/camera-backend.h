@@ -142,6 +142,7 @@ typedef struct camera {
     gchar *ts_string;
     gchar *date_format;
     gboolean debug, read, userptr, use_libv4l2, hidden;
+    gboolean can_read, can_mmap;
     gboolean cap, rcap, acap, show_adjustments, show_effects, audio_enabled;
     gboolean audio_available;
     gboolean audio_volume_available;
@@ -254,8 +255,6 @@ struct camera_backend {
     void (*print_cam)(cam_t *cam);
     void (*start_streaming)(cam_t *cam);
     void (*stop_streaming)(cam_t *cam);
-    void (*start_streaming_userptr)(cam_t *cam);
-    void (*stop_streaming_userptr)(cam_t *cam);
 };
 
 extern const struct camera_backend v4l_camera_backend;

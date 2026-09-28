@@ -983,6 +983,7 @@ static void v4l_get_supported_resolutions(cam_t *cam,
 static int v4l_camera_cap(cam_t *cam)
 {
     char *msg;
+    unsigned int capabilities;
     struct v4l2_capability vid_cap = { 0 };
 
     /* Query device capabilities */
@@ -996,7 +997,9 @@ static int v4l_camera_cap(cam_t *cam)
         return 1;
     }
 
-    if (!(vid_cap.device_caps & V4L2_CAP_VIDEO_CAPTURE)) {
+    capabilities = vid_cap.device_caps ? vid_cap.device_caps :
+                                          vid_cap.capabilities;
+    if (!(capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         msg = g_strdup_printf(_("Device %s is not a video capture device."),
                               cam->video_dev);
         error_dialog(msg);
@@ -1004,7 +1007,10 @@ static int v4l_camera_cap(cam_t *cam)
         return 1;
     }
 
-    if (!(vid_cap.device_caps & V4L2_CAP_STREAMING)) {
+    cam->can_read = !!(capabilities & V4L2_CAP_READWRITE);
+    cam->can_mmap = !!(capabilities & V4L2_CAP_STREAMING);
+
+    if (!cam->can_mmap) {
         printf("Device doesn't support streaming. Using read mode\n");
 
         cam->read = TRUE;
@@ -1023,6 +1029,7 @@ static int v4l_camera_cap(cam_t *cam)
             if (cam->dev < 0)
                 return 1;
         } else {
+            cam->can_mmap = TRUE;
             cam->req.count = 0;
             cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req);
         }
@@ -1314,7 +1321,7 @@ static void v4l_set_win_info(cam_t *cam)
     cam->height = fmt.fmt.pix.height;
 }
 
-static void v4l_start_streaming(cam_t *cam)
+static void v4l_start_streaming_mmap(cam_t *cam)
 {
     char *msg;
     unsigned int i;
@@ -1398,7 +1405,7 @@ static void v4l_start_streaming(cam_t *cam)
     }
 }
 
-static void v4l_start_streaming_userptr(cam_t *cam)
+static int v4l_start_streaming_userptr(cam_t *cam)
 {
     long page_size = sysconf(_SC_PAGESIZE);
     char *msg;
@@ -1409,12 +1416,10 @@ static void v4l_start_streaming_userptr(cam_t *cam)
     cam->req.count = 2;
     cam->req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     cam->req.memory = V4L2_MEMORY_USERPTR;
+
     if (cam_ioctl(cam, VIDIOC_REQBUFS, &cam->req)) {
-        msg = g_strdup_printf(_("VIDIOC_REQBUFS  --  could not request buffers (%s), exiting...."),
-                              cam->video_dev);
-        error_dialog(msg);
-        g_free(msg);
-        exit(0);
+        g_warning("Device doesn't support USERPTR");
+        return -ENOTSUP;
     }
 
     cam->buffers = calloc(cam->req.count, sizeof(*cam->buffers));
@@ -1422,7 +1427,7 @@ static void v4l_start_streaming_userptr(cam_t *cam)
         msg = g_strdup_printf(_("could not allocate memory for video buffers, exiting...."));
         error_dialog(msg);
         g_free(msg);
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     for (cam->n_buffers = 0;
@@ -1437,7 +1442,7 @@ static void v4l_start_streaming_userptr(cam_t *cam)
             msg = g_strdup_printf(_("could not allocate memory for video buffers, exiting...."));
             error_dialog(msg);
             g_free(msg);
-            exit(0);
+            exit(EXIT_FAILURE);
         }
 
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1451,7 +1456,7 @@ static void v4l_start_streaming_userptr(cam_t *cam)
                                   cam->video_dev);
             error_dialog(msg);
             g_free(msg);
-            exit(0);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -1462,11 +1467,26 @@ static void v4l_start_streaming_userptr(cam_t *cam)
                               cam->video_dev);
         error_dialog(msg);
         g_free(msg);
-        exit(0);
+        exit(EXIT_FAILURE);
     }
+
+    return 0;
 }
 
-static void v4l_stop_streaming(cam_t *cam)
+static void v4l_start_streaming(cam_t *cam)
+{
+    if (cam->userptr) {
+        if (!v4l_start_streaming_userptr(cam))
+            return;
+
+        /* Disable USERPTR, as device doesn't support it*/
+        cam->userptr = FALSE;
+    }
+
+    v4l_start_streaming_mmap(cam);
+}
+
+static void v4l_stop_streaming_mmap(cam_t *cam)
 {
     char *msg;
     unsigned int i;
@@ -1584,6 +1604,14 @@ static void v4l_stop_streaming_userptr(cam_t *cam)
     cam->buffers = NULL;
 }
 
+static void v4l_stop_streaming(cam_t *cam)
+{
+    if (cam->userptr)
+        v4l_stop_streaming_userptr(cam);
+    else
+        v4l_stop_streaming_mmap(cam);
+}
+
 const struct camera_backend v4l_camera_backend = {
     .name = "Video4Linux",
     .open = v4l_cam_open,
@@ -1605,6 +1633,4 @@ const struct camera_backend v4l_camera_backend = {
     .print_cam = v4l_print_cam,
     .start_streaming = v4l_start_streaming,
     .stop_streaming = v4l_stop_streaming,
-    .start_streaming_userptr = v4l_start_streaming_userptr,
-    .stop_streaming_userptr = v4l_stop_streaming_userptr,
 };

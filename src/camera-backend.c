@@ -7,6 +7,7 @@
 #include "img_ffmpeg.h"
 #include "v4l.h"
 #include "streaming.h"
+#include "support.h"
 
 static const struct camera_backend *camera_backend_get(const cam_t *cam)
 {
@@ -218,18 +219,23 @@ int start_streaming(cam_t *cam)
     char *stream_method = "";
     float fps;
 
-    if (!cam->read) {
-        if (cam->userptr && backend->start_streaming_userptr) {
-            stream_method = "userptr";
-            backend->start_streaming_userptr(cam);
-        } else if (backend->start_streaming) {
-            stream_method = "mmap";
-            backend->start_streaming(cam);
-        } else {
-            return -ENOTSUP;
-        }
-    } else {
+    if (cam->read && !cam->can_read) {
+        g_warning("Device doesn't support read()");
+        cam->read = FALSE;
+    }
+
+    if (cam->read) {
         stream_method = "read";
+    } else {
+        if (backend->start_streaming)
+            backend->start_streaming(cam);
+        else
+            return -ENOTSUP;
+
+        if (cam->userptr)
+            stream_method = "userptr";
+        else
+            stream_method = "mmap";
     }
 
     if (cam->debug == TRUE) {
@@ -271,12 +277,8 @@ int stop_streaming(cam_t *cam)
     cam_audio_stop(cam);
     cam_stream_stop(cam);
 
-    if (!cam->read) {
-        if (cam->userptr && backend->stop_streaming_userptr)
-                backend->stop_streaming_userptr(cam);
-        else if (backend->stop_streaming)
-                backend->stop_streaming(cam);
-    }
+    if (!cam->read && backend->stop_streaming)
+        backend->stop_streaming(cam);
 
     img_ffmpeg_free_converter(&cam->converter);
 
