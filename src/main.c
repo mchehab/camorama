@@ -472,7 +472,11 @@ static void activate(GtkApplication *app)
                                                    CAM_SETTINGS_SHOW_ADJUSTMENTS);
     cam->show_effects = g_settings_get_boolean(cam->gc,
                                                CAM_SETTINGS_SHOW_EFFECTS);
-    cam->audio_enabled = g_settings_get_boolean(cam->gc, CAM_SETTINGS_AUDIO);
+    if (g_settings_schema_has_key(schema, CAM_SETTINGS_AUDIO))
+        cam->audio_enabled = g_settings_get_boolean(cam->gc, CAM_SETTINGS_AUDIO);
+    else
+	cam->audio_enabled = FALSE;
+
     cam->audio_volume = 1.;
     g_object_get(cam->gc, "settings-schema", &schema, NULL);
     cam->audio_volume_available =
