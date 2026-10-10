@@ -10,6 +10,7 @@
 #include "camorama-globals.h"
 #include "audio.h"
 #include "camera-backend.h"
+#include "cam-settings.h"
 #include "support.h"
 #include "streaming.h"
 #include <config.h>
@@ -387,7 +388,6 @@ static void activate(GtkApplication *app)
 
     cam->has_window_geometry_settings &= g_settings_schema_has_key(schema,
                                                                    CAM_SETTINGS_WINDOW_HEIGHT);
-    g_settings_schema_unref(schema);
 
     if (camera_backend_is_libcamera(cam)) {
         if (video_dev) {
@@ -436,65 +436,73 @@ static void activate(GtkApplication *app)
 
     cam->date_format = (char *) "%Y-%m-%d %H:%M:%S";
 
-    cam->pixdir = g_settings_get_string(cam->gc, CAM_SETTINGS_SAVE_DIR);
+    cam->pixdir = cam_settings_get_string(cam, schema,
+                                          CAM_SETTINGS_SAVE_DIR);
     /* Deal with the save-dir default value starting with "~/" */
     if (cam->pixdir && cam->pixdir[0] == '~' && cam->pixdir[1] == '/') {
         gchar *old = cam->pixdir;
         cam->pixdir = g_strdup_printf("%s/%s", g_get_home_dir(), old + 2);
         g_free(old);
     }
-    cam->capturefile = g_settings_get_string(cam->gc, CAM_SETTINGS_SAVE_FILE);
-    cam->savetype = g_settings_get_int(cam->gc, CAM_SETTINGS_FILE_TYPE);
-    cam->host = g_settings_get_string(cam->gc, CAM_SETTINGS_HOSTNAME);
-    cam->proto = g_settings_get_string(cam->gc, CAM_SETTINGS_REMOTE_PROTO);
-    cam->rdir = g_settings_get_string(cam->gc, CAM_SETTINGS_REMOTE_SAVE_DIR);
-    cam->rcapturefile = g_settings_get_string(cam->gc,
-                                              CAM_SETTINGS_REMOTE_SAVE_FILE);
-    cam->rsavetype = g_settings_get_int(cam->gc,
-                                        CAM_SETTINGS_REMOTE_FILE_TYPE);
-    cam->ts_string = g_settings_get_string(cam->gc,
-                                           CAM_SETTINGS_TIMESTAMP_STRING);
-    cam->timestamp = g_settings_get_boolean(cam->gc, CAM_SETTINGS_TIMESTAMP);
-    cam->rtimestamp = g_settings_get_boolean(cam->gc, CAM_SETTINGS_REMOTE_TIMESTAMP);
+    cam->capturefile = cam_settings_get_string(cam, schema,
+                                               CAM_SETTINGS_SAVE_FILE);
+    cam->savetype = cam_settings_get_int(cam, schema,
+                                         CAM_SETTINGS_FILE_TYPE);
+    cam->host = cam_settings_get_string(cam, schema,
+                                        CAM_SETTINGS_HOSTNAME);
+    cam->proto = cam_settings_get_string(cam, schema,
+                                         CAM_SETTINGS_REMOTE_PROTO);
+    cam->rdir = cam_settings_get_string(cam, schema,
+                                        CAM_SETTINGS_REMOTE_SAVE_DIR);
+    cam->rcapturefile = cam_settings_get_string(cam, schema,
+                                                CAM_SETTINGS_REMOTE_SAVE_FILE);
+    cam->rsavetype = cam_settings_get_int(cam, schema,
+                                          CAM_SETTINGS_REMOTE_FILE_TYPE);
+    cam->ts_string = cam_settings_get_string(cam, schema,
+                                             CAM_SETTINGS_TIMESTAMP_STRING);
+    cam->timestamp = cam_settings_get_boolean(cam, schema,
+                                              CAM_SETTINGS_TIMESTAMP);
+    cam->rtimestamp = cam_settings_get_boolean(cam, schema,
+                                               CAM_SETTINGS_REMOTE_TIMESTAMP);
 
-    cam->cap = g_settings_get_boolean(cam->gc, CAM_SETTINGS_LOCAL_CAPTURE);
-    cam->rcap = g_settings_get_boolean(cam->gc, CAM_SETTINGS_REMOTE_CAPTURE);
-    cam->timefn = g_settings_get_boolean(cam->gc, CAM_SETTINGS_LOCAL_APPEND_TS);
-    cam->rtimefn = g_settings_get_boolean(cam->gc,
-                                         CAM_SETTINGS_REMOTE_APPEND_TS);
-    cam->usestring = g_settings_get_boolean(cam->gc,
-                                           CAM_SETTINGS_USE_CUSTOM_STRING);
-    cam->usedate = g_settings_get_boolean(cam->gc, CAM_SETTINGS_DRAWDATE);
-    cam->acap = g_settings_get_boolean(cam->gc, CAM_SETTINGS_AUTO_CAPTURE);
-    cam->timeout_interval = g_settings_get_int(cam->gc,
-                                               CAM_SETTINGS_AUTO_CAPTURE_INTERVAL);
-    cam->show_adjustments = g_settings_get_boolean(cam->gc,
-                                                   CAM_SETTINGS_SHOW_ADJUSTMENTS);
-    cam->show_effects = g_settings_get_boolean(cam->gc,
-                                               CAM_SETTINGS_SHOW_EFFECTS);
-    if (g_settings_schema_has_key(schema, CAM_SETTINGS_AUDIO))
-        cam->audio_enabled = g_settings_get_boolean(cam->gc, CAM_SETTINGS_AUDIO);
-    else
-	cam->audio_enabled = FALSE;
+    cam->cap = cam_settings_get_boolean(cam, schema,
+                                        CAM_SETTINGS_LOCAL_CAPTURE);
+    cam->rcap = cam_settings_get_boolean(cam, schema,
+                                         CAM_SETTINGS_REMOTE_CAPTURE);
+    cam->timefn = cam_settings_get_boolean(cam, schema,
+                                           CAM_SETTINGS_LOCAL_APPEND_TS);
+    cam->rtimefn = cam_settings_get_boolean(cam, schema,
+                                            CAM_SETTINGS_REMOTE_APPEND_TS);
+    cam->usestring = cam_settings_get_boolean(cam, schema,
+                                              CAM_SETTINGS_USE_CUSTOM_STRING);
+    cam->usedate = cam_settings_get_boolean(cam, schema,
+                                            CAM_SETTINGS_DRAWDATE);
+    cam->acap = cam_settings_get_boolean(cam, schema,
+                                         CAM_SETTINGS_AUTO_CAPTURE);
+    cam->timeout_interval = cam_settings_get_int(cam, schema,
+                                                 CAM_SETTINGS_AUTO_CAPTURE_INTERVAL);
+    cam->show_adjustments = cam_settings_get_boolean(cam, schema,
+                                                     CAM_SETTINGS_SHOW_ADJUSTMENTS);
+    cam->show_effects = cam_settings_get_boolean(cam, schema,
+                                                 CAM_SETTINGS_SHOW_EFFECTS);
 
-    cam->audio_volume = 1.;
-    g_object_get(cam->gc, "settings-schema", &schema, NULL);
-    cam->audio_volume_available =
-        g_settings_schema_has_key(schema, CAM_SETTINGS_AUDIO_VOLUME);
-    if (cam->audio_volume_available)
-        cam->audio_volume = CLAMP(g_settings_get_double(cam->gc,
-                                                         CAM_SETTINGS_AUDIO_VOLUME),
-                                  0., 1.);
-    g_settings_schema_unref(schema);
+    cam->audio_enabled = cam_settings_get_boolean(cam, schema,
+                                                  CAM_SETTINGS_AUDIO);
+    cam->audio_volume = cam_settings_get_double(cam, schema,
+                                                CAM_SETTINGS_AUDIO_VOLUME);
+    cam->audio_volume = CLAMP(cam->audio_volume, 0., 1.);
+
     if (x)
         cam->width = x;
     else
-        cam->width = g_settings_get_int(cam->gc, CAM_SETTINGS_WIDTH);
+        cam->width = cam_settings_get_int(cam, schema, CAM_SETTINGS_WIDTH);
 
     if (y)
         cam->height = y;
     else
-        cam->height = g_settings_get_int(cam->gc, CAM_SETTINGS_HEIGHT);
+        cam->height = cam_settings_get_int(cam, schema, CAM_SETTINGS_HEIGHT);
+
+    g_settings_schema_unref(schema);
 
     set_initial_window_size(cam);
     start_camera(cam);

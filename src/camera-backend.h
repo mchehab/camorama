@@ -145,7 +145,6 @@ typedef struct camera {
     gboolean can_read, can_mmap;
     gboolean cap, rcap, acap, show_adjustments, show_effects, audio_enabled;
     gboolean audio_available;
-    gboolean audio_volume_available;
     gdouble audio_volume;
     gboolean timestamp, rtimestamp, usedate, usestring;
     gboolean rtimefn, timefn;

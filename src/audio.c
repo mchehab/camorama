@@ -564,7 +564,6 @@ void cam_audio_volume(GtkRange *range, cam_t *cam)
         cam->audio->volume = cam->audio_volume;
         g_mutex_unlock(&cam->audio->lock);
     }
-    if (cam->audio_volume_available)
-        g_settings_set_double(cam->gc, CAM_SETTINGS_AUDIO_VOLUME,
-                              cam->audio_volume);
+    g_settings_set_double(cam->gc, CAM_SETTINGS_AUDIO_VOLUME,
+                          cam->audio_volume);
 }
