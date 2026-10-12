@@ -2,6 +2,7 @@ project('camorama', 'c', version: '0.30.0',
         default_options: ['c_std=gnu11', 'warning_level=2'])
 
 cc = meson.get_compiler('c')
+gnome = import('gnome')
 
 sources = [
   'src/camera-backend.c',
@@ -117,7 +118,6 @@ endif
 if gtk3
   sources += 'src/gtk3_callbacks.c'
 else
-  gnome = import('gnome')
   sources += gnome.compile_resources(
     'camorama-icons',
     'data/camorama-icons.gresource.xml',
@@ -156,6 +156,8 @@ subdir('po')
 subdir('data')
 subdir('pixmaps')
 subdir('tests')
+
+gnome.post_install(glib_compile_schemas: true)
 
 desktop = i18n.merge_file(input: 'camorama.desktop.in',
                           output: 'camorama.desktop',
