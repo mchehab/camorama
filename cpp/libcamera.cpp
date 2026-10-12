@@ -957,6 +957,8 @@ struct libcamera_bridge {
     uint64_t delivered_generation = 0;
 };
 
+/* TODO: Bridge code to be removed */
+
 static libcamera_bridge_t *libcamera_bridge_create(const char *camera_id,
                                                    int debug, char **error)
 {
@@ -969,21 +971,6 @@ static libcamera_bridge_t *libcamera_bridge_create(const char *camera_id,
     }
 
     return bridge.release();
-}
-
-static void libcamera_bridge_destroy(libcamera_bridge_t *bridge)
-{
-    delete bridge;
-}
-
-static const char *libcamera_bridge_camera_id(const libcamera_bridge_t *bridge)
-{
-    return bridge->id.c_str();
-}
-
-static const char *libcamera_bridge_camera_name(const libcamera_bridge_t *bridge)
-{
-    return bridge->name.c_str();
 }
 
 static unsigned int libcamera_bridge_num_sizes(const libcamera_bridge_t *bridge)
@@ -1174,7 +1161,7 @@ static int libcamera_cam_open(cam_t *cam, int)
     }
 
     cam->libcamera = bridge;
-    camera_id = libcamera_bridge_camera_id(bridge);
+    camera_id = bridge->id.c_str();
     g_free(cam->video_dev);
     cam->video_dev = g_strdup(camera_id);
 
@@ -1184,7 +1171,7 @@ static int libcamera_cam_open(cam_t *cam, int)
 static int libcamera_cam_close(cam_t *cam)
 {
     if (cam->libcamera) {
-        libcamera_bridge_destroy(cam->libcamera);
+        delete cam->libcamera;
         cam->libcamera = NULL;
     }
     cam->dev = -1;
@@ -1294,7 +1281,7 @@ static int libcamera_camera_cap(cam_t *cam)
     }
     libcamera_try_set_win_info(cam, &cam->width, &cam->height);
 
-    name = libcamera_bridge_camera_name(cam->libcamera);
+    name = cam->libcamera->name.c_str();
     g_strlcpy(cam->name, name ? name : cam->video_dev, sizeof(cam->name));
 
     cam->read = FALSE;
