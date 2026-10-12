@@ -45,7 +45,13 @@ extern "C" {
 
 using namespace libcamera;
 
-namespace {
+enum libcamera_control_type {
+	LIBCAMERA_CONTROL_BOOL,
+	LIBCAMERA_CONTROL_INTEGER,
+	LIBCAMERA_CONTROL_INTEGER64,
+	LIBCAMERA_CONTROL_FLOAT,
+	LIBCAMERA_CONTROL_MENU,
+};
 
 static char *copy_error(const std::string &message)
 {
@@ -209,8 +215,6 @@ struct Mapping {
     const unsigned char *data = nullptr;
     size_t mapped_length = 0;
 };
-
-} /* namespace */
 
 /*
  * Opaque struct used by public methods
@@ -953,80 +957,8 @@ struct libcamera_bridge {
     uint64_t delivered_generation = 0;
 };
 
-extern "C" {
-
-int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
-                                  unsigned int *count, char **error)
-{
-    CameraManager manager;
-    struct libcamera_camera_info *list;
-    int ret;
-
-    if (!output || !count)
-        return -EINVAL;
-
-    *output = nullptr;
-    *count = 0;
-
-    ret = manager.start();
-    if (ret) {
-        set_error(error, error_code(_("failed to start camera manager"), ret));
-        return ret;
-    }
-
-    const auto available = manager.cameras();
-    if (available.empty()) {
-        manager.stop();
-        set_error(error, "no cameras were found");
-        return -ENODEV;
-    }
-
-    list = static_cast<struct libcamera_camera_info *>(
-        calloc(available.size(), sizeof(*list)));
-    if (!list) {
-        manager.stop();
-        set_error(error, "failed to allocate camera list");
-        return -ENOMEM;
-    }
-
-    for (size_t i = 0; i < available.size(); i++) {
-        const std::string id = available[i]->id();
-
-        list[i].id = strdup(id.c_str());
-        const std::string name = camera_model(available[i], id);
-
-        list[i].name = strdup(name.c_str());
-        if (!list[i].id || !list[i].name) {
-            libcamera_bridge_free_cameras(list, available.size());
-            manager.stop();
-            set_error(error, "failed to allocate camera information");
-            return -ENOMEM;
-        }
-    }
-
-    *output = list;
-    *count = available.size();
-    manager.stop();
-
-    return 0;
-}
-
-void libcamera_bridge_free_cameras(struct libcamera_camera_info *cameras,
-                                   unsigned int count)
-{
-    if (!cameras)
-        return;
-
-    for (unsigned int i = 0; i < count; i++) {
-        free(cameras[i].id);
-        free(cameras[i].name);
-    }
-
-    free(cameras);
-}
-
-libcamera_bridge_t *libcamera_bridge_create(const char *camera_id, int debug,
-                                            char **error)
+static libcamera_bridge_t *libcamera_bridge_create(const char *camera_id,
+                                                   int debug, char **error)
 {
     std::unique_ptr<libcamera_bridge> bridge(new libcamera_bridge(debug));
     std::string message;
@@ -1039,34 +971,30 @@ libcamera_bridge_t *libcamera_bridge_create(const char *camera_id, int debug,
     return bridge.release();
 }
 
-void libcamera_bridge_destroy(libcamera_bridge_t *bridge)
+static void libcamera_bridge_destroy(libcamera_bridge_t *bridge)
 {
     delete bridge;
 }
 
-const char *libcamera_bridge_camera_id(const libcamera_bridge_t *bridge)
+static const char *libcamera_bridge_camera_id(const libcamera_bridge_t *bridge)
 {
     return bridge->id.c_str();
 }
 
-const char *libcamera_bridge_camera_name(const libcamera_bridge_t *bridge)
+static const char *libcamera_bridge_camera_name(const libcamera_bridge_t *bridge)
 {
     return bridge->name.c_str();
 }
 
-unsigned int libcamera_bridge_pixel_format(const libcamera_bridge_t *bridge)
-{
-    return bridge->v4l2_pixel_format;
-}
-
-unsigned int libcamera_bridge_num_sizes(const libcamera_bridge_t *bridge)
+static unsigned int libcamera_bridge_num_sizes(const libcamera_bridge_t *bridge)
 {
     return bridge->sizes.size();
 }
 
-int libcamera_bridge_get_size(const libcamera_bridge_t *bridge,
-                            unsigned int index, unsigned int *width,
-                            unsigned int *height, unsigned int *pixformat)
+static int libcamera_bridge_get_size(const libcamera_bridge_t *bridge,
+                                     unsigned int index, unsigned int *width,
+                                     unsigned int *height,
+                                     unsigned int *pixformat)
 {
     if (index >= bridge->sizes.size())
         return -EINVAL;
@@ -1082,19 +1010,19 @@ int libcamera_bridge_get_size(const libcamera_bridge_t *bridge,
     return 0;
 }
 
-void libcamera_bridge_try_size(const libcamera_bridge_t *bridge,
-                            unsigned int *width, unsigned int *height)
+static void libcamera_bridge_try_size(const libcamera_bridge_t *bridge,
+                                      unsigned int *width, unsigned int *height)
 {
     const Size size = bridge->nearestSize(*width, *height);
     *width = size.width;
     *height = size.height;
 }
 
-int libcamera_bridge_configure(libcamera_bridge_t *bridge,
-                            unsigned int *width, unsigned int *height,
-                            unsigned int *stride,
-                            unsigned int *frame_size,
-                            unsigned int *pixformat, char **error)
+static int libcamera_bridge_configure(libcamera_bridge_t *bridge,
+                                      unsigned int *width, unsigned int *height,
+                                      unsigned int *stride,
+                                      unsigned int *frame_size,
+                                      unsigned int *pixformat, char **error)
 {
     std::string message;
 
@@ -1106,7 +1034,7 @@ int libcamera_bridge_configure(libcamera_bridge_t *bridge,
     return ret;
 }
 
-int libcamera_bridge_start(libcamera_bridge_t *bridge, char **error)
+static int libcamera_bridge_start(libcamera_bridge_t *bridge, char **error)
 {
     std::string message;
 
@@ -1117,13 +1045,13 @@ int libcamera_bridge_start(libcamera_bridge_t *bridge, char **error)
     return ret;
 }
 
-void libcamera_bridge_stop(libcamera_bridge_t *bridge)
+static void libcamera_bridge_stop(libcamera_bridge_t *bridge)
 {
     bridge->stopCapture();
 }
 
-int libcamera_bridge_set_frame_duration(libcamera_bridge_t *bridge,
-                                        uint64_t duration_us)
+static int libcamera_bridge_set_frame_duration(libcamera_bridge_t *bridge,
+                                               uint64_t duration_us)
 {
     if (!bridge->supports_frame_duration())
         return -ENOTSUP;
@@ -1131,46 +1059,48 @@ int libcamera_bridge_set_frame_duration(libcamera_bridge_t *bridge,
     return bridge->setFrameDuration(duration_us);
 }
 
-uint64_t libcamera_bridge_frame_duration(const libcamera_bridge_t *bridge)
+static uint64_t libcamera_bridge_frame_duration(const libcamera_bridge_t *bridge)
 {
     return bridge->frameDuration();
 }
 
-int libcamera_bridge_supports_frame_duration(const libcamera_bridge_t *bridge)
+static int libcamera_bridge_supports_frame_duration(const libcamera_bridge_t *bridge)
 {
     return bridge->supports_frame_duration();
 }
 
-unsigned int libcamera_bridge_num_controls(const libcamera_bridge_t *bridge)
+static unsigned int libcamera_bridge_num_controls(const libcamera_bridge_t *bridge)
 {
     return bridge->numControls();
 }
 
-int libcamera_bridge_get_control_info(const libcamera_bridge_t *bridge,
-                                    unsigned int index, uint32_t *id,
-                                    const char **name, int *type,
-                                    int32_t *min, int32_t *max,
-                                    int32_t *def, int32_t *step)
+static int libcamera_bridge_get_control_info(const libcamera_bridge_t *bridge,
+                                             unsigned int index, uint32_t *id,
+                                             const char **name, int *type,
+                                             int32_t *min, int32_t *max,
+                                             int32_t *def, int32_t *step)
 {
     return bridge->getControlInfo(index, *id, *name, *type, *min, *max,
                                 *def, *step);
 }
 
-int libcamera_bridge_set_control(libcamera_bridge_t *bridge, uint32_t id,
-                                int32_t value)
+static int libcamera_bridge_set_control(libcamera_bridge_t *bridge,
+                                        uint32_t id,
+                                        int32_t value)
 {
     return bridge->setControl(id, value);
 }
 
-int libcamera_bridge_get_control(const libcamera_bridge_t *bridge, uint32_t id,
-                                int32_t *value)
+static int libcamera_bridge_get_control(const libcamera_bridge_t *bridge,
+                                        uint32_t id, int32_t *value)
 {
     return bridge->getControl(id, *value);
 }
 
-int libcamera_bridge_read(libcamera_bridge_t *bridge, unsigned char *output,
-                        size_t output_size, unsigned int timeout_ms,
-                        size_t *bytes_used, char **error)
+static int libcamera_bridge_read(libcamera_bridge_t *bridge,
+                                 unsigned char *output,
+                                 size_t output_size, unsigned int timeout_ms,
+                                 size_t *bytes_used, char **error)
 {
     std::string message;
     int ret = bridge->readFrame(output, output_size, timeout_ms,
@@ -1180,16 +1110,6 @@ int libcamera_bridge_read(libcamera_bridge_t *bridge, unsigned char *output,
 
     return ret;
 }
-
-void libcamera_bridge_free_string(char *string)
-{
-    free(string);
-}
-
-} /* extern \"C\" */
-
-
-/* Camorama camera backend integration. */
 
 static void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
                                        unsigned int *height)
@@ -1403,8 +1323,8 @@ static void libcamera_set_win_info(cam_t *cam)
     cam->sizeimage = frame_size;
 }
 
-gboolean libcamera_set_frame_interval(cam_t *cam,
-                                      const struct v4l2_fract *interval)
+static gboolean libcamera_set_frame_interval(cam_t *cam,
+                                             const struct v4l2_fract *interval)
 {
     uint64_t duration;
 
@@ -1416,8 +1336,8 @@ gboolean libcamera_set_frame_interval(cam_t *cam,
     return !libcamera_bridge_set_frame_duration(cam->libcamera, duration);
 }
 
-gboolean libcamera_get_frame_interval(cam_t *cam,
-                                      struct v4l2_fract *interval)
+static gboolean libcamera_get_frame_interval(cam_t *cam,
+                                             struct v4l2_fract *interval)
 {
     uint64_t duration = libcamera_bridge_frame_duration(cam->libcamera);
 
@@ -1429,7 +1349,7 @@ gboolean libcamera_get_frame_interval(cam_t *cam,
     return TRUE;
 }
 
-gboolean libcamera_supports_frame_interval(cam_t *cam)
+static gboolean libcamera_supports_frame_interval(cam_t *cam)
 {
     return libcamera_bridge_supports_frame_duration(cam->libcamera);
 }
@@ -1568,7 +1488,90 @@ static void libcamera_try_win_info(cam_t *cam, unsigned int,
     libcamera_try_set_win_info(cam, width, height);
 }
 
-extern "C" const struct camera_backend libcamera_camera_backend = {
+/*
+ * Camorama interface
+ */
+
+extern "C"
+int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
+                                  unsigned int *count, char **error)
+{
+    CameraManager manager;
+    struct libcamera_camera_info *list;
+    int ret;
+
+    if (!output || !count)
+        return -EINVAL;
+
+    *output = nullptr;
+    *count = 0;
+
+    ret = manager.start();
+    if (ret) {
+        set_error(error, error_code(_("failed to start camera manager"), ret));
+        return ret;
+    }
+
+    const auto available = manager.cameras();
+    if (available.empty()) {
+        manager.stop();
+        set_error(error, "no cameras were found");
+        return -ENODEV;
+    }
+
+    list = static_cast<struct libcamera_camera_info *>(
+        calloc(available.size(), sizeof(*list)));
+    if (!list) {
+        manager.stop();
+        set_error(error, "failed to allocate camera list");
+        return -ENOMEM;
+    }
+
+    for (size_t i = 0; i < available.size(); i++) {
+        const std::string id = available[i]->id();
+
+        list[i].id = strdup(id.c_str());
+        const std::string name = camera_model(available[i], id);
+
+        list[i].name = strdup(name.c_str());
+        if (!list[i].id || !list[i].name) {
+            libcamera_bridge_free_cameras(list, available.size());
+            manager.stop();
+            set_error(error, "failed to allocate camera information");
+            return -ENOMEM;
+        }
+    }
+
+    *output = list;
+    *count = available.size();
+    manager.stop();
+
+    return 0;
+}
+
+extern "C"
+void libcamera_bridge_free_cameras(struct libcamera_camera_info *cameras,
+                                   unsigned int count)
+{
+    if (!cameras)
+        return;
+
+    for (unsigned int i = 0; i < count; i++) {
+        free(cameras[i].id);
+        free(cameras[i].name);
+    }
+
+    free(cameras);
+}
+
+extern "C"
+void libcamera_bridge_free_string(char *string)
+{
+    free(string);
+}
+
+extern "C"
+const struct camera_backend libcamera_camera_backend = {
     .name = "libcamera",
     .is_libcamera = TRUE,
     .open = libcamera_cam_open,
