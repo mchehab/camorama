@@ -957,39 +957,20 @@ struct libcamera_bridge {
     uint64_t delivered_generation = 0;
 };
 
-/* TODO: Bridge code to be removed */
-
-static libcamera_bridge_t *libcamera_bridge_create(const char *camera_id,
-                                                   int debug, char **error)
+static int libcamera_get_size(const libcamera_bridge_t *bridge,
+                              unsigned int index, unsigned int *width,
+                              unsigned int *height,
+                              unsigned int *pixformat)
 {
-    std::unique_ptr<libcamera_bridge> bridge(new libcamera_bridge(debug));
-    std::string message;
+    const libcamera_bridge::FormatSupport *format;
 
-    if (bridge->open(camera_id, message)) {
-        set_error(error, message);
-        return nullptr;
-    }
-
-    return bridge.release();
-}
-
-static unsigned int libcamera_bridge_num_sizes(const libcamera_bridge_t *bridge)
-{
-    return bridge->sizes.size();
-}
-
-static int libcamera_bridge_get_size(const libcamera_bridge_t *bridge,
-                                     unsigned int index, unsigned int *width,
-                                     unsigned int *height,
-                                     unsigned int *pixformat)
-{
     if (index >= bridge->sizes.size())
         return -EINVAL;
 
     *width = bridge->sizes[index].width;
     *height = bridge->sizes[index].height;
-    const libcamera_bridge::FormatSupport *format = bridge->formatForSize(bridge->sizes[index]);
 
+    format = bridge->formatForSize(bridge->sizes[index]);
     if (!format)
         return -EINVAL;
 
@@ -997,111 +978,13 @@ static int libcamera_bridge_get_size(const libcamera_bridge_t *bridge,
     return 0;
 }
 
-static void libcamera_bridge_try_size(const libcamera_bridge_t *bridge,
-                                      unsigned int *width, unsigned int *height)
-{
-    const Size size = bridge->nearestSize(*width, *height);
-    *width = size.width;
-    *height = size.height;
-}
-
-static int libcamera_bridge_configure(libcamera_bridge_t *bridge,
-                                      unsigned int *width, unsigned int *height,
-                                      unsigned int *stride,
-                                      unsigned int *frame_size,
-                                      unsigned int *pixformat, char **error)
-{
-    std::string message;
-
-    int ret = bridge->configure(*width, *height, *stride, *frame_size,
-                                *pixformat, message);
-    if (ret)
-        set_error(error, message);
-
-    return ret;
-}
-
-static int libcamera_bridge_start(libcamera_bridge_t *bridge, char **error)
-{
-    std::string message;
-
-    int ret = bridge->startCapture(message);
-    if (ret)
-        set_error(error, message);
-
-    return ret;
-}
-
-static void libcamera_bridge_stop(libcamera_bridge_t *bridge)
-{
-    bridge->stopCapture();
-}
-
-static int libcamera_bridge_set_frame_duration(libcamera_bridge_t *bridge,
-                                               uint64_t duration_us)
-{
-    if (!bridge->supports_frame_duration())
-        return -ENOTSUP;
-
-    return bridge->setFrameDuration(duration_us);
-}
-
-static uint64_t libcamera_bridge_frame_duration(const libcamera_bridge_t *bridge)
-{
-    return bridge->frameDuration();
-}
-
-static int libcamera_bridge_supports_frame_duration(const libcamera_bridge_t *bridge)
-{
-    return bridge->supports_frame_duration();
-}
-
-static unsigned int libcamera_bridge_num_controls(const libcamera_bridge_t *bridge)
-{
-    return bridge->numControls();
-}
-
-static int libcamera_bridge_get_control_info(const libcamera_bridge_t *bridge,
-                                             unsigned int index, uint32_t *id,
-                                             const char **name, int *type,
-                                             int32_t *min, int32_t *max,
-                                             int32_t *def, int32_t *step)
-{
-    return bridge->getControlInfo(index, *id, *name, *type, *min, *max,
-                                *def, *step);
-}
-
-static int libcamera_bridge_set_control(libcamera_bridge_t *bridge,
-                                        uint32_t id,
-                                        int32_t value)
-{
-    return bridge->setControl(id, value);
-}
-
-static int libcamera_bridge_get_control(const libcamera_bridge_t *bridge,
-                                        uint32_t id, int32_t *value)
-{
-    return bridge->getControl(id, *value);
-}
-
-static int libcamera_bridge_read(libcamera_bridge_t *bridge,
-                                 unsigned char *output,
-                                 size_t output_size, unsigned int timeout_ms,
-                                 size_t *bytes_used, char **error)
-{
-    std::string message;
-    int ret = bridge->readFrame(output, output_size, timeout_ms,
-                                *bytes_used, message);
-    if (ret)
-        set_error(error, message);
-
-    return ret;
-}
-
 static void libcamera_try_set_win_info(cam_t *cam, unsigned int *width,
                                        unsigned int *height)
 {
-    libcamera_bridge_try_size(cam->libcamera, width, height);
+    const Size size = cam->libcamera->nearestSize(*width, *height);
+
+    *width = size.width;
+    *height = size.height;
 }
 
 static void libcamera_add_control(cam_t *cam, guint32 id, const char *name,
@@ -1150,18 +1033,17 @@ static void show_libcamera_error(const char *operation, char *detail)
 
 static int libcamera_cam_open(cam_t *cam, int)
 {
-    libcamera_bridge_t *bridge;
+    std::unique_ptr<libcamera_bridge> bridge(new libcamera_bridge(cam->debug));
     const char *camera_id;
-    char *error = NULL;
+    std::string message;
 
-    bridge = libcamera_bridge_create(cam->video_dev, cam->debug, &error);
-    if (!bridge) {
-        show_libcamera_error(_("could not open camera"), error);
+    if (bridge->open(cam->video_dev, message)) {
+        g_error(_("could not open camera: %s"), message.c_str());
         return -1;
     }
 
-    cam->libcamera = bridge;
-    camera_id = bridge->id.c_str();
+    cam->libcamera = bridge.release();
+    camera_id = cam->libcamera->id.c_str();
     g_free(cam->video_dev);
     cam->video_dev = g_strdup(camera_id);
 
@@ -1181,19 +1063,19 @@ static int libcamera_cam_close(cam_t *cam)
 
 static unsigned char *libcamera_cam_read(cam_t *cam, unsigned char *output)
 {
-    char *error = NULL;
     size_t bytes_used = 0;
+    std::string message;
     int ret;
 
-    ret = libcamera_bridge_read(cam->libcamera, cam->capture_input,
-                                cam->sizeimage, 1000, &bytes_used, &error);
-    if (!ret)
+    ret = cam->libcamera->readFrame(cam->capture_input,
+                                    cam->sizeimage, 1000, bytes_used, message);
+    if (!ret) {
         ret = img_convert_to_rgb24(cam, cam->capture_input, bytes_used,
                                    output);
-    if (ret <= 0) {
-        if (cam->debug && error)
-            g_warning("libcamera: %s", error);
-        libcamera_bridge_free_string(error);
+    } else if (bytes_used) {
+        if (cam->debug)
+            g_warning("libcamera: %s", message.c_str());
+
         return NULL;
     }
 
@@ -1211,7 +1093,7 @@ static void libcamera_get_supported_resolutions(cam_t *cam)
     cam->res = NULL;
     cam->n_res = 0;
 
-    count = libcamera_bridge_num_sizes(bridge);
+    count = bridge->sizes.size();
     if (!count)
         return;
 
@@ -1222,7 +1104,7 @@ static void libcamera_get_supported_resolutions(cam_t *cam)
     for (i = 0; i < count; i++) {
         struct resolutions *res = &cam->res[cam->n_res];
 
-        if (libcamera_bridge_get_size(bridge, i, &res->x, &res->y,
+        if (libcamera_get_size(bridge, i, &res->x, &res->y,
                                       &res->pixformat))
             continue;
         res->depth = 24;
@@ -1292,15 +1174,15 @@ static int libcamera_camera_cap(cam_t *cam)
 
 static void libcamera_set_win_info(cam_t *cam)
 {
-    char *error = NULL;
     unsigned int frame_size = 0;
     unsigned int pixformat = 0;
     unsigned int stride = 0;
 
-    if (libcamera_bridge_configure(cam->libcamera, &cam->width, &cam->height,
-                                   &stride, &frame_size, &pixformat,
-                                   &error)) {
-        show_libcamera_error(_("could not configure camera"), error);
+    std::string message;
+
+    if (cam->libcamera->configure(cam->width, cam->height, stride, frame_size,
+                                  pixformat, message)) {
+        g_error(_("could not configure camera: %s"), message.c_str());
         exit(EXIT_FAILURE);
     }
 
@@ -1320,13 +1202,16 @@ static gboolean libcamera_set_frame_interval(cam_t *cam,
     duration = ((uint64_t)interval->numerator * 1000000 +
                 interval->denominator / 2) / interval->denominator;
 
-    return !libcamera_bridge_set_frame_duration(cam->libcamera, duration);
+    if (!cam->libcamera->supports_frame_duration())
+        return -ENOTSUP;
+
+    return cam->libcamera->setFrameDuration(duration);
 }
 
 static gboolean libcamera_get_frame_interval(cam_t *cam,
                                              struct v4l2_fract *interval)
 {
-    uint64_t duration = libcamera_bridge_frame_duration(cam->libcamera);
+    uint64_t duration = cam->libcamera->frameDuration();
 
     if (!duration)
         return FALSE;
@@ -1338,7 +1223,7 @@ static gboolean libcamera_get_frame_interval(cam_t *cam,
 
 static gboolean libcamera_supports_frame_interval(cam_t *cam)
 {
-    return libcamera_bridge_supports_frame_duration(cam->libcamera);
+    return cam->libcamera->supports_frame_duration();
 }
 
 static GArray *libcamera_get_frame_intervals(cam_t *cam)
@@ -1381,10 +1266,10 @@ static void libcamera_get_pic_info(cam_t *cam)
 
 static void libcamera_start_streaming(cam_t *cam)
 {
-    char *error = NULL;
+    std::string message;
 
-    if (libcamera_bridge_start(cam->libcamera, &error)) {
-        show_libcamera_error(_("could not start camera"), error);
+    if (cam->libcamera->startCapture(message)) {
+        g_warning(_("could not start camera: %s"), message.c_str());
         exit(EXIT_FAILURE);
     }
 }
@@ -1392,7 +1277,7 @@ static void libcamera_start_streaming(cam_t *cam)
 static void libcamera_stop_streaming(cam_t *cam)
 {
     if (cam->libcamera)
-        libcamera_bridge_stop(cam->libcamera);
+        cam->libcamera->stopCapture();
 }
 
 static void libcamera_print_cam(cam_t *cam)
@@ -1419,16 +1304,15 @@ static int libcamera_query_controls(cam_t *cam)
     unsigned int i, count;
 
     cam_free_controls(cam);
-    count = libcamera_bridge_num_controls(cam->libcamera);
+    count = cam->libcamera->numControls();
     for (i = 0; i < count; i++) {
         guint32 id;
         const char *name;
         int type;
         gint32 min, max, def, step;
 
-        if (libcamera_bridge_get_control_info(cam->libcamera, i, &id, &name,
-                                              &type, &min, &max, &def,
-                                              &step))
+        if (cam->libcamera->getControlInfo(i, id, name, type, min, max,
+                                           def, step))
             continue;
 
         libcamera_add_control(cam, id, name, type, min, max, def, step);
@@ -1451,7 +1335,7 @@ static int libcamera_set_control(cam_t *cam, guint32 id, void *value)
     if (!cam_find_control_per_id(cam, id))
         return -1;
 
-    return libcamera_bridge_set_control(cam->libcamera, id, *(gint32 *)value);
+    return cam->libcamera->setControl(id, *(gint32 *)value);
 }
 
 static int libcamera_get_control(cam_t *cam, guint32 id, void *value)
@@ -1459,7 +1343,7 @@ static int libcamera_get_control(cam_t *cam, guint32 id, void *value)
     if (!cam_find_control_per_id(cam, id))
         return -1;
 
-    return libcamera_bridge_get_control(cam->libcamera, id, (gint32 *)value);
+    return cam->libcamera->getControl(id, *(gint32 *)value);
 }
 
 static void libcamera_supported_resolutions(cam_t *cam,
