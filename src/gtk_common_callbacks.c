@@ -1427,21 +1427,18 @@ static void videodev_response(GtkButton *,
 void retrieve_video_dev(cam_t *cam)
 {
     int last_minor = -1;
-    unsigned int i;
     GtkWidget *widget;
+    unsigned int i;
 
     /* This function is not meant to be called more than once */
     assert (n_devices == 0);
 
 #ifdef HAVE_LIBCAMERA
     if (camera_backend_is_libcamera(cam)) {
-        char *error = NULL;
-
         if (libcamera_bridge_list_cameras(&libcamera_devices,
-                                          &n_libcamera_devices, &error) ||
+                                          &n_libcamera_devices) ||
             !n_libcamera_devices) {
-            error_dialog(error ? error : _("Didn't find any camera"));
-            libcamera_bridge_free_string(error);
+
             exit(EXIT_FAILURE);
         }
 

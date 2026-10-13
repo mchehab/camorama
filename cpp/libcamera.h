@@ -17,11 +17,9 @@ struct libcamera_camera_info {
 };
 
 int libcamera_bridge_list_cameras(struct libcamera_camera_info **cameras,
-					  unsigned int *count, char **error);
+					  unsigned int *count);
 void libcamera_bridge_free_cameras(struct libcamera_camera_info *cameras,
 					   unsigned int count);
-
-void libcamera_bridge_free_string(char *string);
 
 #ifdef __cplusplus
 }

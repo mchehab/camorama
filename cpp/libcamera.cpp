@@ -53,32 +53,6 @@ enum libcamera_control_type {
 	LIBCAMERA_CONTROL_MENU,
 };
 
-static char *copy_error(const std::string &message)
-{
-    return strdup(message.c_str());
-}
-
-static void set_error(char **error, const std::string &message)
-{
-    if (error)
-        *error = copy_error(message);
-}
-
-static std::string error_code(const char *operation, int ret)
-{
-    int code = ret < 0 ? -ret : ret;
-
-    return std::string(operation) + ": " + std::strerror(code);
-}
-
-static std::string format_message(const char *format, const char *argument)
-{
-    std::unique_ptr<gchar, decltype(&g_free)> message(g_strdup_printf(format, argument),
-                                                                       &g_free);
-
-    return message.get();
-}
-
 /*
  * As camorama uses V4L2 internally, we need to have a map between
  * libcamera's internal representation and V4L2.
@@ -244,19 +218,18 @@ struct libcamera_bridge {
             manager.stop();
     }
 
-    int open(const char *selector, std::string &error)
+    void open(const char *selector)
     {
         int ret = manager.start();
         if (ret) {
-            error = error_code(_("failed to start camera manager"), ret);
-            return ret;
+            g_error(_("could not start camera manager: %s"),
+                    std::strerror(-ret));
         }
         manager_started = true;
 
         const auto cameras = manager.cameras();
         if (cameras.empty()) {
-            error = _("no cameras were found");
-            return -ENODEV;
+            g_error(_("no cameras were found"));
         }
 
         if (selector && *selector) {
@@ -272,8 +245,7 @@ struct libcamera_bridge {
             if (!camera && end && !*end && index < cameras.size())
                 camera = cameras[index];
             if (!camera) {
-                error = format_message(_("camera '%s' was not found"), selector);
-                return -ENODEV;
+                g_error(_("camera '%s' was not found"), selector);
             }
         } else {
             camera = cameras.front();
@@ -284,15 +256,13 @@ struct libcamera_bridge {
 
         ret = camera->acquire();
         if (ret) {
-            error = error_code(_("failed to acquire camera"), ret);
-            return ret;
+            g_error(_("failed to acquire camera: %s"), std::strerror(-ret));
         }
         acquired = true;
 
         auto config = camera->generateConfiguration({ StreamRole::Viewfinder });
         if (!config || config->empty()) {
-            error = _("camera has no viewfinder stream");
-            return -EINVAL;
+            g_error(_("camera has no viewfinder stream"));
         }
 
         const StreamFormats &stream_formats = config->at(0).formats();
@@ -346,8 +316,7 @@ struct libcamera_bridge {
         }
 
         if (format_supports.empty()) {
-            error = _("camera cannot provide a supported viewfinder stream");
-            return -ENOTSUP;
+            g_error(_("camera cannot provide a supported viewfinder stream"));
         }
 
         std::stable_sort(format_supports.begin(), format_supports.end(),
@@ -373,19 +342,16 @@ struct libcamera_bridge {
 
         sizes.erase(std::unique(sizes.begin(), sizes.end()), sizes.end());
         if (sizes.empty()) {
-            error = _("camera has no supported viewfinder resolutions");
-            return -ENOTSUP;
+            g_error(_("camera has no supported viewfinder resolutions"));
         }
 
         const FormatSupport *default_format = formatForSize(sizes.front());
         if (!default_format) {
-            error = _("camera has no supported format for its resolutions");
-            return -ENOTSUP;
+            g_error(_("camera has no supported format for its resolutions"));
         }
         pixel_format = default_format->pixel_format;
         v4l2_pixel_format = default_format->v4l2_pixel_format;
 
-        return 0;
     }
 
     const FormatSupport *formatForSize(const Size &size) const
@@ -420,26 +386,24 @@ struct libcamera_bridge {
         return best;
     }
 
-    int configure(unsigned int &requested_width,
-                unsigned int &requested_height,
-                unsigned int &output_stride,
-                unsigned int &output_frame_size,
-                unsigned int &output_pixformat, std::string &error)
+    void configure(unsigned int &requested_width,
+                   unsigned int &requested_height,
+                   unsigned int &output_stride,
+                   unsigned int &output_frame_size,
+                   unsigned int &output_pixformat)
     {
         stopCapture();
         configured = false;
 
         auto config = camera->generateConfiguration({ StreamRole::Viewfinder });
         if (!config || config->empty()) {
-            error = _("camera has no viewfinder stream");
-            return -EINVAL;
+            g_error(_("camera has no viewfinder stream"));
         }
 
         Size selected = nearestSize(requested_width, requested_height);
         const FormatSupport *selected_format = formatForSize(selected);
         if (!selected_format) {
-            error = _("camera has no supported format for the selected resolution");
-            return -ENOTSUP;
+            g_error(_("camera has no supported format for the selected resolution"));
         }
         StreamConfiguration &stream_config = config->at(0);
         stream_config.pixelFormat = selected_format->pixel_format;
@@ -448,18 +412,15 @@ struct libcamera_bridge {
 
         CameraConfiguration::Status status = config->validate();
         if (status == CameraConfiguration::Invalid) {
-            error = _("requested stream configuration is invalid");
-            return -EINVAL;
+            g_error(_("requested stream configuration is invalid"));
         }
         if (stream_config.pixelFormat != selected_format->pixel_format) {
-            error = _("camera adjusted the stream to a non-RGB format");
-            return -ENOTSUP;
+            g_error(_("camera adjusted the stream to a non-RGB format"));
         }
 
         int ret = camera->configure(config.get());
         if (ret) {
-            error = error_code(_("failed to configure camera"), ret);
-            return ret;
+            g_error(_("failed to configure camera: %s"), std::strerror(-ret));
         }
 
         stream = stream_config.stream();
@@ -474,25 +435,23 @@ struct libcamera_bridge {
         output_pixformat = selected_format->v4l2_pixel_format;
         configured = true;
 
-        return 0;
     }
 
-    int startCapture(std::string &error)
+    void startCapture()
     {
         if (!configured) {
-            error = _("camera is not configured");
-            return -EINVAL;
+            g_error(_("camera is not configured"));
         }
         if (started)
-            return 0;
+            return;
 
         allocator = std::make_unique<FrameBufferAllocator>(camera);
 
         int ret = allocator->allocate(stream);
         if (ret < 0) {
-            error = error_code(_("failed to allocate capture buffers"), ret);
+            g_error(_("failed to allocate capture buffers: %s"),
+                    std::strerror(-ret));
             allocator.reset();
-            return ret;
         }
 
         for (const auto &buffer : allocator->buffers(stream)) {
@@ -503,15 +462,15 @@ struct libcamera_bridge {
             void *base = mmap(nullptr, mapped_length, PROT_READ, MAP_SHARED,
                             fd, 0);
             if (base == MAP_FAILED) {
-                error = error_code(_("failed to map capture buffer"), errno);
+                int saved_errno = errno;
                 releaseBuffers();
-                return -errno;
+                g_error(_("failed to map capture buffer: %s"),
+                        std::strerror(saved_errno));
             }
             if (plane.length < frame_size) {
                 munmap(base, mapped_length);
-                error = _("capture buffer is smaller than the configured image");
                 releaseBuffers();
-                return -EIO;
+                g_error(_("capture buffer is smaller than the configured image"));
             }
             mappings[buffer.get()] = {
                 base,
@@ -522,16 +481,15 @@ struct libcamera_bridge {
             std::unique_ptr<Request> request = camera->createRequest();
 
             if (!request) {
-                error = _("failed to create capture request");
                 releaseBuffers();
-                return -ENOMEM;
+                g_error(_("failed to create capture request"));
             }
 
             ret = request->addBuffer(stream, buffer.get());
             if (ret) {
-                error = error_code(_("failed to attach capture buffer"), ret);
                 releaseBuffers();
-                return ret;
+                g_error(_("failed to attach capture buffer: %s"),
+                        std::strerror(-ret));
             }
             applyControls(request.get());
             requests.push_back(std::move(request));
@@ -551,21 +509,19 @@ struct libcamera_bridge {
         if (ret) {
             running = false;
             camera->requestCompleted.disconnect(this);
-            error = error_code(_("failed to start capture"), ret);
             releaseBuffers();
-            return ret;
+            g_error(_("failed to start capture: %s"), std::strerror(-ret));
         }
         started = true;
 
         for (const auto &request : requests) {
             ret = camera->queueRequest(request.get());
             if (ret) {
-                error = error_code(_("failed to queue capture request"), ret);
                 stopCapture();
-                return ret;
+                g_error(_("failed to queue capture request: %s"),
+                        std::strerror(-ret));
             }
         }
-        return 0;
     }
 
     void requestComplete(Request *request)
@@ -605,8 +561,7 @@ struct libcamera_bridge {
     }
 
     int readFrame(unsigned char *output, size_t output_size,
-                unsigned int timeout_ms, size_t &bytes_used,
-                std::string &error)
+                  unsigned int timeout_ms, size_t &bytes_used)
     {
         std::unique_lock<std::mutex> lock(frame_mutex);
 
@@ -614,15 +569,15 @@ struct libcamera_bridge {
         if (!frame_ready.wait_for(lock, std::chrono::milliseconds(timeout_ms),
                                 [&] { return frame_generation != previous ||
                                             !running; })) {
-            error = _("timed out waiting for a frame");
+            g_warning(_("timed out waiting for a frame"));
             return -ETIMEDOUT;
         }
         if (!running || latest_frame.empty()) {
-            error = _("capture stopped while waiting for a frame");
+            g_warning(_("capture stopped while waiting for a frame"));
             return -EPIPE;
         }
         if (output_size < latest_frame.size()) {
-            error = _("output buffer is too small");
+            g_warning(_("output buffer is too small"));
             return -ENOSPC;
         }
 
@@ -957,6 +912,10 @@ struct libcamera_bridge {
     uint64_t delivered_generation = 0;
 };
 
+/*
+ * C-style handlers that are compatible with V4L2
+ */
+
 static int libcamera_get_size(const libcamera_bridge_t *bridge,
                               unsigned int index, unsigned int *width,
                               unsigned int *height,
@@ -1028,19 +987,15 @@ static void show_libcamera_error(const char *operation, char *detail)
                               detail ? detail : _("unknown error"));
     error_dialog(message);
     g_free(message);
-    libcamera_bridge_free_string(detail);
+    free(detail);
 }
 
 static int libcamera_cam_open(cam_t *cam, int)
 {
     std::unique_ptr<libcamera_bridge> bridge(new libcamera_bridge(cam->debug));
     const char *camera_id;
-    std::string message;
 
-    if (bridge->open(cam->video_dev, message)) {
-        g_error(_("could not open camera: %s"), message.c_str());
-        return -1;
-    }
+    bridge->open(cam->video_dev);
 
     cam->libcamera = bridge.release();
     camera_id = cam->libcamera->id.c_str();
@@ -1064,20 +1019,13 @@ static int libcamera_cam_close(cam_t *cam)
 static unsigned char *libcamera_cam_read(cam_t *cam, unsigned char *output)
 {
     size_t bytes_used = 0;
-    std::string message;
     int ret;
 
-    ret = cam->libcamera->readFrame(cam->capture_input,
-                                    cam->sizeimage, 1000, bytes_used, message);
-    if (!ret) {
-        ret = img_convert_to_rgb24(cam, cam->capture_input, bytes_used,
-                                   output);
-    } else if (bytes_used) {
-        if (cam->debug)
-            g_warning("libcamera: %s", message.c_str());
-
+    ret = cam->libcamera->readFrame(cam->capture_input, cam->sizeimage, 1000,
+                                    bytes_used);
+    if (ret)
         return NULL;
-    }
+    ret = img_convert_to_rgb24(cam, cam->capture_input, bytes_used, output);
 
     g_atomic_int_inc(&cam->frame_number);
 
@@ -1178,13 +1126,8 @@ static void libcamera_set_win_info(cam_t *cam)
     unsigned int pixformat = 0;
     unsigned int stride = 0;
 
-    std::string message;
-
-    if (cam->libcamera->configure(cam->width, cam->height, stride, frame_size,
-                                  pixformat, message)) {
-        g_error(_("could not configure camera: %s"), message.c_str());
-        exit(EXIT_FAILURE);
-    }
+    cam->libcamera->configure(cam->width, cam->height, stride, frame_size,
+                              pixformat);
 
     cam->pixformat = pixformat;
     cam->bpp = 24;
@@ -1250,7 +1193,9 @@ static GArray *libcamera_get_frame_intervals(cam_t *cam)
     return intervals;
 }
 
-static void libcamera_get_win_info(cam_t *) {}
+static void libcamera_get_win_info(cam_t *)
+{
+}
 
 static void libcamera_get_pic_info(cam_t *cam)
 {
@@ -1266,12 +1211,7 @@ static void libcamera_get_pic_info(cam_t *cam)
 
 static void libcamera_start_streaming(cam_t *cam)
 {
-    std::string message;
-
-    if (cam->libcamera->startCapture(message)) {
-        g_warning(_("could not start camera: %s"), message.c_str());
-        exit(EXIT_FAILURE);
-    }
+    cam->libcamera->startCapture();
 }
 
 static void libcamera_stop_streaming(cam_t *cam)
@@ -1360,15 +1300,16 @@ static void libcamera_try_win_info(cam_t *cam, unsigned int,
 }
 
 /*
- * Camorama interface
+ * Camorama C interface
  */
 
 extern "C"
 int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
-                                  unsigned int *count, char **error)
+                                  unsigned int *count)
 {
-    CameraManager manager;
     struct libcamera_camera_info *list;
+    CameraManager manager;
+    char *msg;
     int ret;
 
     if (!output || !count)
@@ -1379,14 +1320,16 @@ int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
 
     ret = manager.start();
     if (ret) {
-        set_error(error, error_code(_("failed to start camera manager"), ret));
+        msg = g_strdup_printf(_("failed to start camera manager: %d"), ret);
+        error_dialog(msg);
+        g_free(msg);
         return ret;
     }
 
     const auto available = manager.cameras();
     if (available.empty()) {
         manager.stop();
-        set_error(error, "no cameras were found");
+        error_dialog(_("no cameras were found"));
         return -ENODEV;
     }
 
@@ -1394,7 +1337,7 @@ int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
         calloc(available.size(), sizeof(*list)));
     if (!list) {
         manager.stop();
-        set_error(error, "failed to allocate camera list");
+        error_dialog(_("failed to allocate camera list"));
         return -ENOMEM;
     }
 
@@ -1408,7 +1351,7 @@ int libcamera_bridge_list_cameras(struct libcamera_camera_info **output,
         if (!list[i].id || !list[i].name) {
             libcamera_bridge_free_cameras(list, available.size());
             manager.stop();
-            set_error(error, "failed to allocate camera information");
+            error_dialog(_("failed to allocate camera information"));
             return -ENOMEM;
         }
     }
@@ -1433,12 +1376,6 @@ void libcamera_bridge_free_cameras(struct libcamera_camera_info *cameras,
     }
 
     free(cameras);
-}
-
-extern "C"
-void libcamera_bridge_free_string(char *string)
-{
-    free(string);
 }
 
 extern "C"
