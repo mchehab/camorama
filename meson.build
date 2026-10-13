@@ -1,4 +1,4 @@
-project('camorama', 'c', version: '0.30.0',
+project('camorama', 'c', version: '0.30.1',
         default_options: ['c_std=gnu11', 'warning_level=2'])
 
 cc = meson.get_compiler('c')

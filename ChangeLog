@@ -1,3 +1,19 @@
+2026-10-13 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+
+	Version 0.30.1
+
+	* fix meson builds with Fedora and dependencies
+	* Update Fedora build instructions
+	* better sync audio with video when audio is captured
+	* some cleanups at compressed formats printk
+	* fix some issues when fps or resolution changes
+	* several cleanups and minor fixes at libcamera
+	* some updates on translations
+	* ensure that g_settings is installed and relax crashes related
+	  to not-installed new fields
+	* fix read() logic
+	* create a hermetic test group to ensure tests at make dist time
+
 2026-09-26 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
 
 	Version 0.30.0 - changes since 0.21.2
