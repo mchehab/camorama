@@ -357,15 +357,27 @@ static gpointer audio_thread(gpointer user_data)
     return NULL;
 }
 
-static const pa_buffer_attr low_latency_attr = {
-    .tlength    = 0,
-    .fragsize   = 10 * 1024,
-    .minreq     = 0,
+static pa_buffer_attr low_latency_attr(cam_t *cam,
+                                       const pa_sample_spec *sample_spec)
+{
+    struct v4l2_fract interval;
+    pa_usec_t frame_duration = G_USEC_PER_SEC / 60;
+    pa_buffer_attr attr = {
+        .tlength = 0,
+        .minreq = 0,
+    };
 
-    /* Confine latency inside a limit considering 30 fps */
-    .prebuf     = 48000 * 4 / 30,
-    .maxlength  = 48000 * 4 / 15,
-};
+    if (cam_get_frame_interval(cam, &interval) && interval.numerator &&
+        interval.denominator)
+        frame_duration = (pa_usec_t)((guint64)interval.numerator *
+                                     G_USEC_PER_SEC / interval.denominator);
+
+    attr.prebuf = (uint32_t)pa_usec_to_bytes(frame_duration, sample_spec);
+    attr.maxlength = (uint32_t)pa_usec_to_bytes(frame_duration * 2,
+                                               sample_spec);
+    attr.fragsize = attr.prebuf;
+    return attr;
+}
 
 gboolean cam_audio_start(cam_t *cam)
 {
@@ -378,6 +390,7 @@ gboolean cam_audio_start(cam_t *cam)
     pa_mainloop *mainloop;
     pa_context *context;
     pa_stream *capture, *playback;
+    pa_buffer_attr buffer_attr;
     pa_context_state_t state;
     gchar *source, *sink;
     gint card;
@@ -461,7 +474,8 @@ gboolean cam_audio_start(cam_t *cam)
     pa_stream_set_suspended_callback(playback, stream_suspended_cb, audio);
     pa_stream_set_read_callback(capture, capture_read_cb, audio);
 
-    ret = pa_stream_connect_playback(playback, sink, &low_latency_attr,
+    buffer_attr = low_latency_attr(cam, &sample_spec);
+    ret = pa_stream_connect_playback(playback, sink, &buffer_attr,
                                      PA_STREAM_AUTO_TIMING_UPDATE |
                                      PA_STREAM_INTERPOLATE_TIMING,
                                      NULL, NULL);
@@ -469,7 +483,7 @@ gboolean cam_audio_start(cam_t *cam)
         g_warning("Could not play to PulseAudio: %s", pa_strerror(ret));
         goto cleanup;
     }
-    ret = pa_stream_connect_record(capture, source, &low_latency_attr, 0);
+    ret = pa_stream_connect_record(capture, source, &buffer_attr, 0);
     if (ret < 0) {
         g_warning("Could not record from PulseAudio: %s", pa_strerror(ret));
         goto cleanup;
